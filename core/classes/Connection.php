@@ -12,7 +12,7 @@ $this->connection = new PDO("mysql:host={$this->HOST};dbname={$this->DATABASE}",
     } catch (Exception $e) {
       die($e->getMessage());
     }
-
+return $this->connection;
 
   }
 }
