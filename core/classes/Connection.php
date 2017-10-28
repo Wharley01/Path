@@ -16,4 +16,7 @@ return $this->connection;
 
   }
 }
+function close(){
+$this->Connection = null;
+}
 ?>
