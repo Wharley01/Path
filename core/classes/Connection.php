@@ -1,22 +1,37 @@
 <?php
 namespace Connection;
-class Connect{
-  private $HOST = "localhost";
-  private $USER = "";
-  private $PASSWORD = "";
-  private $DATABASE = "";
-  public $connection = null;
-  function __construct(){
-    try {
-$this->connection = new PDO("mysql:host={$this->HOST};dbname={$this->DATABASE}", $this->USER, $this->PASSWORD);
-    } catch (Exception $e) {
-      die($e->getMessage());
-    }
-return $this->connection;
 
-  }
+/**
+ *
+ */
+interface DB{
+  public function __construct();
+  public function close();
 }
-function close(){
-$this->Connection = null;
+
+class Mysql implements DB
+{
+    private $HOST = "localhost";
+    private $USER = "";
+    private $PASSWORD = "";
+    private $DATABASE = "";
+    public $connection = null;
+
+    public function __construct()
+    {
+        try {
+            $this->connection = new \PDO("mysql:host={$this->HOST};dbname={$this->DATABASE}", $this->USER, $this->PASSWORD);
+            $this->connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        } catch (\Exception $e) {
+            die($e->getMessage());
+        }
+        return $this->connection;
+
+    }
+
+    public function close()
+    {
+        $this->Connection = null;
+    }
 }
 ?>
