@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="394663eb-1490-46ad-bce1-f3adc35485d2" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/classes/Database.php" afterPath="$PROJECT_DIR$/core/classes/Database.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.php" afterPath="$PROJECT_DIR$/test.php" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -40,8 +39,8 @@
       <file leaf-file-name="test.php" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/test.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="243">
-              <caret line="7" column="219" lean-forward="false" selection-start-line="7" selection-start-column="219" selection-end-line="7" selection-end-column="219" />
+            <state relative-caret-position="295">
+              <caret line="15" column="4" lean-forward="false" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
               <folding>
                 <element signature="e#38#59#0#PHP" expanded="true" />
               </folding>
@@ -161,12 +160,12 @@
       <option name="presentableId" value="Default" />
       <updated>1509166857820</updated>
       <workItem from="1509166860482" duration="25982000" />
-      <workItem from="1509241265411" duration="4706000" />
+      <workItem from="1509241265411" duration="5749000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="30688000" />
+    <option name="totallyTimeSpent" value="31731000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
@@ -267,8 +266,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/test.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="243">
-          <caret line="7" column="219" lean-forward="false" selection-start-line="7" selection-start-column="219" selection-end-line="7" selection-end-column="219" />
+        <state relative-caret-position="295">
+          <caret line="15" column="4" lean-forward="false" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
           <folding>
             <element signature="e#38#59#0#PHP" expanded="true" />
           </folding>
