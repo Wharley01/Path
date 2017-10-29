@@ -9,7 +9,7 @@ $db->
 select("Name")
     ->from("test_table")
     ->where(['id' => 1])
-    ->where('id = 2');
+    ->or_where('id = 2');
 
 print_r($db->getResult(false));
 
