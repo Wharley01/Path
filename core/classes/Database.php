@@ -51,7 +51,8 @@ class Database{
 
 
                 foreach($conditions as $condition => $value){
-                        $string .= " {$condition} = {$value} AND ";
+                        $string .= " {$condition} = ? AND ";
+                        $this->query_data['where_val'][] = $value;
                 }
                 $string = preg_replace("/(AND)\s*$/","",$string);
             if(!isset($this->query_data['where'])){
@@ -62,13 +63,19 @@ class Database{
 
 
         }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$conditions)){
+
             $split = explode(",",$conditions);
+            $string = "";
             foreach ($split as $val){
-                if(!isset($this->query_data['where'])){
-                    $this->query_data['where'] .= $val;
-                }else{
-                    $this->query_data['where'] .= ' AND '. $val;
-                }
+                $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
+                $string .= "{$matches[1]} {$matches[2]} ? AND ";
+                $this->query_data['where_val'][] = $matches[3];
+            }
+            $string = preg_replace("/(AND)\s*$/","",$string);
+            if(!isset($this->query_data['where'])){
+                @$this->query_data['where'] .= $string;
+            }else{
+                $this->query_data['where'] .= ' AND '. $string;
             }
 
         }
@@ -83,27 +90,30 @@ class Database{
 
 
             foreach($conditions as $condition => $value){
-                $this->query_data['where'] .= " OR {$condition} = {$value}";
+                $string .= " OR {$condition} = ? ";
+                $this->query_data['where_val'][] = $value;
             }
-////            $string = preg_replace("/(AND)\s*$/","",$string);
-//            if(!isset($this->query_data['where'])){
-//                $this->query_data['where'] .= $string;
-//            }else{
-//                $this->query_data['where'] .= ' AND '. $string;
-//            }
+            $string = preg_replace("/(AND)\s*$/","",$string);
+
+                $this->query_data['where'] .= $string;
+
 
 
         }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$conditions)){
+
             $split = explode(",",$conditions);
+            $string = "";
             foreach ($split as $val){
-
-                    $this->query_data['where'] .= ' OR '. $val;
-
+                $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
+                $string .= "OR {$matches[1]} {$matches[2]} ? ";
+                $this->query_data['where_val'][] = $matches[3];
             }
+            $string = preg_replace("/(OR)\s*$/","",$string);
+
+                $this->query_data['where'] .= $string;
 
         }
         return $this;
-
     }
 
 
