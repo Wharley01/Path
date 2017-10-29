@@ -22,7 +22,7 @@ class Mysql implements DB
         try {
             $this->connection = new \PDO("mysql:host={$this->HOST};dbname={$this->DATABASE}", $this->USER, $this->PASSWORD);
             $this->connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-        } catch (\Exception $e) {
+        } catch (\PDOException $e) {
             die($e->getMessage());
         }
         return $this->connection;
