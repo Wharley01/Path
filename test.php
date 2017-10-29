@@ -7,7 +7,8 @@ $db = new Database(new Mysql());
 $age = 12;
 $db->
 select("*")
-    ->from("test_table");
+    ->from("test_table")
+    ->where(['id' => 1]);
 
 print_r($db->getResult(false));
 
