@@ -2,11 +2,11 @@
 namespace Data;
 use Connection\DB;
 class Database{
-    private $connection;
+    private $db_con;
     public $query_data = array();
     public function __construct(DB $connection)
     {
-        $this->connection = $connection->__construct();
+        $this->db_con = $connection->__construct();
     }
 
     /**
@@ -52,11 +52,11 @@ class Database{
 
                 foreach($conditions as $condition => $value){
                         $string .= " {$condition} = ? AND ";
-                        $this->query_data['where_val'][] = $value;
+                        $this->query_data['bind_data'][] = $value;
                 }
                 $string = preg_replace("/(AND)\s*$/","",$string);
             if(!isset($this->query_data['where'])){
-                $this->query_data['where'] .= $string;
+                @$this->query_data['where'] .= $string;
             }else{
                 $this->query_data['where'] .= ' AND '. $string;
             }
@@ -69,7 +69,7 @@ class Database{
             foreach ($split as $val){
                 $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
                 $string .= "{$matches[1]} {$matches[2]} ? AND ";
-                $this->query_data['where_val'][] = $matches[3];
+                $this->query_data['bind_data'][] = $matches[3];
             }
             $string = preg_replace("/(AND)\s*$/","",$string);
             if(!isset($this->query_data['where'])){
@@ -91,7 +91,7 @@ class Database{
 
             foreach($conditions as $condition => $value){
                 $string .= " OR {$condition} = ? ";
-                $this->query_data['where_val'][] = $value;
+                $this->query_data['bind_data'][] = $value;
             }
             $string = preg_replace("/(AND)\s*$/","",$string);
 
@@ -106,7 +106,7 @@ class Database{
             foreach ($split as $val){
                 $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
                 $string .= "OR {$matches[1]} {$matches[2]} ? ";
-                $this->query_data['where_val'][] = $matches[3];
+                $this->query_data['bind_data'][] = $matches[3];
             }
             $string = preg_replace("/(OR)\s*$/","",$string);
 
@@ -115,7 +115,29 @@ class Database{
         }
         return $this;
     }
+public function getResult($is_array = true){
+        $query = "";
+        $query = "SELECT {$this->query_data['column']} FROM {$this->query_data['table']}";
+        if(@$this->query_data['where']){
+        $query .= " WHERE {$this->query_data['where']}";
+                }
+        try{
 
+            $exe = $this->db_con->prepare($query);
+            $exe->execute(@$this->query_data['bind_data']);
+
+            if($is_array){
+                return $exe->fetchAll(\PDO::FETCH_ASSOC);
+            }else{
+                return (object) $exe->fetchAll(\PDO::FETCH_ASSOC);
+            }
+
+
+
+        }catch (\PDOException $e){
+            echo $e->getMessage();
+        }
+}
 
 }
 

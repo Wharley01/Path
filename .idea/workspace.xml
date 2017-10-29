@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="394663eb-1490-46ad-bce1-f3adc35485d2" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/classes/Connection.php" afterPath="$PROJECT_DIR$/core/classes/Connection.php" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/core/classes/Database.php" afterPath="$PROJECT_DIR$/core/classes/Database.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/test.php" afterPath="$PROJECT_DIR$/test.php" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -17,8 +18,8 @@
       <file leaf-file-name="Connection.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/classes/Connection.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="160">
-              <caret line="24" column="30" lean-forward="false" selection-start-line="24" selection-start-column="30" selection-end-line="24" selection-end-column="30" />
+            <state relative-caret-position="-191">
+              <caret line="16" column="38" lean-forward="false" selection-start-line="16" selection-start-column="38" selection-end-line="16" selection-end-column="38" />
               <folding />
             </state>
           </provider>
@@ -27,10 +28,14 @@
       <file leaf-file-name="Database.php" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/core/classes/Database.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="565">
-              <caret line="112" column="46" lean-forward="false" selection-start-line="112" selection-start-column="46" selection-end-line="112" selection-end-column="46" />
+            <state relative-caret-position="351">
+              <caret line="139" column="1" lean-forward="true" selection-start-line="139" selection-start-column="1" selection-end-line="139" selection-end-column="1" />
               <folding>
-                <marker date="1509254516833" expanded="true" signature="769:776" ph="SELECT ${{$s... " />
+                <marker date="1509270638239" expanded="true" signature="761:768" ph="SELECT ${{$s... " />
+                <marker date="1509270638239" expanded="true" signature="3623:3665" ph="SELECT ${{$t... " />
+                <marker date="1509270638239" expanded="true" signature="3623:3693" ph="SELECT ${{$t... " />
+                <marker date="1509270638239" expanded="true" signature="3623:3700" ph="SELECT ${{$t... " />
+                <marker date="1509270638239" expanded="true" signature="3623:4217" ph="SELECT ${{$t... " />
               </folding>
             </state>
           </provider>
@@ -39,8 +44,8 @@
       <file leaf-file-name="test.php" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/test.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="295">
-              <caret line="15" column="4" lean-forward="false" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
+            <state relative-caret-position="297">
+              <caret line="11" column="28" lean-forward="false" selection-start-line="11" selection-start-column="28" selection-end-line="11" selection-end-column="28" />
               <folding>
                 <element signature="e#38#59#0#PHP" expanded="true" />
               </folding>
@@ -59,6 +64,14 @@
         </entry>
       </file>
     </leaf>
+  </component>
+  <component name="FindInProjectRecents">
+    <findStrings>
+      <find>where_val</find>
+    </findStrings>
+    <replaceStrings>
+      <replace>bind_data</replace>
+    </replaceStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -160,12 +173,12 @@
       <option name="presentableId" value="Default" />
       <updated>1509166857820</updated>
       <workItem from="1509166860482" duration="25982000" />
-      <workItem from="1509241265411" duration="5749000" />
+      <workItem from="1509241265411" duration="12228000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="31731000" />
+    <option name="totallyTimeSpent" value="38210000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
@@ -215,7 +228,11 @@
         <state relative-caret-position="2295">
           <caret line="85" column="42" lean-forward="false" selection-start-line="85" selection-start-column="42" selection-end-line="85" selection-end-column="42" />
           <folding>
-            <marker date="1509254516833" expanded="true" signature="769:776" ph="SELECT ${{$s... " />
+            <marker date="1509270638239" expanded="true" signature="761:768" ph="SELECT ${{$s... " />
+            <marker date="1509270638239" expanded="true" signature="3623:3665" ph="SELECT ${{$t... " />
+            <marker date="1509270638239" expanded="true" signature="3623:3693" ph="SELECT ${{$t... " />
+            <marker date="1509270638239" expanded="true" signature="3623:3700" ph="SELECT ${{$t... " />
+            <marker date="1509270638239" expanded="true" signature="3623:4217" ph="SELECT ${{$t... " />
           </folding>
         </state>
       </provider>
@@ -246,28 +263,32 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/classes/Connection.php">
+    <entry file="file://$PROJECT_DIR$/core/classes/Database.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="160">
-          <caret line="24" column="30" lean-forward="false" selection-start-line="24" selection-start-column="30" selection-end-line="24" selection-end-column="30" />
-          <folding />
+        <state relative-caret-position="351">
+          <caret line="139" column="1" lean-forward="true" selection-start-line="139" selection-start-column="1" selection-end-line="139" selection-end-column="1" />
+          <folding>
+            <marker date="1509270638239" expanded="true" signature="761:768" ph="SELECT ${{$s... " />
+            <marker date="1509270638239" expanded="true" signature="3623:3665" ph="SELECT ${{$t... " />
+            <marker date="1509270638239" expanded="true" signature="3623:3693" ph="SELECT ${{$t... " />
+            <marker date="1509270638239" expanded="true" signature="3623:3700" ph="SELECT ${{$t... " />
+            <marker date="1509270638239" expanded="true" signature="3623:4217" ph="SELECT ${{$t... " />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/core/classes/Database.php">
+    <entry file="file://$PROJECT_DIR$/core/classes/Connection.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="565">
-          <caret line="112" column="46" lean-forward="false" selection-start-line="112" selection-start-column="46" selection-end-line="112" selection-end-column="46" />
-          <folding>
-            <marker date="1509254516833" expanded="true" signature="769:776" ph="SELECT ${{$s... " />
-          </folding>
+        <state relative-caret-position="-191">
+          <caret line="16" column="38" lean-forward="false" selection-start-line="16" selection-start-column="38" selection-end-line="16" selection-end-column="38" />
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/test.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="295">
-          <caret line="15" column="4" lean-forward="false" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
+        <state relative-caret-position="297">
+          <caret line="11" column="28" lean-forward="false" selection-start-line="11" selection-start-column="28" selection-end-line="11" selection-end-column="28" />
           <folding>
             <element signature="e#38#59#0#PHP" expanded="true" />
           </folding>
