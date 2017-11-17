@@ -4,16 +4,25 @@ use Connection\Mysql;
 use Data\Database;
 
 $db = new Database(new Mysql());
-$age = 12;
-$db->Insert('Name = wale,Age = 12')->Into('test_table');
-try{
-    $db->Exe();
-}catch (Exception $exception){
-    echo $exception->getMessage();
-}
+
+$select = $db->Select('Name')
+             ->From('test_table')
+             ->Where('Name')
+             ->Like('Ade')
+             ->orWhere('Name')
+             ->Like('Sul')
+             ->Get();
+
+print_r($select);
+
+//try{
+//    $db->Exe();
+//}catch (Exception $exception){
+//    echo $exception->getMessage();
+//}
 
 
-print_r($db->query_data['bind_data'])
+
 
 
 ?>
