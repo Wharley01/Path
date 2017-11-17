@@ -42,7 +42,7 @@ class Database{
      * @param array $condition
      * @return $this
      */
-    public function Where($conditions){
+public function Where($conditions){
         if(func_num_args() < 1){
             return $this;
         }
@@ -117,12 +117,83 @@ class Database{
         }
         return $this;
     }
+
+public function Update($table){
+    if(func_num_args() < 1 || is_null($table) || empty($table)){
+        throw new \Exception("Specify table to update");
+    }
+    $this->query_data['table'] = $table;
+    return $this;
+}
+
+
+
+public function Set($values){
+    if(func_num_args() < 1 || is_null($values) || empty($values)){
+        throw new \Exception('Set value to update');
+    }
+
+    if(is_array($values)){
+        $string = "";
+
+
+        foreach($values as $column => $value){
+            if($this->query_data['update_data']){
+                $string .= ",{$column} = ?,";
+                $this->query_data['bind_data'][] = $value;
+            }else{
+                $string .= "{$column} = ?,";
+                $this->query_data['bind_data'][] = $value;
+            }
+
+        }
+            $string = preg_replace("/,\s*$/","",$string);//remove trailing commar
+
+        @$this->query_data['update_data'] .= $string;
+
+    }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$values)){
+
+        $split = explode(",",$values);
+        $string = "";
+        foreach ($split as $val){
+            $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
+            if(!empty($this->query_data['update_data'])){
+                $string .= ",{$matches[1]} = ?,";
+                $this->query_data['bind_data'][] = $matches[3];
+            }else{
+                $string .= "{$matches[1]} = ?,";
+                $this->query_data['bind_data'][] = $matches[3];
+            }
+
+        }
+        $string = preg_replace("/,\s*$/","",$string);
+
+        @$this->query_data['update_data'] .= $string;
+
+    }
+    return $this;
+}
+public function Exe(){
+    $query = "UPDATE {$this->query_data['table']} SET {$this->query_data['update_data']}";
+    if($this->query_data['where']){
+        $query .= " WHERE {$this->query_data['where']}";
+    }
+    try{
+        $exe = $this->db_con->prepare($query);
+        $exe->execute(@$this->query_data['bind_data']);
+        echo "Query successfully executed";
+    }catch (\PDOException $e){
+        throw new \Exception($e->getMessage());
+    }
+
+    return true;
+}
 public function Get($is_array = true){
         $query = "";
         $query = "SELECT {$this->query_data['column']} FROM {$this->query_data['table']}";
         if(@$this->query_data['where']){
-        $query .= " WHERE {$this->query_data['where']}";
-                }
+            $query .= " WHERE {$this->query_data['where']}";
+        }
         try{
 
             $exe = $this->db_con->prepare($query);
@@ -140,49 +211,7 @@ public function Get($is_array = true){
             echo $e->getMessage();
         }
         return $this;
-}
-public function Update($table){
-    if(func_num_args() < 1 || is_nan($table) || empty($table)){
-        throw new \Exception("Specify table to update");
     }
-    $this->query_data['table'] = $table;
-    return $this;
-}
-public function Set($values){
-    if(func_num_args() < 1 || is_nan($values) || empty($values)){
-        throw new \Exception('Set value to update');
-    }
-    unset($this->query_data['bind_data']);//clear previous saved binded data
-    if(is_array($values)){
-        $string = "";
-
-
-        foreach($values as $column => $value){
-            $string .= "{$column} = ?,";
-            $this->query_data['bind_data'][] = $value;
-        }
-            $string = preg_replace("/,\s*$/","",$string);//remove trailing commar
-
-        $this->query_data['update_data'] .= $string;
-
-
-
-    }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$values)){
-
-        $split = explode(",",$values);
-        $string = "";
-        foreach ($split as $val){
-            $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
-            $string .= "{$matches[1]} = ?,";
-            $this->query_data['bind_data'][] = $matches[3];
-        }
-        $string = preg_replace("/,\s*$/","",$string);
-
-        $this->query_data['where'] .= $string;
-
-    }
-}
-
 
 }
 
