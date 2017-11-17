@@ -18,9 +18,9 @@ SELECT Column FROM Table_Name WHERE ID = 1
 ```
 
 
-####Documentation
+###Documentation
 
-#####Selecting Data from database
+Selecting Data from database
 ```
 $select = $db->Select('Column')//The column to select, Put * for all
              ->From('Table_Name')//The Table to Select from
