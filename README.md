@@ -3,7 +3,7 @@
 A simple, lightweight, versatile and secure Sql query builder.
 Query builder is powered by PHP PDO, All parameters are bond during execution. 
 
-##Get Started
+## Get Started
 
 ```
 $db = new Database(new Mysql());`
@@ -18,9 +18,9 @@ SELECT Column FROM Table_Name WHERE ID = 1
 ```
 
 
-###Documentation
+### Documentation
 
-Selecting Data from database
+###### Selecting Data from database
 ```
 $select = $db->Select('Column')//The column to select, Put * for all
              ->From('Table_Name')//The Table to Select from
@@ -38,4 +38,4 @@ Example Explained
  `Select()` Method Can also be chained with `_As()` Method, For Example `Select('AVG(Age)')->_As('AverageAge')->From('Table_Name')`
 
 
-##Continuing...
+## Continuing...
