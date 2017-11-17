@@ -5,7 +5,7 @@ use Data\Database;
 
 $db = new Database(new Mysql());
 $age = 12;
-$db->Update('test')->Set('Name = wale')->Set(['School'=>'Unilag'])->Where(['Name'=>'Wale'])->orWhere('ID = 3');
+$db->Insert('Name = wale,Age = 12')->Into('test_table');
 try{
     $db->Exe();
 }catch (Exception $exception){
