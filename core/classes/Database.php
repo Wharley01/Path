@@ -123,6 +123,8 @@ public function Update($table){
         throw new \Exception("Specify table to update");
     }
     $this->query_data['table'] = $table;
+    $this->query_data['command'] = "UPDATE";
+
     return $this;
 }
 
@@ -173,8 +175,61 @@ public function Set($values){
     }
     return $this;
 }
+public function Insert($data){
+    if(func_num_args() < 1 || is_null($data) || empty($data)){
+        throw new \Exception('Set value to update');
+    }
+
+    if(is_array($data)){
+        $string = "";
+
+
+        foreach($data as $column => $value){
+            if($this->query_data['update_data']){
+                $string .= ",{$column} = ?,";
+                $this->query_data['bind_data'][] = $value;
+            }else{
+                $string .= "{$column} = ?,";
+                $this->query_data['bind_data'][] = $value;
+            }
+
+        }
+        $string = preg_replace("/,\s*$/","",$string);//remove trailing commar
+
+        @$this->query_data['update_data'] .= $string;
+
+    }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$data)){
+
+        $split = explode(",",$data);
+        $string = "";
+        foreach ($split as $val){
+            $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
+            if(!empty($this->query_data['update_data'])){
+                $string .= ",{$matches[1]} = ?,";
+                $this->query_data['bind_data'][] = $matches[3];
+            }else{
+                $string .= "{$matches[1]} = ?,";
+                $this->query_data['bind_data'][] = $matches[3];
+            }
+
+        }
+        $string = preg_replace("/,\s*$/","",$string);
+
+        @$this->query_data['update_data'] .= $string;
+
+    }
+    return $this;
+}
+public function Into($table){
+    if(func_num_args() < 1 || is_null($table) || empty($table)){
+        throw new \Exception("Specify table to update");
+    }
+    $this->query_data['table'] = $table;
+    $this->query_data['command'] = "INSERT INTO";
+    return $this;
+}
 public function Exe(){
-    $query = "UPDATE {$this->query_data['table']} SET {$this->query_data['update_data']}";
+    $query = "{$this->query_data['command']} {$this->query_data['table']} SET {$this->query_data['update_data']}";
     if($this->query_data['where']){
         $query .= " WHERE {$this->query_data['where']}";
     }
