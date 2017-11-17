@@ -8,10 +8,10 @@ $age = 12;
 $db->
 select("Name")
     ->from("test_table")
-    ->where(['id' => 1])
-    ->or_where('id = 2');
+    ->Where(['id' => 1])
+    ->orWhere('id = 2');
 
-print_r($db->getResult(false));
+print_r($db->Get(false));
 
 
 ?>

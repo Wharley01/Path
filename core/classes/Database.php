@@ -12,7 +12,7 @@ class Database{
     /**
      * @param $columns
      */
-    public function select($columns){
+    public function Select($columns){
         $string = "";
         if(empty($columns) || func_num_args() < 1){
             throw new \Exception("Provide Column/Columns");
@@ -30,7 +30,7 @@ class Database{
         return $this;
 
     }
-    public function from($table){
+    public function From($table){
         if(empty($this->query_data)){
             throw new \Exception("Specify Column");
         }
@@ -42,7 +42,7 @@ class Database{
      * @param array $condition
      * @return $this
      */
-    public function where($conditions){
+    public function Where($conditions){
         if(func_num_args() < 1){
             return $this;
         }
@@ -81,7 +81,7 @@ class Database{
         }
         return $this;
     }
-    public function or_where($conditions){
+    public function orWhere($conditions){
         if(empty($this->query_data['where'])){
             throw new \Exception('User the where method before the or_where');
         }
@@ -93,7 +93,7 @@ class Database{
                 $string .= " OR {$condition} = ? ";
                 $this->query_data['bind_data'][] = $value;
             }
-            $string = preg_replace("/(AND)\s*$/","",$string);
+//            $string = preg_replace("/(AND)\s*$/","",$string);
 
                 $this->query_data['where'] .= $string;
 
@@ -112,10 +112,12 @@ class Database{
 
                 $this->query_data['where'] .= $string;
 
+        }else{
+            throw new \Exception("Invalid value for 'orWhere' method");
         }
         return $this;
     }
-public function getResult($is_array = true){
+public function Get($is_array = true){
         $query = "";
         $query = "SELECT {$this->query_data['column']} FROM {$this->query_data['table']}";
         if(@$this->query_data['where']){
@@ -137,7 +139,50 @@ public function getResult($is_array = true){
         }catch (\PDOException $e){
             echo $e->getMessage();
         }
+        return $this;
 }
+public function Update($table){
+    if(func_num_args() < 1 || is_nan($table) || empty($table)){
+        throw new \Exception("Specify table to update");
+    }
+    $this->query_data['table'] = $table;
+    return $this;
+}
+public function Set($values){
+    if(func_num_args() < 1 || is_nan($values) || empty($values)){
+        throw new \Exception('Set value to update');
+    }
+    unset($this->query_data['bind_data']);//clear previous saved binded data
+    if(is_array($values)){
+        $string = "";
+
+
+        foreach($values as $column => $value){
+            $string .= "{$column} = ?,";
+            $this->query_data['bind_data'][] = $value;
+        }
+            $string = preg_replace("/,\s*$/","",$string);//remove trailing commar
+
+        $this->query_data['update_data'] .= $string;
+
+
+
+    }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$values)){
+
+        $split = explode(",",$values);
+        $string = "";
+        foreach ($split as $val){
+            $match = preg_match("/(\w+)\s*([><=!])\s*(\w+)/",$val,$matches);
+            $string .= "{$matches[1]} = ?,";
+            $this->query_data['bind_data'][] = $matches[3];
+        }
+        $string = preg_replace("/,\s*$/","",$string);
+
+        $this->query_data['where'] .= $string;
+
+    }
+}
+
 
 }
 
