@@ -30,6 +30,11 @@ class Database{
         return $this;
 
     }
+    public function _As($alias){
+        $column = $this->query_data["column"];
+        $this->query_data["column"] = "{$column} AS {$alias}";
+        return $this;
+    }
     public function From($table){
         if(empty($this->query_data)){
             throw new \Exception("Specify Column");
@@ -46,7 +51,9 @@ public function Where($conditions){
         if(func_num_args() < 1){
             return $this;
         }
-        if(is_array($conditions)){
+        if(preg_match('/^[_\w]*$/',$conditions)){
+            $this->query_data['where'] = $conditions;
+        }elseif(is_array($conditions)){
             $string = "";
 
 
@@ -85,7 +92,10 @@ public function Where($conditions){
         if(empty($this->query_data['where'])){
             throw new \Exception('User the where method before the or_where');
         }
-        if(is_array($conditions)){
+        if(preg_match('/^[_\w]*$/',$conditions)){
+            $where = $this->query_data['where'];
+            $this->query_data['where'] = "{$where} OR {$conditions}";
+        }else if(is_array($conditions)){
             $string = "";
 
 
@@ -117,7 +127,12 @@ public function Where($conditions){
         }
         return $this;
     }
-
+public function Like($compare){
+    $where = $this->query_data['where'];
+    $this->query_data['where'] = "{$where} LIKE ?";
+    $this->query_data['bind_data'][] = "%{$compare}%";
+    return $this;
+}
 public function Update($table){
     if(func_num_args() < 1 || is_null($table) || empty($table)){
         throw new \Exception("Specify table to update");
@@ -249,6 +264,7 @@ public function Get($is_array = true){
         if(@$this->query_data['where']){
             $query .= " WHERE {$this->query_data['where']}";
         }
+
         try{
 
             $exe = $this->db_con->prepare($query);
