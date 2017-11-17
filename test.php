@@ -5,13 +5,15 @@ use Data\Database;
 
 $db = new Database(new Mysql());
 $age = 12;
-$db->
-select("Name")
-    ->from("test_table")
-    ->Where(['id' => 1])
-    ->orWhere('id = 2');
+$db->Update('test')->Set('Name = wale')->Set(['School'=>'Unilag'])->Where(['Name'=>'Wale'])->orWhere('ID = 3');
+try{
+    $db->Exe();
+}catch (Exception $exception){
+    echo $exception->getMessage();
+}
 
-print_r($db->Get(false));
+
+print_r($db->query_data['bind_data'])
 
 
 ?>
