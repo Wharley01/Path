@@ -133,6 +133,27 @@ public function Like($compare){
     $this->query_data['bind_data'][] = "%{$compare}%";
     return $this;
 }
+    public function notLike($compare){
+        $where = $this->query_data['where'];
+        $this->query_data['where'] = "{$where} NOT LIKE ?";
+        $this->query_data['bind_data'][] = "%{$compare}%";
+        return $this;
+    }
+public function Between($start,$stop){
+        $where = $this->query_data['where'];
+        $this->query_data['where'] = "{$where} BETWEEN ? AND ?";
+        $this->query_data['bind_data'][] = $start;
+        $this->query_data['bind_data'][] = $stop;
+        return $this;
+    }
+public function notBetween($start,$stop){
+        $where = $this->query_data['where'];
+        $this->query_data['where'] = "{$where} NOT BETWEEN ? AND ?";
+        $this->query_data['bind_data'][] = $start;
+        $this->query_data['bind_data'][] = $stop;
+
+        return $this;
+    }
 public function Update($table){
     if(func_num_args() < 1 || is_null($table) || empty($table)){
         throw new \Exception("Specify table to update");
@@ -155,7 +176,7 @@ public function Set($values){
 
 
         foreach($values as $column => $value){
-            if($this->query_data['update_data']){
+            if(@$this->query_data['update_data']){
                 $string .= ",{$column} = ?,";
                 $this->query_data['bind_data'][] = $value;
             }else{
@@ -197,8 +218,6 @@ public function Insert($data){
 
     if(is_array($data)){
         $string = "";
-
-
         foreach($data as $column => $value){
             if($this->query_data['update_data']){
                 $string .= ",{$column} = ?,";
@@ -243,11 +262,26 @@ public function Into($table){
     $this->query_data['command'] = "INSERT INTO";
     return $this;
 }
+public function deleteFrom($table){
+    if(func_num_args() < 1 || is_null($table) || empty($table)){
+        throw new \Exception("Specify table to delete from");
+    }
+    $this->query_data['table'] = $table;
+    $this->query_data['command'] = "DELETE FROM ";
+    return $this;
+}
 public function Exe(){
-    $query = "{$this->query_data['command']} {$this->query_data['table']} SET {$this->query_data['update_data']}";
+    $query = "{$this->query_data['command']} {$this->query_data['table']}";
+
+    if(@$this->query_data['update_data']){
+        $query .= " SET {$this->query_data['update_data']}";
+    }
+
+
     if($this->query_data['where']){
         $query .= " WHERE {$this->query_data['where']}";
     }
+    echo $query.'<br><br>';
     try{
         $exe = $this->db_con->prepare($query);
         $exe->execute(@$this->query_data['bind_data']);
