@@ -48,7 +48,23 @@ The code above will generate
 ```
 UPDATE Table_Name SET `Name` = 'Sulaiman Adewale',`Age` = '21' WHERE `ID` = 2
 ```
-Code Explained
+Code Explanation
 
 The `Update()` Method accepts the table you are trying to update in string, the `Set()` Accepts the Data to update while the method `Where()` Can be chained to set the condition to check for before it can Update.
 
+##### Insert Data
+
+Inserting data is similar to updating, the difference is you don't need to specify any condition.
+
+Example
+```
+$db->Insert(['Name' => 'My other Name','Age'=>'4'])->Into->('Table_Name');
+```
+
+Explanation
+
+To insert data in database, you need two methods chained together, the `Insert()` method and the `Into()` method.
+
+`Insert()` -- Accepts the data you are willing to insert in associative array or string separated with comma, Meaning `['Name' => 'My other Name','Age'=>'4']` can be replaced with `Name = My other Name,Age = 4`.
+
+`Into()` -- Accepts the table Name, (the table to insert data to)
