@@ -94,3 +94,15 @@ Deleting data is very straight forward. The code below illustrate that.
 $db->deleteFrom('Table_Name')->Where(['ID'=>1]);//Can be chained with Where method, and other conditional statements
 ```
 
+#### More on Conditional Where()
+
+To select rows that match a specific search keyword
+```
+$select = $db->Select('Name')//Column to select
+             ->From('Table_Name')
+             ->Where('Name')//Column to match the keyword with
+             ->Like('SearchKeyword')//the search keyword, you can use notLike() Here too
+             ->Get();
+```
+
+
