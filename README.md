@@ -6,7 +6,7 @@ Query builder is powered by PHP PDO, All parameters are bond during execution.
 ## Get Started
 
 ```
-$db = new Database(new Mysql());`
+$db = new Database(new Mysql());
 
 $select = $db->Select('Column')->From('Table_Name')->Where(\['ID'=>'1']);
 //This is the simplest form of a select statement
@@ -41,7 +41,7 @@ SELECT Column FROM Table_Name WHERE ID = 1
 ```
 $select = $db->Select('Column')//The column to select, Put * for all
              ->From('Table_Name')//The Table to Select from
-             ->Where(\['ID'=>'1'])->Get();//Condition
+             ->Where(['ID'=>'1'])->Get();//Condition
 ```
 Example Explained
 
