@@ -69,7 +69,7 @@ Code Explanation
 
 The `Update()` Method accepts the table you are trying to update in string, the `Set()` Accepts the Data to update while the method `Where()` Can be chained to set the condition to check for before it can Update.
 
-##### Insert Data
+### Insert Data
 
 Inserting data is similar to updating, the difference is you don't need to specify any condition.
 
