@@ -16,15 +16,32 @@ The code above will build query:
 ```
 SELECT Column FROM Table_Name WHERE ID = 1
 ```
+### Method reference
 
+* Select()
+* From()
+* _As()
+* Where()
+* orWhere()
+* Like()
+* notLike()
+* Between()
+* notBetween()
+* Update()
+* Set()
+* Insert()
+* Into()
+* deleteFrom()
+* Exe() Alias of Execute()
+* Get() 
 
 ### Documentation
 
-##### Selecting Data from database
+#### Selecting Data from database
 ```
 $select = $db->Select('Column')//The column to select, Put * for all
              ->From('Table_Name')//The Table to Select from
-             ->Where(\['ID'=>'1']);//Condition
+             ->Where(\['ID'=>'1'])->Get();//Condition
 ```
 Example Explained
 
@@ -38,11 +55,11 @@ Example Explained
  `Select()` Method Can also be chained with `_As()` Method, For Example `Select('AVG(Age)')->_As('AverageAge')->From('Table_Name')`
 
 
-##### Updating Data
+#### Updating Data
 
 The code below can be used to update data in data
 ```
-$db->Update('Table_Name')->Set(['Name' => 'Sulaiman Adewale','Age'=>'21'])->Where('ID = 2');
+$db->Update('Table_Name')->Set(['Name' => 'Sulaiman Adewale','Age'=>'21'])->Where('ID = 2')->Exe();
 ```
 The code above will generate
 ```
@@ -58,7 +75,7 @@ Inserting data is similar to updating, the difference is you don't need to speci
 
 Example
 ```
-$db->Insert(['Name' => 'My other Name','Age'=>'4'])->Into->('Table_Name');
+$db->Insert(['Name' => 'My other Name','Age'=>'4'])->Into->('Table_Name')->Exe();
 ```
 
 Explanation
@@ -68,3 +85,12 @@ To insert data in database, you need two methods chained together, the `Insert()
 `Insert()` -- Accepts the data you are willing to insert in associative array or string separated with comma, Meaning `['Name' => 'My other Name','Age'=>'4']` can be replaced with `Name = My other Name,Age = 4`.
 
 `Into()` -- Accepts the table Name, (the table to insert data to)
+
+#### Deleting data
+
+Deleting data is very straight forward. The code below illustrate that.
+
+```
+$db->deleteFrom('Table_Name')->Where(['ID'=>1]);//Can be chained with Where method, and other conditional statements
+```
+
