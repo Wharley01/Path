@@ -20,7 +20,7 @@ SELECT Column FROM Table_Name WHERE ID = 1
 
 ### Documentation
 
-###### Selecting Data from database
+##### Selecting Data from database
 ```
 $select = $db->Select('Column')//The column to select, Put * for all
              ->From('Table_Name')//The Table to Select from
@@ -38,4 +38,17 @@ Example Explained
  `Select()` Method Can also be chained with `_As()` Method, For Example `Select('AVG(Age)')->_As('AverageAge')->From('Table_Name')`
 
 
-## Continuing...
+##### Updating Data
+
+The code below can be used to update data in data
+```
+$db->Update('Table_Name')->Set(['Name' => 'Sulaiman Adewale','Age'=>'21'])->Where('ID = 2');
+```
+The code above will generate
+```
+UPDATE Table_Name SET `Name` = 'Sulaiman Adewale',`Age` = '21' WHERE `ID` = 2
+```
+Code Explained
+
+The `Update()` Method accepts the table you are trying to update in string, the `Set()` Accepts the Data to update while the method `Where()` Can be chained to set the condition to check for before it can Update.
+
