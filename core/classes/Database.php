@@ -292,6 +292,9 @@ public function Exe(){
 
     return true;
 }
+public function Execute(){
+    $this->Exe();
+}
 public function Get($is_array = true){
         $query = "";
         $query = "SELECT {$this->query_data['column']} FROM {$this->query_data['table']}";
