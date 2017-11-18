@@ -8,7 +8,7 @@ Query builder is powered by PHP PDO, All parameters are bond during execution.
 ```
 $db = new Database(new Mysql());
 
-$select = $db->Select('Column')->From('Table_Name')->Where(\['ID'=>'1']);
+$select = $db->Select('Column')->From('Table_Name')->Where(['ID'=>'1'])->Get();
 //This is the simplest form of a select statement
 ```
 
