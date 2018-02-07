@@ -319,6 +319,9 @@ public function Get($is_array = true){
         if(@$this->query_data['where']){
             $query .= " WHERE {$this->query_data['where']}";
         }
+        if(@$this->query_data['sort']){
+            $query .= $this->query_data['sort'];
+        }
 
         try{
 
