@@ -34,7 +34,7 @@ SELECT Column FROM Table_Name WHERE ID = 1
 * deleteFrom()
 * Exe() Alias of Execute()
 * Get() 
-
+* orderBy()
 ### Documentation
 
 #### Selecting Data from database
@@ -53,6 +53,12 @@ Example Explained
  You can use SQL functions, for example `Select('AVG(Age)')`.
  
  `Select()` Method Can also be chained with `_As()` Method, For Example `Select('AVG(Age)')->_As('AverageAge')->From('Table_Name')`
+
+To order your data, you can use orderBy() method, check out the exampl below
+```
+$db->Select('*')->From('test_table')->orderBy(['Name' => 'ASC'])->Get();
+```
+this example will select all from table "test_table" and order the result by the Name column in Ascending order
 
 
 #### Updating Data
