@@ -13,6 +13,7 @@ class Database{
      * @param $columns
      */
     public function Select($columns){
+        $this->query_data = [];
         $string = "";
         if(empty($columns) || func_num_args() < 1){
             throw new \Exception("Provide Column/Columns");
@@ -51,9 +52,7 @@ public function Where($conditions){
         if(func_num_args() < 1){
             return $this;
         }
-        if(preg_match('/^[_\w]*$/',$conditions)){
-            $this->query_data['where'] = $conditions;
-        }elseif(is_array($conditions)){
+       if(is_array($conditions)){
             $string = "";
 
 
@@ -85,6 +84,8 @@ public function Where($conditions){
                 $this->query_data['where'] .= ' AND '. $string;
             }
 
+        }elseif(preg_match('/^[_\w]*$/',$conditions)){
+            $this->query_data['where'] = $conditions;
         }
         return $this;
     }
@@ -152,6 +153,7 @@ public function notBetween($start,$stop){
         return $this;
     }
 public function Update($table){
+    $this->query_data = [];
     if(func_num_args() < 1 || is_null($table) || empty($table)){
         throw new \Exception("Specify table to update");
     }
@@ -209,6 +211,7 @@ public function Set($values){
     return $this;
 }
 public function Insert($data){
+    $this->query_data = [];
     if(func_num_args() < 1 || is_null($data) || empty($data)){
         throw new \Exception('Set value to update');
     }
@@ -216,7 +219,7 @@ public function Insert($data){
     if(is_array($data)){
         $string = "";
         foreach($data as $column => $value){
-            if($this->query_data['update_data']){
+            if(@$this->query_data['update_data']){
                 $string .= ",{$column} = ?,";
                 $this->query_data['bind_data'][] = $value;
             }else{
@@ -279,7 +282,7 @@ public function Exe(){
     }
 
 
-    if($this->query_data['where']){
+    if(@$this->query_data['where']){
         $query .= " WHERE {$this->query_data['where']}";
     }
     echo $query.'<br><br>';
@@ -324,7 +327,7 @@ public function Get($is_array = true){
         }
 
         try{
-
+echo $query;
             $exe = $this->db_con->prepare($query);
             $exe->execute(@$this->query_data['bind_data']);
 
