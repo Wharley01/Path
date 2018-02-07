@@ -285,11 +285,11 @@ public function Exe(){
     if(@$this->query_data['where']){
         $query .= " WHERE {$this->query_data['where']}";
     }
-    echo $query.'<br><br>';
+    //echo $query.'<br><br>';
     try{
         $exe = $this->db_con->prepare($query);
         $exe->execute(@$this->query_data['bind_data']);
-        echo "Query successfully executed";
+        //echo "Query successfully executed";
     }catch (\PDOException $e){
         throw new \Exception($e->getMessage());
     }
@@ -327,7 +327,7 @@ public function Get($is_array = true){
         }
 
         try{
-echo $query;
+//echo $query;
             $exe = $this->db_con->prepare($query);
             $exe->execute(@$this->query_data['bind_data']);
 
@@ -346,8 +346,5 @@ echo $query;
     }
 
 }
-
-
-
 
 ?>
