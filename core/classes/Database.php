@@ -92,10 +92,7 @@ public function Where($conditions){
         if(empty($this->query_data['where'])){
             throw new \Exception('User the where method before the or_where');
         }
-        if(preg_match('/^[_\w]*$/',$conditions)){
-            $where = $this->query_data['where'];
-            $this->query_data['where'] = "{$where} OR {$conditions}";
-        }else if(is_array($conditions)){
+        if(is_array($conditions)){
             $string = "";
 
 
@@ -106,9 +103,9 @@ public function Where($conditions){
 //            $string = preg_replace("/(AND)\s*$/","",$string);
 
                 $this->query_data['where'] .= $string;
-
-
-
+        }else if(preg_match('/^[_\w]*$/',$conditions)){
+            $where = $this->query_data['where'];
+            $this->query_data['where'] = "{$where} OR {$conditions}";
         }else if(preg_match("/\w+\s*[><=!]\s*\w+/",$conditions)){
 
             $split = explode(",",$conditions);
@@ -254,6 +251,10 @@ public function Insert($data){
     }
     return $this;
 }
+public function removeTrailingComma($str){
+    $str = preg_replace("/,$/","",$str);
+    return $str;
+}
 public function Into($table){
     if(func_num_args() < 1 || is_null($table) || empty($table)){
         throw new \Exception("Specify table to update");
@@ -294,6 +295,23 @@ public function Exe(){
 }
 public function Execute(){
     $this->Exe();
+}
+
+    /**
+     * @return array
+     */
+public function orderBy($sort){
+    if(is_array($sort)){
+        $str = "";
+        foreach ($sort as $key => $val){
+            $str .=" {$key} {$val},";
+        }
+        $str = $this->removeTrailingComma($str);
+        $this->query_data['sort'] = " ORDER BY ".$str;
+    }else{
+        $this->query_data['sort'] = " ORDER BY ".$sort;
+    }
+    return $this;
 }
 public function Get($is_array = true){
         $query = "";
