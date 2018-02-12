@@ -316,6 +316,17 @@ public function orderBy($sort){
     }
     return $this;
 }
+
+public function Limit(
+    $start = 0,
+    $stop = 10
+){
+    if(is_nan($start) OR is_nan($stop)){
+        throw new \Exception("Invalid start or stop argument in Limit method");
+    }
+    $this->query_data['limit'] = " LIMIT {$start},{$stop}";
+    return $this;
+}
 public function Get($is_array = true){
         $query = "";
         $query = "SELECT {$this->query_data['column']} FROM {$this->query_data['table']}";
@@ -325,7 +336,9 @@ public function Get($is_array = true){
         if(@$this->query_data['sort']){
             $query .= $this->query_data['sort'];
         }
-
+        if(@$this->query_data['limit']){
+            $query .= $this->query_data['limit'];
+        }
         try{
 //echo $query;
             $exe = $this->db_con->prepare($query);
