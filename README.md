@@ -35,6 +35,7 @@ SELECT Column FROM Table_Name WHERE ID = 1
 * Exe() Alias of Execute()
 * Get() 
 * orderBy()
+* Limit()
 ### Documentation
 
 #### Selecting Data from database
