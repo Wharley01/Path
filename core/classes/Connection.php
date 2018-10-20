@@ -12,9 +12,9 @@ interface DB{
 class Mysql implements DB
 {
     private $HOST = "localhost";
-    private $USER = "";
+    private $USER = "root";
     private $PASSWORD = "";
-    private $DATABASE = "test_bootsrap";
+    private $DATABASE = "test_boostrap";
     public $connection = null;
 
     public function __construct()
