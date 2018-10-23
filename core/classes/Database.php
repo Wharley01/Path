@@ -324,7 +324,8 @@ class Database{
     }
 
     /**
-     * @return array
+     * @param $sort
+     * @return Database
      */
 
     public function orderBy($sort) : Database{

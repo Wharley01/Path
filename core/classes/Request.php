@@ -6,20 +6,20 @@
  * Time: 4:42 AM
  */
 
-namespace Airdrop;
+namespace Path;
 
 
 class Request
 {
-    public $request_type;
+    public $METHOD;
     public $server;
     public function __construct(){
-        $this->request_type = $_SERVER["REQUEST_METHOD"];
-        $obj = new \stdClass();
-        foreach ($_SERVER as $key => $value){
-            $obj->$key = $value;
-        }
-        $this->server = $obj;
+        $this->METHOD = $_SERVER["REQUEST_METHOD"];
+
+        if(!@$_SERVER['REDIRECT_URL'])
+            $_SERVER['REDIRECT_URL'] = "/";
+
+        $this->server = (object)$_SERVER;
     }
     static function GET(){
     $obj = new \stdClass();
