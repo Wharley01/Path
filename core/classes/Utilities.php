@@ -24,4 +24,11 @@ class Utilities
         return strtoupper($randomString);
     }
 
+    /**
+     * @param array $array
+     */
+    static function Log(array $array){
+
+    }
+
 }

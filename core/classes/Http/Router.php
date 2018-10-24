@@ -6,10 +6,11 @@
  * @Time: 12:14 AM
  */
 
-namespace Path;
+namespace Path\Http;
+load_class(["Utilities"]);
 
-
-use Path\Request;
+use Path\Http\Request;
+use Path\Utilities;
 
 class Router
 {
@@ -20,6 +21,11 @@ class Router
     public function __construct(Request $request)
     {
         $this->request = $request;
+    }
+    private static function set_header(array $headers){
+        foreach ($headers as $header => $value){
+            header("{$header}: $value");
+        }
     }
 
     /**
@@ -39,9 +45,7 @@ class Router
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
         }));
-
         $matched = 0;
-
         for($i = 0;$i < count($b_real_path); $i ++){
             if($i >= count($b_path)) {//if the amount of url path is more than required, return false
                 return false;
@@ -97,7 +101,10 @@ class Router
      * @param $path
      * @return object
      */
-    public static function get_params($real_path, $path){
+    public static function get_params(
+        $real_path,
+        $path
+    ){
         $path_str = $path;
         $b_real_path = explode("/",$real_path);
         $b_path = explode("/",$path);
@@ -119,32 +126,95 @@ class Router
             }
         }
         return (object) $params;
-
     }
-    private function response($method,$path,$callback){
-        if(strtoupper($this->request->METHOD) == $method){
-            //        TODO: check if path contains a parameter path/$id
-            $real_path = trim($this->request->server->REDIRECT_URL);
+    public static function MiddleWare(
+        $method,
+        $fallback = null
+    ){
+        return (object)["method" => $method,"fallback" => $fallback];
+    }
+
+    /**
+     * @param $method
+     * @param $path
+     * @param $callback
+     * @param null $middle_ware
+     * @return bool
+     * @throws RouterException
+     */
+    private function response(
+        $method,
+        $path,
+        $callback,
+        $middle_ware = null
+    ){
+
+        $real_path = trim($this->request->server->REDIRECT_URL);
+        if(!is_null($middle_ware)){
+            if(!is_callable($middle_ware->method))
+                throw new RouterException("Expected middleware method to be callable");
+            if($middle_ware->fallback != null || $middle_ware->fallback){
+                if(!$middle_ware->fallback instanceof Response)
+                    throw new RouterException("Expected middleware method to be callable");
+            }
+            if(!$middle_ware->method(self::get_params($real_path,$path)))
+                return false;
+        }
+
+            //        Set the path to list of paths
+            $this->assigned_paths[] = [
+                "path"      => $path,
+                "method"    => $method
+            ];
+//        TODO: check if path contains a parameter path/$id
             if(self::compare_path($real_path,$path)){
                 $c = $callback(self::get_params($real_path,$path));//call the callback, pass the params generated to it to be used
                 if($c instanceof Response){//Check if return value from callback is a Response Object
-                    $headers = $c->headers;
-
-                    foreach ($headers as $header => $value){
-                        header("{$header}: {$value}");
-                    }
+                    self::set_header($c->headers);
                     echo $c->content;
-                }else{
+                }elseif($c AND !$c instanceof Response){
                     throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$path\"");
                 }
             }
+
+
+
+    }
+    public function GET($path,$callback,$middle_ware = null){
+        if(strtoupper($this->request->METHOD) == "GET") {
+            $this->response("GET", $path, $callback,$middle_ware);
         }
+        return $this;
     }
-    public function GET($path,$callback){
-        $this->response("GET",$path,$callback);
+    public function POST($path,$callback,$middle_ware = null){
+        if(strtoupper($this->request->METHOD) == "POST") {
+            $this->response("POST", $path, $callback, $middle_ware);
+        }
+        return $this;
     }
-    public function POST($path,$callback){
-        $this->response("POST",$path,$callback);
+    private function should_fall_back(){
+        $real_path = trim($this->request->server->REDIRECT_URL);
+        $current_method = strtoupper($this->request->METHOD);
+        for ($i = 0;$i < count($this->assigned_paths);$i++){
+            if(self::compare_path($real_path,$this->assigned_paths[$i]['path']) && $this->assigned_paths[$i]['method'] == $current_method) return false;
+        }
+        return true;
+    }
+    public function Fallback($callback){//executes when no route is specified
+        if($this->should_fall_back()){//check if the current request doesn't match any request
+//            print_r($this->assigned_paths);
+            $c = $callback($this->request);//call the callback, pass the params generated to it to be used
+            if($c instanceof Response){//Check if return value from callback is a Response Object
+                $headers = $c->headers;
+                foreach ($headers as $header => $value){
+                    header("{$header}: {$value}");
+                }
+                echo $c->content;
+            }elseif($c AND !$c instanceof Response){
+                throw new RouterException("Expecting an instance of Response to be returned at \"Fallback\"");
+            }
+        }
+
     }
 
 

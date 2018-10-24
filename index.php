@@ -1,33 +1,41 @@
 <?php
 
-use Path\Response;
-use Path\Router;
+use Path\Http\Response;
+use Path\Http\Router;
 
 require_once "core/kernel.php";
 
 load_class([
-    "Router","Request","Response"
+    "Http/Router","Http/Request","Http/Response"
 ]);
 
-$router = new Router(new \Path\Request());
+$router = new Router(new \Path\Http\Request());
+
 try{
-    $router->GET("/api/user/@user_name/@user_id:int",function ($params){
+    $router->GET("/api/user/@user_name/@user_id:int",function ($params) use ($router){
         $arr = [
-          "greet" => "Hello world"
+          "greet" => "Hello world new json API"
         ];
-
-
-
-        return (new Response(json_encode($arr),200))->addHeader([
-            "Content-Type" => "application/json; charset=UTF-8",
+        return (new Response())->json($arr)->addHeader([
             "Access-Control-Allow-Origin" => "*"
         ]);
     });
 
-    $router->POST("/api/user/@user_id:int/delete",function ($params) use ($router){
-        print_r($router->request::POST());
-      echo "POST request received";
+
+    /** @var Router $router */
+    @$router->POST("/api/user/@user_name/@user_id:int",function ($params) use ($router){
+        return (new Response("Hello world"))->addHeader([
+            "Access-Control-Allow-Origin" => "*"
+        ]);
     });
+
+    $router->Fallback(function (){
+        return (new Response("Error 404",200))->addHeader([
+            "Access-Control-Allow-Origin" => "*"
+        ]);
+    });
+
+
 }catch (\Path\RouterException $e){
     echo $e->getMessage();
 }

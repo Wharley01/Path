@@ -19,8 +19,11 @@ class User
     {
         $this->db_connection = $database;
     }
-    public function delete(Request $request){
-        echo $request::GET()->ID;
+    public function Delete(Request $request){
+
+    }
+    public function Auth($params){
+        return false;
     }
 
 }

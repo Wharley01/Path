@@ -6,7 +6,7 @@
  * Time: 4:42 AM
  */
 
-namespace Path;
+namespace Path\Http;
 
 
 class Request
