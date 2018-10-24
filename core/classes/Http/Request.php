@@ -21,19 +21,8 @@ class Request
 
         $this->server = (object)$_SERVER;
     }
-    static function GET(){
-    $obj = new \stdClass();
-    foreach ($_GET as $key => $value){
-        $obj->$key = htmlspecialchars(trim($value));
-    }
-    return $obj;
-    }
-    static function POST(){
-        $obj = new \stdClass();
-        foreach ($_POST as $key => $value){
-            $obj->$key = $value;
-        }
-        return $obj;
+    public function fetch($key){
+        return @$_REQUEST[$key];
     }
 
 }

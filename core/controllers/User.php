@@ -6,11 +6,12 @@
  * Time: 3:29 AM
  */
 
-namespace Controller;
+namespace Path\Controller;
 
 
 use Data\Database;
-use Path\Request;
+use Path\Http\Request;
+
 
 class User
 {

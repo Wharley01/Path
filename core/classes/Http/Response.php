@@ -7,7 +7,7 @@
  */
 
 namespace Path\Http;
-
+load_class(["Http/MiddleWares/MiddleWare","Http/MiddleWares/Auth"]);
 
 class Response
 {
@@ -31,6 +31,18 @@ class Response
     public function addHeader(array $header){
         $this->headers = array_merge($this->headers,$header);
         return $this;
+    }
+
+    /**
+     * @param $method
+     * @param null $fallback
+     * @return object
+     */
+    public static function MiddleWare(
+        $method,
+        $fallback = null
+    ){
+        return (object)["method" => $method,"fallback" => $fallback];
     }
 
 

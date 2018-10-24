@@ -10,6 +10,7 @@ namespace Path\Http;
 load_class(["Utilities"]);
 
 use Path\Http\Request;
+use Path\RouterException;
 use Path\Utilities;
 
 class Router
@@ -127,12 +128,6 @@ class Router
         }
         return (object) $params;
     }
-    public static function MiddleWare(
-        $method,
-        $fallback = null
-    ){
-        return (object)["method" => $method,"fallback" => $fallback];
-    }
 
     /**
      * @param $method
@@ -148,17 +143,24 @@ class Router
         $callback,
         $middle_ware = null
     ){
-
         $real_path = trim($this->request->server->REDIRECT_URL);
         if(!is_null($middle_ware)){
-            if(!is_callable($middle_ware->method))
+            if(get_parent_class(new $middle_ware->method()) != 'Path\Http\MiddleWare')
                 throw new RouterException("Expected middleware method to be callable");
             if($middle_ware->fallback != null || $middle_ware->fallback){
                 if(!$middle_ware->fallback instanceof Response)
                     throw new RouterException("Expected middleware method to be callable");
             }
-            if(!$middle_ware->method(self::get_params($real_path,$path)))
+
+//            Check middle ware return
+            $check_middle_ware = (new $middle_ware->method())->Control($this->request,self::get_params($real_path,$path));
+            if(!$check_middle_ware){
+                if($middle_ware->fallback){
+                    self::set_header($middle_ware->fallback->headers);
+                    echo $middle_ware->fallback->content;
+                }
                 return false;
+            }
         }
 
             //        Set the path to list of paths
@@ -180,15 +182,37 @@ class Router
 
 
     }
-    public function GET($path,$callback,$middle_ware = null){
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return $this
+     */
+    public function GET($path, $callback){
+        if(is_array($path)){
+            $_path = $path['path'];
+            $_middle_ware = $path['middleware'];
+        }else{
+            $_path = $path;
+            $_middle_ware = null;
+        }
+
         if(strtoupper($this->request->METHOD) == "GET") {
-            $this->response("GET", $path, $callback,$middle_ware);
+            $this->response("GET", $_path, $callback,$_middle_ware);
         }
         return $this;
     }
-    public function POST($path,$callback,$middle_ware = null){
+    public function POST($path,$callback){
+        if(is_array($path)){
+            $_path = $path['path'];
+            $_middle_ware = $path['middleware'];
+        }else{
+            $_path = $path;
+            $_middle_ware = null;
+        }
+
         if(strtoupper($this->request->METHOD) == "POST") {
-            $this->response("POST", $path, $callback, $middle_ware);
+            $this->response("POST", $_path, $callback, $_middle_ware);
         }
         return $this;
     }
