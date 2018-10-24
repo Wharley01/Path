@@ -22,6 +22,7 @@ class Response
     }
     public function json(array $arr,$status = 200){
         $this->content = json_encode($arr);
+        $this->status = $status;
         $this->headers = array_merge($this->headers,["Content-Type" => "application/json; charset=UTF-8"]);
         return $this;
     }

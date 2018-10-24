@@ -23,6 +23,11 @@ class Router
     {
         $this->request = $request;
     }
+
+    /**
+     * set header from associative array
+     * @param array $headers
+     */
     private static function set_header(array $headers){
         foreach ($headers as $header => $value){
             header("{$header}: $value");
@@ -42,11 +47,16 @@ class Router
          */
         $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
             return strlen(trim($p)) > 0;
-        }));
+        }));//get all paths in a array, filter
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
         }));
-        $matched = 0;
+        if($real_path == $path){//if the path are literally the same, don't do much hard job, return true
+            return true;
+        }
+//        Else, continue checking
+
+        $matched = 0;//number of matched paths(Both template and path
         for($i = 0;$i < count($b_real_path); $i ++){
             if($i >= count($b_path)) {//if the amount of url path is more than required, return false
                 return false;
@@ -156,6 +166,7 @@ class Router
             $check_middle_ware = (new $middle_ware->method())->Control($this->request,self::get_params($real_path,$path));
             if(!$check_middle_ware){
                 if($middle_ware->fallback){
+                    http_response_code($middle_ware->fallback->status);
                     self::set_header($middle_ware->fallback->headers);
                     echo $middle_ware->fallback->content;
                 }
@@ -172,6 +183,7 @@ class Router
             if(self::compare_path($real_path,$path)){
                 $c = $callback(self::get_params($real_path,$path));//call the callback, pass the params generated to it to be used
                 if($c instanceof Response){//Check if return value from callback is a Response Object
+                    http_response_code($c->status);
                     self::set_header($c->headers);
                     echo $c->content;
                 }elseif($c AND !$c instanceof Response){
@@ -189,29 +201,30 @@ class Router
      * @return $this
      */
     public function GET($path, $callback){
-        if(is_array($path)){
-            $_path = $path['path'];
-            $_middle_ware = $path['middleware'];
+        if(is_array($path)){//check if path is associative array or a string
+            $_path = @$path['path'];
+            $_middle_ware = @$path['middleware'];
         }else{
             $_path = $path;
             $_middle_ware = null;
         }
-
-        if(strtoupper($this->request->METHOD) == "GET") {
+        $real_path = trim($this->request->server->REDIRECT_URL);
+//Check if path is the one actively visited in browser
+        if(strtoupper($this->request->METHOD) == "GET" && self::compare_path($real_path,$_path)) {
             $this->response("GET", $_path, $callback,$_middle_ware);
         }
         return $this;
     }
     public function POST($path,$callback){
         if(is_array($path)){
-            $_path = $path['path'];
-            $_middle_ware = $path['middleware'];
+            $_path = @$path['path'];
+            $_middle_ware = @$path['middleware'];
         }else{
             $_path = $path;
             $_middle_ware = null;
         }
-
-        if(strtoupper($this->request->METHOD) == "POST") {
+        $real_path = trim($this->request->server->REDIRECT_URL);
+        if(strtoupper($this->request->METHOD) == "POST" && self::compare_path($real_path,$_path)) {
             $this->response("POST", $_path, $callback, $_middle_ware);
         }
         return $this;
@@ -229,10 +242,8 @@ class Router
 //            print_r($this->assigned_paths);
             $c = $callback($this->request);//call the callback, pass the params generated to it to be used
             if($c instanceof Response){//Check if return value from callback is a Response Object
-                $headers = $c->headers;
-                foreach ($headers as $header => $value){
-                    header("{$header}: {$value}");
-                }
+                http_response_code($c->status);
+                self::set_header($c->headers);
                 echo $c->content;
             }elseif($c AND !$c instanceof Response){
                 throw new RouterException("Expecting an instance of Response to be returned at \"Fallback\"");

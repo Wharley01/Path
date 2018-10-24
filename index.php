@@ -1,5 +1,6 @@
 <?php
 
+use Path\Http\Request;
 use Path\Http\Response;
 use Path\Http\Router;
 
@@ -8,22 +9,17 @@ require_once "core/kernel.php";
 load_class(["Http/Router","Http/Request","Http/Response"]);
 load_class(["User"],"controllers");
 
-$router = new Router(new \Path\Http\Request());
+$router = new Router(new Request());
 
 try{
     $router->GET(
         ["path"       => "/api/user/@user_name/@user_id:int",
          "middleware" => Response::MiddleWare(
         Path\Http\MiddleWare\Auth::class,
-        (new Response())->json(["error" => "User ID not 300"],400)->addHeader([
-            "Access-Control-Allow-Origin" => "*"
-        ])
-        )],function ($params) use ($router){
-        $arr = [
-          "greet" => "Hello world new json API"
-        ];
-
-        return (new Response())->json($arr)->addHeader([
+        (new Response())->json(["error" => "User ID not 300"],401))],function ($params) use ($router){
+        return (new Response())->json([
+            "greet" => "Hello world new json API"
+        ])->addHeader([
             "Access-Control-Allow-Origin" => "*"
         ]);
     });
@@ -36,8 +32,12 @@ try{
         ]);
     });
 
+    $router->GET(["path" => '/'],function ($params){
+       return(new Response("This is home page"));
+    });
+
     $router->Fallback(function (){
-        return (new Response("Error 404",200))->addHeader([
+        return (new Response("Error 404",404))->addHeader([
             "Access-Control-Allow-Origin" => "*"
         ]);
     });
