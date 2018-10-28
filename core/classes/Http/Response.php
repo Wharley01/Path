@@ -41,8 +41,9 @@ class Response
      */
     public static function MiddleWare(
         $method,
-        $fallback = null
+$fallback = null
     ){
+        $fallback = is_callable($fallback) ? $fallback:$fallback;
         return (object)["method" => $method,"fallback" => $fallback];
     }
 
