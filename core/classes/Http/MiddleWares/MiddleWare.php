@@ -3,11 +3,14 @@
 namespace Path\Http;
 
 
-class MiddleWare
+interface MiddleWare
 {
-    public function __construct()
-    {
+    public function __construct();
 
-    }
-
+    /**
+     * @param $request
+     * @param $params
+     * @return mixed
+     */
+    public function Control($request, $params);
 }
