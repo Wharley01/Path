@@ -10,12 +10,14 @@ namespace Path\Controller;
 
 
 use Data\Database;
+use Path\Controller;
 use Path\Http\Request;
 
 
-class User
+class User implements Controller
 {
     private $db_connection;
+
     public function __construct(Database $database)
     {
         $this->db_connection = $database;
@@ -24,7 +26,7 @@ class User
 
     }
     public function Auth($params){
-        return false;
+        return $params->user_id == 300;
     }
 
 }
