@@ -15,10 +15,11 @@ use Path\Utilities;
 
 class Router
 {
-    public $request;
+    public  $request;
     private $assigned_paths = [//to hold all paths assigned
 
     ];
+    private $exception_callback;
     public function __construct(Request $request)
     {
         $this->request = $request;
@@ -72,6 +73,16 @@ class Router
 
     }
 
+    private function write_response($response){
+        if(!$response instanceof Response)
+            throw new RouterException("Callback function expected to return an instance of Response Class");
+
+        http_response_code($response->status);//set response code
+        self::set_header($response->headers);//set header
+        echo $response->content;
+        return true;
+    }
+
     /**
      * @param $param
      * @param $raw_param
@@ -79,22 +90,60 @@ class Router
      * @return bool
      * @throws RouterException
      */
-    public static function type_check($param, $raw_param, $path){//throw exception if specified type doesn't match the dynamic url(url from the browser)
+    public function type_check($param, $raw_param, $path){//throw exception if specified type doesn't match the dynamic url(url from the browser)
         if(strpos($raw_param,":") > -1){
             $type = strtolower(explode(":",$raw_param)[1]);
             switch ($type){
                 case "int":
-                    if(!preg_match("/^\d+$/",$param))
-                        throw new RouterException("{$param} is not a {$type} in {$path}");
+                    if(!preg_match("/^\d+$/",$param)){
+                        $error = ["msg" => "{$param} is not a {$type} in {$path}","path" => $path];
+                        if (is_callable($this->exception_callback)) {
+                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$error]);
+                        } else {
+                            $exception_callback = false;
+                        }
+                        if($exception_callback){
+                            $this->write_response($exception_callback);
+                            return false;
+                        }else{
+                            throw new RouterException($error['msg']);
+                        }
+                    }
                     break;
                 case "float":
-                    if(!preg_match("/^\d+\.\d+$/",$param))
-                        throw new RouterException("{$param} is not a {$type} in {$path}");
+                    if(!preg_match("/^\d+\.\d+$/",$param)){
+                        $error = ["msg" => "{$param} is not a {$type} in {$path}","path" => $path];
+                        if (is_callable($this->exception_callback)) {
+                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$error]);
+                        } else {
+                            $exception_callback = false;
+                        }
+                        if($exception_callback){
+                            $this->write_response($exception_callback);
+                            return false;
+                        }else{
+                            throw new RouterException($error['msg']);
+                        }
+                    }
+
                     break;
                 default:
                     $type = str_replace("]","",str_replace("[","",$type));
-                    if(!preg_match("/{$type}/",$param))
-                        throw new RouterException("{$param} does not match {$type} Regex in {$path}");
+                    if(!preg_match("/{$type}/",$param)){//Check if the regex match the URL parameter
+                        $error = ["msg" => "{$param} does not match {$type} Regex in {$path}","path" => $path];
+                        if (is_callable($this->exception_callback)) {
+                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$error]);
+                        } else {
+                            $exception_callback = false;
+                        }
+                        if($exception_callback){
+                            $this->write_response($exception_callback);
+                            return false;
+                        }else{
+                            throw new RouterException($error['msg']);
+                        }
+                    }
+
 
                     break;
 
@@ -110,9 +159,9 @@ class Router
     /**
      * @param $real_path
      * @param $path
-     * @return object
+     * @return bool|object
      */
-    public static function get_params(
+    public  function get_params(
         $real_path,
         $path
     ){
@@ -131,7 +180,9 @@ class Router
 //                TODO: check for string typing
                 $raw_param = $path;
                 $param = self::get_param_name(substr($path,1,strlen($path)));
-                self::type_check($b_real_path[$i],$raw_param,$path_str);
+                if(!$this->type_check($b_real_path[$i],$raw_param,$path_str)){//if type check doesn't match don't return any param
+                    return false;
+                }
                 $params[$param] = $b_real_path[$i];
 
             }
@@ -154,34 +205,45 @@ class Router
         $middle_ware = null
     ){
         $real_path = trim($this->request->server->REDIRECT_URL);
+        $params = $this->get_params($real_path,$path);
+        if(!self::compare_path($real_path,$path))//if the browser path doesn't match specified path template
+            return false;
+
+
+        $this->assigned_paths[] = [
+            "path"      => $path,
+            "method"    => $method
+        ];
         if(!is_null($middle_ware)){
-            if(get_parent_class(new $middle_ware->method()) != 'Path\Http\MiddleWare')
-                throw new RouterException("Expected middleware method to be callable");
-            if($middle_ware->fallback != null || $middle_ware->fallback){
-                if(!$middle_ware->fallback instanceof Response)
-                    throw new RouterException("Expected middleware method to be callable");
+            if(!class_implements($middle_ware->method)['Path\Http\MiddleWare'])
+                throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"MiddleWare\" interface in \"{$path}\"");
+            $fallback = null;
+            if($middle_ware->fallback != null || $middle_ware->fallback) {
+                $fallback = ($middle_ware->fallback) ? $middle_ware->fallback : null;
+                $fallback = is_callable($fallback) ?  $fallback($this->request,$params): null;
             }
 
+                if($fallback != null && !$fallback instanceof Response)
+                    throw new RouterException("Expected middleware method to be instance of Response");
+
 //            Check middle ware return
-            $check_middle_ware = (new $middle_ware->method())->Control($this->request,self::get_params($real_path,$path));
-            if(!$check_middle_ware){
-                if($middle_ware->fallback){
-                    http_response_code($middle_ware->fallback->status);
-                    self::set_header($middle_ware->fallback->headers);
-                    echo $middle_ware->fallback->content;
+            $check_middle_ware = (new $middle_ware->method())->Control($params,$params);
+            if(!$check_middle_ware){//if the middle ware class returns false
+                if(!is_null($fallback)){//if there is a fallback function parsed
+                    http_response_code($fallback->status);//set response code
+                    self::set_header($fallback->headers);//set header
+                    echo $fallback->content;
+                    return true;
                 }
-                return false;
+                return true;
             }
         }
 
             //        Set the path to list of paths
-            $this->assigned_paths[] = [
-                "path"      => $path,
-                "method"    => $method
-            ];
+
 //        TODO: check if path contains a parameter path/$id
             if(self::compare_path($real_path,$path)){
-                $c = $callback(self::get_params($real_path,$path));//call the callback, pass the params generated to it to be used
+                $c = $callback($params);//call the callback, pass the params generated to it to be used
                 if($c instanceof Response){//Check if return value from callback is a Response Object
                     http_response_code($c->status);
                     self::set_header($c->headers);
@@ -190,9 +252,7 @@ class Router
                     throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$path\"");
                 }
             }
-
-
-
+            return true;
     }
 
     /**
@@ -237,7 +297,14 @@ class Router
         }
         return true;
     }
-    public function Fallback($callback){//executes when no route is specified
+    public function ExceptionCatch($callback){
+        if(!is_callable($callback))
+            throw new RouterException("ExceptionCatch expects a callable function");
+
+        $this->exception_callback = $callback;
+        return true;
+    }
+    public function Error404($callback){//executes when no route is specified
         if($this->should_fall_back()){//check if the current request doesn't match any request
 //            print_r($this->assigned_paths);
             $c = $callback($this->request);//call the callback, pass the params generated to it to be used
@@ -251,6 +318,7 @@ class Router
         }
 
     }
+
 
 
 }
