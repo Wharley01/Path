@@ -7,22 +7,46 @@
  */
 
 namespace Path\Http;
-load_class(["Utilities"]);
+load_class(["Utilities","Http/Request"]);
 
 use Path\Http\Request;
 use Path\RouterException;
 use Path\Utilities;
+//use Path\Controller\User;
 
 class Router
 {
     public  $request;
+    public $root_path;
     private $assigned_paths = [//to hold all paths assigned
 
     ];
     private $exception_callback;
-    public function __construct(Request $request)
+    const VALID_REQUESTS = [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "COPY",
+        "HEAD",
+        "OPTIONS",
+        "LINK",
+        "UNLINK",
+        "PURGE",
+        "LOCK",
+        "PROPFIND",
+        "VIEW"
+    ];
+
+    /**
+     * Router constructor.
+     * @param string $root_path
+     */
+    public function __construct($root_path = "/")
     {
-        $this->request = $request;
+        $this->root_path = $root_path;
+        $this->request = new Request();
     }
 
     /**
@@ -34,7 +58,33 @@ class Router
             header("{$header}: $value");
         }
     }
+    private static function is_root($real_path, $path){
+        $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
+            return strlen(trim($p)) > 0;
+        }));//get all paths in a array, filter
+        $b_path = array_values(array_filter(explode("/",$path),function ($p){
+            return strlen(trim($p)) > 0;
+        }));
 
+
+        if($real_path == $path)
+            return true;
+
+        $matches = 0;
+        for($i = 0;$i < count($b_path); $i ++){
+            $path = $b_path[$i];
+            if(!is_null($b_path[$i]) && @$path[0] == "@" && !is_null($b_real_path[$i])){
+                $matches += 1;
+            }elseif (!is_null($b_path[$i]) &&  !is_null($b_real_path[$i]) && $b_path[$i] == $b_real_path[$i]){
+                $matches += 1;
+            }else{
+                return false;
+            }
+        }
+//        echo var_dump($matches == count($b_path));
+        return $matches == count($b_path);
+
+    }
     /**
      * Compare browser path and path template to
      * @param $real_path
@@ -76,7 +126,6 @@ class Router
     private function write_response($response){
         if(!$response instanceof Response)
             throw new RouterException("Callback function expected to return an instance of Response Class");
-
         http_response_code($response->status);//set response code
         self::set_header($response->headers);//set header
         echo $response->content;
@@ -128,7 +177,7 @@ class Router
 
                     break;
                 default:
-                    $type = str_replace("]","",str_replace("[","",$type));
+                    $type = preg_replace("/\}$/","",preg_replace("/^\{/","",$type));
                     if(!preg_match("/{$type}/",$param)){//Check if the regex match the URL parameter
                         $error = ["msg" => "{$param} does not match {$type} Regex in {$path}","path" => $path];
                         if (is_callable($this->exception_callback)) {
@@ -152,6 +201,9 @@ class Router
         }
         return true;
     }
+    private function concat_path($root,$path){
+        return $root.$path;
+    }
     public static function get_param_name($raw_param){
         $param = explode(":",$raw_param);
         return $param[0];
@@ -161,13 +213,18 @@ class Router
      * @param $path
      * @return bool|object
      */
-    public  function get_params(
+    public function get_params(
         $real_path,
         $path
     ){
         $path_str = $path;
-        $b_real_path = explode("/",$real_path);
-        $b_path = explode("/",$path);
+        $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
+            return strlen(trim($p)) > 0;
+        }));
+        $b_path = array_values(array_filter(explode("/",$path),function ($p){
+            return strlen(trim($p)) > 0;
+        }));;
+
         $params = [];
 
 
@@ -192,27 +249,34 @@ class Router
 
     /**
      * @param $method
+     * @param $root
      * @param $path
      * @param $callback
      * @param null $middle_ware
+     * @param bool $is_group
      * @return bool
      * @throws RouterException
      */
     private function response(
         $method,
+        $root,
         $path,
         $callback,
-        $middle_ware = null
+        $middle_ware = null,
+        $is_group = false
     ){
+        $path = $this->concat_path($this->root_path,$path);
         $real_path = trim($this->request->server->REDIRECT_URL);
         $params = $this->get_params($real_path,$path);
-        if(!self::compare_path($real_path,$path))//if the browser path doesn't match specified path template
+        if(!self::compare_path($real_path,$path) && !$is_group) {//if the browser path doesn't match specified path template
+            echo "Erroroooooo";
             return false;
+        }
 
-
-        $this->assigned_paths[] = [
+        $this->assigned_paths[$root][] = [
             "path"      => $path,
-            "method"    => $method
+            "method"    => $method,
+            "is_group"  => $is_group
         ];
         if(!is_null($middle_ware)){
             if(!class_implements($middle_ware->method)['Path\Http\MiddleWare'])
@@ -220,19 +284,23 @@ class Router
             $fallback = null;
             if($middle_ware->fallback != null || $middle_ware->fallback) {
                 $fallback = ($middle_ware->fallback) ? $middle_ware->fallback : null;
-                $fallback = is_callable($fallback) ?  $fallback($this->request,$params): null;
+                $request = new Request();
+                $request->params = $params;
+                $response = new Response();
+                $fallback = is_callable($fallback) ?  $fallback($this->request,$response): null;
             }
 
                 if($fallback != null && !$fallback instanceof Response)
                     throw new RouterException("Expected middleware method to be instance of Response");
 
 //            Check middle ware return
-            $check_middle_ware = (new $middle_ware->method())->Control($params,$params);
+            $request = new Request();
+            $request->params = $params;
+            $response = new Response();
+            $check_middle_ware = (new $middle_ware->method())->Control($request,$response);
             if(!$check_middle_ware){//if the middle ware class returns false
                 if(!is_null($fallback)){//if there is a fallback function parsed
-                    http_response_code($fallback->status);//set response code
-                    self::set_header($fallback->headers);//set header
-                    echo $fallback->content;
+                    $this->write_response($fallback);
                     return true;
                 }
                 return true;
@@ -242,25 +310,91 @@ class Router
             //        Set the path to list of paths
 
 //        TODO: check if path contains a parameter path/$id
-            if(self::compare_path($real_path,$path)){
-                $c = $callback($params);//call the callback, pass the params generated to it to be used
-                if($c instanceof Response){//Check if return value from callback is a Response Object
-                    http_response_code($c->status);
-                    self::set_header($c->headers);
-                    echo $c->content;
-                }elseif($c AND !$c instanceof Response){
-                    throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$path\"");
+//            Check if method calling response is
+                if($is_group){
+                    $router = new Router($path);
+                    $c = $callback($router);//call the callback, pass the params generated to it to be used
+                }else{
+                    $request = new Request();
+                    $request->params = $params;
+                    $response = new Response();
+
+                    if(is_string($callback)){
+                        $_callback = $this->break_controller($callback);
+
+                        $class = $_callback->ini_class->{$_callback->method}($request,$response);
+                        if($class instanceof Response){//Check if return value from callback is a Response Object
+                            $this->write_response($class);
+                        }
+
+                    }else{
+                        $c = $callback($request,$response);
+                        if($c instanceof Response){//Check if return value from callback is a Response Object
+                            $this->write_response($c);
+                        }elseif($c AND !$c instanceof Response){
+                            throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$path\"");
+                        }
+                    }
+                    //call the callback, pass the params generated to it to be used
                 }
-            }
-            return true;
+
+
+
     }
 
     /**
-     * @param $path
-     * @param $callback
-     * @return $this
+     * @return bool
      */
-    public function GET($path, $callback){
+    private function should_fall_back(){
+        $real_path = trim($this->request->server->REDIRECT_URL);
+        $current_method = strtoupper($this->request->METHOD);
+        foreach ($this->assigned_paths as $root => $paths){
+            $root = $root == "/" ? "":$root;
+            for ($i = 0;$i < count($this->assigned_paths);$i++){
+//                var_dump($root.$paths[$i]['path']);
+                if($paths[$i]['is_group'] AND self::is_root($real_path,$paths[$i]['path'])){
+                    return false;
+                }
+                if(self::compare_path($real_path,$root.$paths[$i]['path']) && ($paths[$i]['method'] == $current_method && $paths[$i]['method'] != "ANY")) return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function group($path, $callback){
+        if(is_array($path)){//check if path is associative array or a string
+            $_path = @$path['path'];
+            $_middle_ware = @$path['middleware'];
+        }else{
+            $_path = $path;
+            $_middle_ware = null;
+        }
+        $real_path = trim($this->request->server->REDIRECT_URL);
+        if(self::is_root($real_path,$_path)){
+            $this->response("ANY","/",$_path,$callback,$_middle_ware,true);
+        }
+    }
+    private function break_controller($controller_str){
+//        break string
+        if(!preg_match("/([\S]+)\-\>([\S]+)/",$controller_str))
+            throw new RouterException("Invalid Router String");
+
+//        Break all string to array
+        $contr_breakdown = array_values(array_filter(explode("->",$controller_str),function ($m){
+            return strlen($m) > 0;
+        }));//filter empty array
+        $class_ini = $contr_breakdown[0];
+        load_class($class_ini,"controllers");
+
+//        load_class($class_ini,"controllers");
+        $class_ini = "Path\Controller\\".$class_ini;
+//        echo ;
+        $class_ini = new $class_ini();
+
+        return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
+    }
+    private function process_request($path,$callback,$method){
         if(is_array($path)){//check if path is associative array or a string
             $_path = @$path['path'];
             $_middle_ware = @$path['middleware'];
@@ -270,33 +404,27 @@ class Router
         }
         $real_path = trim($this->request->server->REDIRECT_URL);
 //Check if path is the one actively visited in browser
-        if(strtoupper($this->request->METHOD) == "GET" && self::compare_path($real_path,$_path)) {
-            $this->response("GET", $_path, $callback,$_middle_ware);
+        if(strtoupper($this->request->METHOD) == $method && self::compare_path($real_path,$this->root_path.$_path)) {
+
+//            Check if $callback is a string, parse appropriate
+            $this->response($method,"/", $_path, $callback,$_middle_ware);
         }
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return $this
+     */
+    public function GET($path, $callback){
+        $this->process_request($path,$callback,"GET");
         return $this;
     }
     public function POST($path,$callback){
-        if(is_array($path)){
-            $_path = @$path['path'];
-            $_middle_ware = @$path['middleware'];
-        }else{
-            $_path = $path;
-            $_middle_ware = null;
-        }
-        $real_path = trim($this->request->server->REDIRECT_URL);
-        if(strtoupper($this->request->METHOD) == "POST" && self::compare_path($real_path,$_path)) {
-            $this->response("POST", $_path, $callback, $_middle_ware);
-        }
+        $this->process_request($path,$callback,"POST");
         return $this;
     }
-    private function should_fall_back(){
-        $real_path = trim($this->request->server->REDIRECT_URL);
-        $current_method = strtoupper($this->request->METHOD);
-        for ($i = 0;$i < count($this->assigned_paths);$i++){
-            if(self::compare_path($real_path,$this->assigned_paths[$i]['path']) && $this->assigned_paths[$i]['method'] == $current_method) return false;
-        }
-        return true;
-    }
+
     public function ExceptionCatch($callback){
         if(!is_callable($callback))
             throw new RouterException("ExceptionCatch expects a callable function");
@@ -309,9 +437,8 @@ class Router
 //            print_r($this->assigned_paths);
             $c = $callback($this->request);//call the callback, pass the params generated to it to be used
             if($c instanceof Response){//Check if return value from callback is a Response Object
-                http_response_code($c->status);
-                self::set_header($c->headers);
-                echo $c->content;
+
+                $this->write_response($c);
             }elseif($c AND !$c instanceof Response){
                 throw new RouterException("Expecting an instance of Response to be returned at \"Fallback\"");
             }
