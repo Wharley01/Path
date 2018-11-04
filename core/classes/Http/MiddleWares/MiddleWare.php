@@ -8,9 +8,10 @@ interface MiddleWare
     public function __construct();
 
     /**
-     * @param $request
-     * @param $params
+     * @param Request $request
+     * @param Response $response
      * @return mixed
+     * @internal param $params
      */
-    public function Control($request, $params);
+    public function Control(Request $request, Response $response);
 }
