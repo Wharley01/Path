@@ -7,8 +7,10 @@
  */
 
 namespace Path\Http;
-load_class(["Utilities","Http/Request"]);
+load_class(["Utilities","Http/Request","Database","Connection"]);
 
+use Connection\Mysql;
+use Data\Database;
 use Path\Http\Request;
 use Path\RouterException;
 use Path\Utilities;
@@ -18,11 +20,14 @@ class Router
 {
     public  $request;
     public $root_path;
+    private $database;
+    private $response_instance;
     private $assigned_paths = [//to hold all paths assigned
 
     ];
-    private $exception_callback;
-    const VALID_REQUESTS = [
+    private $exception_callback;//Callback exception
+
+    const VALID_REQUESTS = [//Accepted request type
         "GET",
         "POST",
         "PUT",
@@ -47,6 +52,8 @@ class Router
     {
         $this->root_path = $root_path;
         $this->request = new Request();
+        $this->database = new Database(new Mysql());
+        $this->response_instance = new Response();
     }
 
     /**
@@ -286,8 +293,7 @@ class Router
                 $fallback = ($middle_ware->fallback) ? $middle_ware->fallback : null;
                 $request = new Request();
                 $request->params = $params;
-                $response = new Response();
-                $fallback = is_callable($fallback) ?  $fallback($this->request,$response): null;
+                $fallback = is_callable($fallback) ?  $fallback($this->request,$this->response_instance): null;
             }
 
                 if($fallback != null && !$fallback instanceof Response)
@@ -296,8 +302,7 @@ class Router
 //            Check middle ware return
             $request = new Request();
             $request->params = $params;
-            $response = new Response();
-            $check_middle_ware = (new $middle_ware->method())->Control($request,$response);
+            $check_middle_ware = (new $middle_ware->method())->Control($request,$this->response_instance);
             if(!$check_middle_ware){//if the middle ware class returns false
                 if(!is_null($fallback)){//if there is a fallback function parsed
                     $this->write_response($fallback);
@@ -317,18 +322,15 @@ class Router
                 }else{
                     $request = new Request();
                     $request->params = $params;
-                    $response = new Response();
-
                     if(is_string($callback)){
                         $_callback = $this->break_controller($callback);
-
-                        $class = $_callback->ini_class->{$_callback->method}($request,$response);
+                        $class = $_callback->ini_class->{$_callback->method}($request,$this->response_instance);
                         if($class instanceof Response){//Check if return value from callback is a Response Object
                             $this->write_response($class);
                         }
 
                     }else{
-                        $c = $callback($request,$response);
+                        $c = $callback($request,$this->response_instance);
                         if($c instanceof Response){//Check if return value from callback is a Response Object
                             $this->write_response($c);
                         }elseif($c AND !$c instanceof Response){
