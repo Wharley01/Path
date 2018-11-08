@@ -21,9 +21,10 @@ class Songs
     /**
      * @param Request $request
      * @param Response $response
+     * @return bool
      */
     public function Find(Request $request, Response $response){
-
+        return true;
     }
     public function Delete(Request $request, Response $response){
         return $response->html("<b>Delete user</b>",201);
