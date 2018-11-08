@@ -5,7 +5,12 @@ namespace Path;
 
 class Views
 {
-    public function __construct($raw_content)
+    /**
+     * Views constructor.
+     * @param mixed $raw_content
+     */
+    public function __construct(Mixed $raw_content)
     {
+
     }
 }
