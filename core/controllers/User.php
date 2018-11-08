@@ -29,14 +29,14 @@ class User implements Controller
      * @return Response
      */
     public function Delete(Request $request, Response $response){
-            return $response->json(['user_id' => $request->params->user_id,"action" => "DELETE FROM CONTROLLER"]);
+            return $response->json(['user_id' => $request->params->user_id,"action" => /** @lang text */"DELETE FROM CONTROLLER"]);
 
     }
     public function Find(Request $request,Response $response){
-        return $response->json(['result' => (array) $request->params],200);
+        return $response->json([[1,4,7]],200);
     }
     public function Auth(Request $request,Response $response){
-        return true;
+        return $response->json(["hello world"],200);
     }
 
 }
