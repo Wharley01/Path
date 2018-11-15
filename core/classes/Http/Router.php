@@ -65,6 +65,34 @@ class Router
             header("{$header}: $value");
         }
     }
+    private static function path_matches($param,$raw_param){
+//        echo $param,$raw_param;
+        $raw_param = substr($raw_param,1);
+        if(strpos($raw_param,":") > -1){
+            $type = strtolower(explode(":",$raw_param)[1]);
+            switch ($type){
+                case "int":
+                    if(!preg_match("/^\d+$/",$param)){
+                        return false;
+                    }
+                    break;
+                case "float":
+                    if(!preg_match("/^\d+\.\d+$/",$param)){
+                        return false;
+                    }
+                    break;
+                default:
+                    $type = preg_replace("/\}$/","",preg_replace("/^\{/","",$type));
+                    if(!preg_match("/{$type}/",$param)){//Check if the regex match the URL parameter
+                    return false;
+                    }
+
+                    break;
+            }
+
+        }
+        return true;
+    }
     private static function is_root($real_path, $path){
         $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
             return strlen(trim($p)) > 0;
@@ -72,20 +100,20 @@ class Router
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
         }));
-
-
+//        var_dump($b_real_path,$b_path);
         if($real_path == $path)
             return true;
 
         $matches = 0;
-        for($i = 0;$i < count($b_path); $i ++){
-            $path = $b_path[$i];
-            if(!is_null($b_path[$i]) && @$path[0] == "@" && !is_null($b_real_path[$i])){
-                $matches += 1;
-            }elseif (!is_null($b_path[$i]) &&  !is_null($b_real_path[$i]) && $b_path[$i] == $b_real_path[$i]){
-                $matches += 1;
-            }else{
-                return false;
+        for($i = 0;$i < count($b_path); $i ++){//loop through the path template instead of real  path
+
+            $c_path = trim($b_path[$i]);
+            $c_real_path = trim($b_real_path[$i]);
+//            echo $c_real_path,"/",$c_path;
+            if($c_path == $c_real_path){//if current templ path == browser path, count as matched
+                $matches++;
+            }elseif ($c_path != $c_real_path && $c_path[0] == "@" && self::path_matches($c_real_path,$c_path)){//if current path templ not equal to current raw path, and current path templ is is param, and the param obeys the restriction add to match count
+                $matches++;
             }
         }
 //        echo var_dump($matches == count($b_path));
@@ -116,14 +144,18 @@ class Router
 
         $matched = 0;//number of matched paths(Both template and path
         for($i = 0;$i < count($b_real_path); $i ++){
-            if($i >= count($b_path)) {//if the amount of url path is more than required, return false
+            if($i > count($b_path)) {//if the amount of url path is more than required, return false
                 return false;
             }
-            $path = $b_path[$i];
-            if(!is_null($b_path[$i]) && @$path[0] == "@" && !is_null($b_real_path[$i])){
-                $matched += 1;
-            }elseif (!is_null($b_path[$i]) &&  !is_null($b_real_path[$i]) && $b_path[$i] == $b_real_path[$i]){
-                $matched += 1;
+//            Continue execution
+            $c_path = @$b_path[$i];//current path (template)
+            $c_real_path = @$b_real_path[$i];//current path (from web browser)
+            if($c_path == $c_real_path){// current template path is equal to real path from browser count it as matched
+                $matched++;//count
+            }elseif ($c_path != $c_real_path && $c_path[0] == "@" && !!$c_path && $c_real_path){//if path template is not equal to current path, and real path
+                $matched++;
+            }else{
+                return false;
             }
         }
         return $matched == count($b_path);
@@ -154,7 +186,7 @@ class Router
                     if(!preg_match("/^\d+$/",$param)){
                         $error = ["msg" => "{$param} is not a {$type} in {$path}","path" => $path];
                         if (is_callable($this->exception_callback)) {
-                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$error]);
+                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$this->response_instance,$error]);
                         } else {
                             $exception_callback = false;
                         }
@@ -170,7 +202,7 @@ class Router
                     if(!preg_match("/^\d+\.\d+$/",$param)){
                         $error = ["msg" => "{$param} is not a {$type} in {$path}","path" => $path];
                         if (is_callable($this->exception_callback)) {
-                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$error]);
+                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$this->response_instance,$error]);
                         } else {
                             $exception_callback = false;
                         }
@@ -188,7 +220,7 @@ class Router
                     if(!preg_match("/{$type}/",$param)){//Check if the regex match the URL parameter
                         $error = ["msg" => "{$param} does not match {$type} Regex in {$path}","path" => $path];
                         if (is_callable($this->exception_callback)) {
-                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$error]);
+                            $exception_callback = call_user_func_array($this->exception_callback,[$this->request,$this->response_instance,$error]);
                         } else {
                             $exception_callback = false;
                         }
@@ -244,7 +276,7 @@ class Router
 //                TODO: check for string typing
                 $raw_param = $path;
                 $param = self::get_param_name(substr($path,1,strlen($path)));
-                if(!$this->type_check($b_real_path[$i],$raw_param,$path_str)){//if type check doesn't match don't return any param
+                if(!self::path_matches($b_real_path[$i],$raw_param)){//if type check doesn't match don't return any param
                     return false;
                 }
                 $params[$param] = $b_real_path[$i];
@@ -391,7 +423,6 @@ class Router
 
 //        load_class($class_ini,"controllers");
         $class_ini = "Path\Controller\\".$class_ini;
-//        echo ;
         $class_ini = new $class_ini();
 
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
@@ -437,7 +468,7 @@ class Router
     public function Error404($callback){//executes when no route is specified
         if($this->should_fall_back()){//check if the current request doesn't match any request
 //            print_r($this->assigned_paths);
-            $c = $callback($this->request);//call the callback, pass the params generated to it to be used
+            $c = $callback($this->request,$this->response_instance);//call the callback, pass the params generated to it to be used
             if($c instanceof Response){//Check if return value from callback is a Response Object
 
                 $this->write_response($c);

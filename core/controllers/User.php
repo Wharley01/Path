@@ -33,10 +33,10 @@ class User implements Controller
 
     }
     public function Find(Request $request,Response $response){
-        return $response->json([[1,4,7]],200);
+        return $response->json([(array)$request->params],200);
     }
     public function Auth(Request $request,Response $response){
-        return $response->json(["hello world"],200);
+        return $response->json(["user_name" => $request->fetch('school')],200);
     }
 
 }
