@@ -20,8 +20,8 @@ class Response
         $this->status = $status;
         return $this;
     }
-    public function json(array $arr,$status = 200){
-        $this->content = json_encode($arr);
+    public function json($arr,$status = 200){
+        $this->content = json_encode((array)$arr);
         $this->status = $status;
         $this->headers = ["Content-Type" => "application/json; charset=UTF-8"];
         return $this;

@@ -8,14 +8,14 @@ use Path\Http\MiddleWare;
 use Path\Http\Request;
 use Path\Http\Response;
 
-load_class(['Connection','Database']);
+// load_class(['Connection','Database']);
 load_class("User","controllers");
 
 class Auth extends User implements MiddleWare
 {
     public function __construct()
     {
-        parent::__construct(new Database(new Mysql()));
+        parent::__construct();
         return true;
     }
     public function Control(Request $request,Response $response){

@@ -22,6 +22,9 @@ try{
         $router->GET("search/@query", function (Request $req,Response $res){
             return $res->json((array) $req->params);
         });
+        $router->GET(["path" => "/user/@user_name/@user_id:int","middleware" => Response::MiddleWare(\Path\Http\MiddleWare\Auth::class,function (Request $request,Response $response){
+            return $response->json(['error' => 'Invalid user,Try new user ID'],401);
+        })],"User->Find");
 
         $router->Error404(function (Request $request,Response $response){
             return $response->json(['error' => "Ops, error 404"],404);
@@ -47,8 +50,8 @@ try{
             ]);
         });
     });
-   $router->Error404(function (){
-        return (new Response("Error 404",404))->addHeader([
+   $router->Error404(function (Request $request,Response $response){
+        return $response->json(['error' => "Error 404",'params' => $request->fetch("name")])->addHeader([
             "Access-Control-Allow-Origin" => "*"
         ]);
     });

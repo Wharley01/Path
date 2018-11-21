@@ -14,14 +14,16 @@ use Data\Model;
 
 class User extends Model
 {
-    protected $table_name = "user_table_edited_from_child_class";
-    protected $forbidden_cols = ['name'];
+    protected $table_name           = "test_table";
+
+    protected $non_writable_cols    = ['name'];
+    protected $readable_cols        = ['Name','Age'];
+
+    protected $fetch_method         = "FETCH_ASSOC";
+    protected $primary_key          = "ID";
+
     public function __construct()
     {
         parent::__construct();
     }
-
-
-
-
 }

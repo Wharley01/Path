@@ -8,19 +8,21 @@
 
 namespace Path\Controller;
 load_class("Controller","controllers");
+load_class(["Database/Model","Database/Models/User"]);
 use Data\Database;
 use Path\Controller;
 use Path\Http\Request;
 use Path\Http\Response;
+use Path\Model;
 
 
 class User implements Controller
 {
     private $db_connection;
-
+    protected $userModel;
     public function __construct()
     {
-//        $this->db_connection = $database;
+        $this->userModel = (new Model\User());
     }
 
     /**
@@ -30,13 +32,14 @@ class User implements Controller
      */
     public function Delete(Request $request, Response $response){
             return $response->json(['user_id' => $request->params->user_id,"action" => /** @lang text */"DELETE FROM CONTROLLER"]);
-
     }
     public function Find(Request $request,Response $response){
-        return $response->json([(array)$request->params],200);
+        return $response->json(["total" => $this->userModel->count()],200);
     }
     public function Auth(Request $request,Response $response){
-        return $response->json(["user_name" => $request->fetch('school')],200);
+        $result = $this->userModel
+                       ->identify($request->params->user_id);
+        return $result->count() > 0;
     }
 
 }

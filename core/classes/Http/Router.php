@@ -7,7 +7,7 @@
  */
 
 namespace Path\Http;
-load_class(["Utilities","Http/Request","Database","Connection"]);
+load_class(["Utilities","Http/Request","Database/Model","Database/Connection"]);
 
 use Connection\Mysql;
 use Data\Database;
@@ -52,7 +52,8 @@ class Router
     {
         $this->root_path = $root_path;
         $this->request = new Request();
-        $this->database = new Database(new Mysql());
+        $this->database = null;
+//        TODO: Initialize model for database
         $this->response_instance = new Response();
     }
 
