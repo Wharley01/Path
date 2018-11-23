@@ -108,8 +108,8 @@ class Router
         $matches = 0;
         for($i = 0;$i < count($b_path); $i ++){//loop through the path template instead of real  path
 
-            $c_path = trim($b_path[$i]);
-            $c_real_path = trim($b_real_path[$i]);
+            $c_path = trim(@$b_path[$i]);
+            $c_real_path = trim(@$b_real_path[$i]);
 //            echo $c_real_path,"/",$c_path;
             if($c_path == $c_real_path){//if current templ path == browser path, count as matched
                 $matches++;
@@ -306,10 +306,9 @@ class Router
         $is_group = false
     ){
         $path = $this->concat_path($this->root_path,$path);
-        $real_path = trim($this->request->server->REDIRECT_URL);
+        $real_path = trim($this->request->server->REQUEST_URI);
         $params = $this->get_params($real_path,$path);
         if(!self::compare_path($real_path,$path) && !$is_group) {//if the browser path doesn't match specified path template
-            echo "Erroroooooo";
             return false;
         }
 
@@ -319,6 +318,11 @@ class Router
             "is_group"  => $is_group
         ];
         if(!is_null($middle_ware)){
+            $middle_ware_name =  explode("\\",$middle_ware->method);
+            $middle_ware_name = $middle_ware_name[count($middle_ware_name)-1];
+//            Load middleware class
+            load_class("Http/MiddleWares/{$middle_ware_name}");
+
             if(!class_implements($middle_ware->method)['Path\Http\MiddleWare'])
                 throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"MiddleWare\" interface in \"{$path}\"");
             $fallback = null;
@@ -356,7 +360,7 @@ class Router
                     $request = new Request();
                     $request->params = $params;
                     if(is_string($callback)){
-                        $_callback = $this->break_controller($callback);
+                        $_callback = $this->breakController($callback);
                         $class = $_callback->ini_class->{$_callback->method}($request,$this->response_instance);
                         if($class instanceof Response){//Check if return value from callback is a Response Object
                             $this->write_response($class);
@@ -381,7 +385,7 @@ class Router
      * @return bool
      */
     private function should_fall_back(){
-        $real_path = trim($this->request->server->REDIRECT_URL);
+        $real_path = trim($this->request->server->REQUEST_URI);
         $current_method = strtoupper($this->request->METHOD);
         foreach ($this->assigned_paths as $root => $paths){
             $root = $root == "/" ? "":$root;
@@ -405,12 +409,12 @@ class Router
             $_path = $path;
             $_middle_ware = null;
         }
-        $real_path = trim($this->request->server->REDIRECT_URL);
+        $real_path = trim($this->request->server->REQUEST_URI);
         if(self::is_root($real_path,$_path)){
             $this->response("ANY","/",$_path,$callback,$_middle_ware,true);
         }
     }
-    private function break_controller($controller_str){
+    private function breakController($controller_str){
 //        break string
         if(!preg_match("/([\S]+)\-\>([\S]+)/",$controller_str))
             throw new RouterException("Invalid Router String");
@@ -428,7 +432,7 @@ class Router
 
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
     }
-    private function process_request($path,$callback,$method){
+    private function processRequest($path, $callback, $method){
         if(is_array($path)){//check if path is associative array or a string
             $_path = @$path['path'];
             $_middle_ware = @$path['middleware'];
@@ -436,7 +440,7 @@ class Router
             $_path = $path;
             $_middle_ware = null;
         }
-        $real_path = trim($this->request->server->REDIRECT_URL);
+        $real_path = trim($this->request->server->REQUEST_URI);
 //Check if path is the one actively visited in browser
         if(strtoupper($this->request->METHOD) == $method && self::compare_path($real_path,$this->root_path.$_path)) {
 
@@ -450,23 +454,71 @@ class Router
      * @param $callback
      * @return $this
      */
-    public function GET($path, $callback){
-        $this->process_request($path,$callback,"GET");
+    public function get($path, $callback){
+        $this->processRequest($path,$callback,"GET");
         return $this;
     }
-    public function POST($path,$callback){
-        $this->process_request($path,$callback,"POST");
+    public function post($path, $callback){
+        $this->processRequest($path,$callback,"POST");
+        return $this;
+    }
+    public function put($path, $callback){
+        $this->processRequest($path,$callback,"PUT");
+        return $this;
+    }
+    public function patch($path, $callback){
+        $this->processRequest($path,$callback,"PATCH");
+        return $this;
+    }
+    public function delete($path, $callback){
+        $this->processRequest($path,$callback,"DELETE");
+        return $this;
+    }
+    public function copy($path, $callback){
+        $this->processRequest($path,$callback,"COPY");
+        return $this;
+    }
+    public function head($path, $callback){
+        $this->processRequest($path,$callback,"HEAD");
+        return $this;
+    }
+    public function options($path, $callback){
+        $this->processRequest($path,$callback,"HEAD");
+        return $this;
+    }
+    public function link($path, $callback){
+        $this->processRequest($path,$callback,"LINK");
+        return $this;
+    }
+    public function unlink($path, $callback){
+        $this->processRequest($path,$callback,"UNLINK");
+        return $this;
+    }
+    public function purge($path, $callback){
+        $this->processRequest($path,$callback,"PURGE");
+        return $this;
+    }
+    public function lock($path, $callback){
+        $this->processRequest($path,$callback,"LOCK");
+        return $this;
+    }
+    public function propFind($path, $callback){
+        $this->processRequest($path,$callback,"PROPFIND");
+        return $this;
+    }
+    public function view($path, $callback){
+        $this->processRequest($path,$callback,"VIEW");
         return $this;
     }
 
-    public function ExceptionCatch($callback){
+    public function exceptionCatch($callback){
         if(!is_callable($callback))
             throw new RouterException("ExceptionCatch expects a callable function");
 
         $this->exception_callback = $callback;
         return true;
     }
-    public function Error404($callback){//executes when no route is specified
+    public function error404($callback){//executes when no route is specified
         if($this->should_fall_back()){//check if the current request doesn't match any request
 //            print_r($this->assigned_paths);
             $c = $callback($this->request,$this->response_instance);//call the callback, pass the params generated to it to be used

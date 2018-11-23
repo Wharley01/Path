@@ -31,14 +31,17 @@ class User implements Controller
      * @return Response
      */
     public function Delete(Request $request, Response $response){
-            return $response->json(['user_id' => $request->params->user_id,"action" => /** @lang text */"DELETE FROM CONTROLLER"]);
+            return $response->json(['user_id' => @$request->params->user_id,"action" => /** @lang text */"DELETE FROM CONTROLLER"]);
     }
     public function Find(Request $request,Response $response){
-        return $response->json(["total" => $this->userModel->count()],200);
+        return $response->json(["total" => $this->userModel->where("Name")->like("%{$request->params->user_name}%")->all()],200);
+    }
+    public function Profile(Request $request,Response $response){
+        return $response->json($this->userModel->identify($request->params->user_id)->first(),200);
     }
     public function Auth(Request $request,Response $response){
         $result = $this->userModel
-                       ->identify($request->params->user_id);
+                       ->identify(@$request->params->user_id);
         return $result->count() > 0;
     }
 

@@ -113,3 +113,4 @@ $select = $db->Select('Name')//Column to select
 ```
 
 
+https://web.facebook.com/v2.8/dialog/oauth?auth_type=rerequest&client_id=753704141384922&state=dc642404d036870cefb703d6b279aac0&response_type=code&sdk=php-sdk-5.6.1&redirect_uri=https%3A%2F%2Fnaijapeoplemeet.com%2Findex.php%2Fsocial_auth%2Fendpoint%3Fhauth_done%3DFacebook&scope=email%2Cpublic_profile%2Cuser_birthday&_rdc=1&_rdr

@@ -1,6 +1,6 @@
 <?php
 
-$router->GET(
+$router->get(
 ["path"       => "/api/user/@user_name/@user_id:int",
 "middleware" => Response::MiddleWare(
 Path\Http\MiddleWare\Auth::class,

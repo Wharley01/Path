@@ -7,7 +7,7 @@
  */
 
 namespace Path\Http;
-load_class(["Http/MiddleWares/MiddleWare","Http/MiddleWares/Auth"]);
+load_class(["Http/MiddleWare"]);
 
 class Response
 {

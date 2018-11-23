@@ -16,8 +16,13 @@ class Views
     {
 
     }
-    static public function Render($file){
+    static public function Render($file):Response{
 //        echo __DIR__;
-        return (new Response())->html(file_get_contents($_SERVER['DOCUMENT_ROOT']."views".DIRECTORY_SEPARATOR."{$file}.html"));
+        $path = $_SERVER['DOCUMENT_ROOT']."views".DIRECTORY_SEPARATOR."{$file}.html";
+
+        if(!file_exists($path))
+            throw new PathException(" \"{$file}\" does not exist");
+
+        return (new Response())->html(file_get_contents($path));
     }
 }

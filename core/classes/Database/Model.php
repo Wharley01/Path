@@ -447,7 +447,7 @@ abstract class Model
             throw new DatabaseException("WHERE Clause is empty");
 
         $this->query_structure["WHERE"] .= " LIKE ?";
-        $this->params[] = "$wild_card";
+        $this->params["WHERE"][] = "$wild_card";
         return $this;
     }
     public function notLike($wild_card){
@@ -455,7 +455,7 @@ abstract class Model
             throw new DatabaseException("WHERE Clause is empty");
 
         $this->query_structure["WHERE"] .= " NOT LIKE ?";
-        $this->params[] = "$wild_card";
+        $this->params["WHERE"][] = "$wild_card";
         return $this;
     }
     public function between($start,$stop){
@@ -496,19 +496,32 @@ abstract class Model
         return $this->all(null,true)["total"];
     }
     public function max($col){
+        $this->query_structure["ORDER_BY"] = "{$col} DESC";
+        $this->query_structure["LIMIT"]    = "0,1";
         return $this;
     }
     public function min($col){
+        $this->query_structure["ORDER_BY"] = "{$col} ASC";
+        $this->query_structure["LIMIT"]    = "0,1";
         return $this;
     }
     public function groupBy($col){
         return $this;
     }
 
-    public function exists(){
-        return $this;
+    /**
+     * @return bool
+     */
+    public function exists():bool {
+        $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        return $this->all(null,true)["total"] > 0;
     }
-    public function doesntExists(){
-        return $this;
+
+    /**
+     * @return bool
+     */
+    public function doesntExists():bool {
+        $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        return $this->all(null,true)["total"] < 1;
     }
 }
