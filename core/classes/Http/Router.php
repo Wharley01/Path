@@ -421,7 +421,7 @@ class Router
 
 //        Break all string to array
         $contr_breakdown = array_values(array_filter(explode("->",$controller_str),function ($m){
-            return strlen($m) > 0;
+            return strlen(trim($m)) > 0;
         }));//filter empty array
         $class_ini = $contr_breakdown[0];
         load_class($class_ini,"controllers");
