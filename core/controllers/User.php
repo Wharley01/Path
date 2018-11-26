@@ -35,23 +35,25 @@ class User implements Controller
     public function Delete(Request $request, Response $response){
             return $response->json(['user_id' => @$request->params->user_id,"action" => /** @lang text */"DELETE FROM CONTROLLER"]);
     }
-    public function UploadPicture(Request $request,Response $response){
+
+    /**
+     * @param Request $request
+     * @param Response $response
+     * @return Response
+     */
+    public function UploadPicture(Request $request, Response $response){
 //      get set from client
-        $file_process = $this->fileSys->file($request->file("image"))//multiple file upload out of the box supported
-                                      ->setRules([
-                                            'retain_name' => false,//unique file name will be generated if set false
-                                      ])
-                                      ->moveTo("img/");//save in folder img/
+        $file_process = (new FileSys)
+                        ->file($request->file("image"))//multiple file upload out of the box supported
+                        ->setRules([
+                        'retain_name' => false,//unique file name will be generated if set false
+                        ])
+                        ->moveTo("img/");//save in folder img/
 
-        if($file_process->hasError()){//check if there was error during upload
-            return $response->json(["error" => [
-                "msg"    => "There was an error uploading your picture",
-                "errors" => $file_process->getErrors()//get all those errors
-            ]],500);
-        }else{
-            return $response->json(["files" => $file_process->getFiles()],200);//return a response with all file(s) in array
-        }
-
+        return $file_process->hasError() ? $response->json(["error" => [
+            "msg" => "There was an error uploading your picture",
+            "errors" => $file_process->getErrors()//get all those errors
+        ]], 500) : $response->json(["files" => $file_process->getFiles()], 200);
     }
     public function Profile(Request $request,Response $response){
         return $response->json($this->userModel->identify($request->params->user_id)->first(),200);
