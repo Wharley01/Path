@@ -7,6 +7,7 @@ load_class("Database/Connection");
 use Connection\DB;
 use Connection\Mysql;
 use Path\DatabaseException;
+use Path\FileSys;
 
 abstract class Model
 {
@@ -17,11 +18,11 @@ abstract class Model
     protected $updated_col     = "updated_at";
     protected $created_col     = "created_at";
     protected $record_per_page = 10;
-    private $query_structure = [
+    private   $query_structure = [
         "WITH"              => "",
         "SELECT"            => "",
-        "JOIN"              => "",//table to join
-        "JOIN_TYPE"         => "",
+        "AS"                => "",
+        "JOIN"              => [],//table to join
         "ON"                => "",//associative array holding join condition
         "INSERT"            => "",
         "UPDATE"            => "",
@@ -32,7 +33,8 @@ abstract class Model
         "LIMIT"             => ""
     ];
 
-    public    $params               = [
+    public    $params       = [
+        "SELECT"    => [],
         "WHERE"     => [],
         "UPDATE"    => [],
         "INSERT"    => [],
@@ -40,7 +42,7 @@ abstract class Model
         "LIMIT"     => []
     ];
     protected $writable_cols        = [];//writable columns(Can be overridden)
-    protected $non_writable_cols       = [];//non writable (Can be overridden)
+    protected $non_writable_cols    = [];//non writable (Can be overridden)
 
     protected $readable_cols        = [];//readable columns(Can be overridden)
     protected $non_readable_cols    = [];//non readable (Can be overridden)
@@ -51,7 +53,7 @@ abstract class Model
 
     protected $fetch_method         = "FETCH_ASSOC";
     private   $pages                = [];
-    private $total_record;
+    private   $total_record;
 
     public function __construct()
     {
@@ -62,7 +64,7 @@ abstract class Model
     }
     private function getColumns($table){
         try{
-            $q = $this->conn->query("DESCRIBE {$this->table_name}");
+            $q = $this->conn->query("DESCRIBE {$table}");
             $cols = [];
             foreach ($q as $k){
                 $cols[] = $k["Field"];
@@ -72,6 +74,15 @@ abstract class Model
             throw new DatabaseException($e->getMessage());
         }
 
+    }
+
+    /**
+     * @param $col
+     * @return boolean
+     */
+    private function is_valid_col($col):bool
+    {
+        return preg_match("/^[_\w\.]*$/",$col);
     }
     public function __set($name, $value)
     {
@@ -87,8 +98,16 @@ abstract class Model
     }
 
 
-    public function raw_str(){
-
+    public function raw_select_query(){
+        $query      = $this->buildWriteRawQuery("SELECT");
+        return (object)[
+            "query"     => $query,
+            "params"    => [
+                "select"=> $this->params["SELECT"],
+                "where" => $this->params["WHERE"],
+                "limit" => $this->params["LIMIT"]
+            ]
+        ];
     }
     /**
      * @param $table
@@ -135,8 +154,12 @@ abstract class Model
             }else{
                 $this->query_structure["WHERE"] .= " {$logic_gate} ". $str;
             }
-        }elseif(preg_match('/^[_\w]*$/',$conditions)){
-            $this->query_structure["WHERE"] = $conditions;
+        }elseif(preg_match("/^[_\w\.|\s\(\)\`\\'\",]*$/",$conditions)){
+            if(!$this->query_structure["WHERE"]){
+                @$this->query_structure["WHERE"] = $conditions;
+            }else{
+                $this->query_structure["WHERE"] .= " {$logic_gate} ". $conditions;
+            }
         }else{
             throw new DatabaseException("Invalid WHERE condition");
         }
@@ -147,8 +170,8 @@ abstract class Model
      * @return bool
      */
     private function isWritable($key){
-        if($this->writable_cols && !in_array($key,$this->writable_cols))
-            return false;
+        if($this->writable_cols && in_array(trim($key),$this->writable_cols))
+            return true;
 
         if($this->non_writable_cols && in_array($key,$this->non_writable_cols))
             return false;
@@ -156,10 +179,10 @@ abstract class Model
         return true;
     }
     private function isReadable($key){
-        if($this->readable_cols && !in_array($key,$this->readable_cols))
-            return false;
+        if($this->readable_cols && in_array(trim($key),$this->readable_cols))
+            return true;
 
-        if($this->non_readable_cols && in_array($key,$this->non_readable_cols))
+        if($this->non_readable_cols && in_array(trim($key),$this->non_readable_cols))
             return false;
 
         return true;
@@ -173,7 +196,7 @@ abstract class Model
     }
     private function filterNonReadable(Array $data){
         foreach ($data as $key => $value){
-            if($this->isReadable($key))
+            if(!$this->isReadable($key))
                 unset($data[$key]);
         }
         return $data;
@@ -261,17 +284,22 @@ abstract class Model
             $query      = "DELETE FROM {$this->table_name} ";
 
             if($this->query_structure["WHERE"])
-                $query .= " WHERE ".$this->query_structure["WHERE"];
+                $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];
             break;
             case "SELECT":
                 $params     = $this->query_structure["SELECT"];
-                $query      = "SELECT SQL_CALC_FOUND_ROWS {$params} FROM {$this->table_name} ";
+                $query      = "SELECT SQL_CALC_FOUND_ROWS {$params}";
+                $query     .= PHP_EOL." FROM {$this->table_name} ";
+                if($this->query_structure["JOIN"]){
+                    $query .= " ".$this->rawJoinGen($this->query_structure["JOIN"]);
+                }
                 if(@$this->query_structure["WHERE"])
-                    $query .= " WHERE ".$this->query_structure["WHERE"];
+                    $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];                       if(@$this->query_structure["GROUP_BY"])
+                    $query .= PHP_EOL." GROUP BY ".$this->query_structure["WHERE"];
                 if(@$this->query_structure['ORDER_BY'])
-                    $query .= " ORDER BY ".$this->query_structure['ORDER_BY'];
+                    $query .= PHP_EOL." ORDER BY ".$this->query_structure['ORDER_BY'];
                 if(@$this->query_structure['LIMIT'])
-                    $query .= " LIMIT ".$this->query_structure['LIMIT'];
+                    $query .= PHP_EOL." LIMIT ".$this->query_structure['LIMIT'];
                 break;
             case "SORT":
                 $params     = $this->query_structure["SELECT"];
@@ -373,11 +401,11 @@ abstract class Model
     }
 
     /**
-     * @param array $cols
-     * @param bool $sing_record
-     * @return array|mixed
-     * @throws DatabaseException
-     */
+ * @param array $cols
+ * @param bool $sing_record
+ * @return array|mixed
+ * @throws DatabaseException
+ */
     public function all(
         $cols = [],
         $sing_record = false
@@ -394,7 +422,7 @@ abstract class Model
             $this->rawColumnGen($cols);
         }
         $query      = $this->buildWriteRawQuery("SELECT");
-        $params     = array_merge($this->params["WHERE"]);
+        $params     = array_merge($this->params["SELECT"],$this->params["WHERE"],$this->params["LIMIT"]);
 
 //        var_dump($params);
 //        echo "<br>".$query."<br>";
@@ -411,13 +439,41 @@ abstract class Model
         }
     }
 
+
+    /**
+     * @param bool $sing_record
+     * @return array|mixed
+     * @throws DatabaseException
+     * @internal param array $cols
+     */
+    public function get(
+        $sing_record = false
+    ){
+
+        $query      = $this->buildWriteRawQuery("SELECT");
+        $params     = array_merge($this->params["SELECT"],$this->params["WHERE"],$this->params["LIMIT"]);
+
+        print_r($params);
+        echo "<br>".$query."<br>";
+        try{
+            $prepare                = $this->conn->prepare($query);//Prepare query\
+            $prepare                ->execute($params);
+            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
+            if($sing_record)
+                return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
+            else
+                return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
+        }catch (\PDOException $e){
+            throw new DatabaseException($e->getMessage());
+        }
+    }
     /**
      * @param int $_from
      * @param int $_to
      * @return $this
      */
     public function batch($_from = 0, $_to = 10){
-        $this->query_structure["LIMIT"] = "{$_from},{$_to}";
+        $this->query_structure["LIMIT"] = "?,?";
         $this->params["LIMIT"]          = [$_from,$_to];
         return $this;
     }
@@ -467,7 +523,77 @@ abstract class Model
         $this->params[] = $stop;
         return $this;
     }
-    public function join($table,$on){
+
+    private function getOn($arr){
+        foreach ($arr as $key => $value) {
+            return $key." = ".$value;
+        }
+        return "";
+    }
+
+
+    public function rawJoinGen($table_joins){
+        $str = "";
+        foreach ($table_joins as $table => $value) {
+            $type = $value["type"];
+            $on   = $value["on"];
+            $str .= PHP_EOL." ".$type." ".$table." ".PHP_EOL."   "."ON"." ".$on;
+        }
+        return $str;
+    }
+    /**
+     * @param string $type
+     * @param $table
+     * @param $on
+     * @return $this
+     */
+    private function join($type = "INNER JOIN", $table, $on){
+        $this->query_structure["JOIN"][$table]["type"] =  $type." JOIN";
+        $this->query_structure["JOIN"][$table]["on"] =  $this ->getOn($on);
+        return $this;
+    }
+
+    /**
+     * @param $table
+     * @param $on
+     * @return $this
+     */
+    public function leftJoin($table, $on){
+        $this->join("LEFT",$table,$on);
+        /** @var Model $this */
+        return $this;
+    }
+
+    /**
+     * @param $table
+     * @param $on
+     * @return $this
+     */
+    public function innerJoin($table, $on){
+        $this->join("INNER",$table,$on);
+        /** @var Model $this */
+        return $this;
+    }
+
+    /**
+     * @param $table
+     * @param $on
+     * @return $this
+     */
+    public function rightJoin($table, $on){
+        $this->join("RIGHT",$table,$on);
+        /** @var Model $this */
+        return $this;
+    }
+
+    /**
+     * @param $table
+     * @param $on
+     * @return $this
+     */
+    public function fullJoin($table, $on){
+        $this->join("FULL",$table,$on);
+        /** @var Model $this */
         return $this;
     }
 
@@ -491,21 +617,94 @@ abstract class Model
         return (object)$this->all($cols,true);
     }
 
+    /**
+     * @return mixed
+     */
     public function count(){
         $this->query_structure["SELECT"] = "COUNT({$this->primary_key}) as total";
         return $this->all(null,true)["total"];
     }
+
+    /**
+     * @param $col
+     * @return $this
+     */
     public function max($col){
         $this->query_structure["ORDER_BY"] = "{$col} DESC";
         $this->query_structure["LIMIT"]    = "0,1";
         return $this;
     }
+
+    /**
+     * @param $col
+     * @return $this
+     */
     public function min($col){
         $this->query_structure["ORDER_BY"] = "{$col} ASC";
         $this->query_structure["LIMIT"]    = "0,1";
         return $this;
     }
+    public function select($columns,$params = []){
+        if($columns instanceof Model){
+            $raw = $columns->raw_select_query();
+            if($this->query_structure["SELECT"]){
+                $this->query_structure["SELECT"] .= ", (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
+                $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
+                $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
+                $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
+            }else{
+                $this->query_structure["SELECT"] = " (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
+                $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
+                $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
+                $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
+            }
+        }else{
+            if(is_array($columns)){
+                if(!$columns)
+                    $columns = $this->filterNonReadable($this->table_cols);
+
+                if(!$columns)
+                    throw new DatabaseException("Error Attempting to update Empty data set");
+                if(!$this->table_name)
+                    throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+
+                $columns = $this->filterNonReadable($columns);
+                if(!$columns)
+                    throw new DatabaseException("Can't read empty sets of columns in \"select()\" Method ");
+
+                $this->rawColumnGen($columns);
+            }else{
+                if($this->query_structure["SELECT"]){
+                    $this->query_structure["SELECT"] .=", ".$columns;
+                }else{
+                    $this->query_structure["SELECT"] = $columns;
+                }
+            }
+        }
+        if($params)
+            $this->params["SELECT"] = array_merge($this->params["SELECT"],$params);
+        return $this;
+    }
+
+    /**
+     * @param $alias
+     * @return $this
+     */
+    public function as($alias){
+        if($this->query_structure["SELECT"]){
+            $this->query_structure["SELECT"] .= " AS ".$alias." ";
+        }
+        return $this;
+    }
     public function groupBy($col){
+        if(is_array($col)){
+            $this->query_structure["GROUP_BY"] = join(",",$col);
+        }else{
+            if(!$this->is_valid_col($col))
+                throw new DatabaseException("Invalid Column name \"{$col}\" in \"groupBy()\" method ");
+
+            $this->query_structure["GROUP_BY"] = $col;
+        }
         return $this;
     }
 
@@ -524,4 +723,26 @@ abstract class Model
         $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
         return $this->all(null,true)["total"] < 1;
     }
+
+    /**
+     * @param array ...$cols
+     * @return $this
+     */
+    public function whereCols(...$cols){
+        $this->where_gen("MATCH( ".join(",",$cols)." )");
+        return $this;
+    }
+
+    /**
+     * @param $value
+     * @param string $mode
+     * @return  $this
+     */
+    public function matches($value, $mode = "BOOLEAN"){
+        $this->query_structure["WHERE"] .= " AGAINST(? IN {$mode} MODE)";
+        $this->params["WHERE"][]         = $value;
+        return $this;
+    }
+
+
 }
