@@ -7,7 +7,7 @@
  */
 
 namespace Path\Controller;
-load_class("Controller","controllers");
+load_class("Controller");
 load_class(["Database/Model","Database/Models/User","FileSys"]);
 use Data\Database;
 use Path\Controller;

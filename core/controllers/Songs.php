@@ -7,6 +7,7 @@
  */
 
 namespace Path\Controller;
+load_class("Controller");
 use Path\Controller;
 use Path\Http\Request;
 use Path\Http\Response;
