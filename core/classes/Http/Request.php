@@ -36,4 +36,8 @@ class Request
         $this->params = $params;
     }
 
+    public function file($name){
+        return @$_FILES[$name];
+    }
+
 }
