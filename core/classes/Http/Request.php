@@ -40,4 +40,18 @@ class Request
         return @$_FILES[$name];
     }
 
+    /**
+     * @param $method
+     * @param null $fallback
+     * @return object
+     */
+    public static function MiddleWare(
+        $method,
+        $fallback = null
+    ){
+        $fallback = is_callable($fallback) ? $fallback:$fallback;
+        return (object)["method" => $method,"fallback" => $fallback];
+    }
+
+
 }

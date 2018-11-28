@@ -34,7 +34,7 @@ try {
         $router->get([
             "path" => "/user/profile/@user_id:int",
             // Middle ware to authenticate USer
-            "middleware" => Response::MiddleWare(
+            "middleware" => Request::MiddleWare(
                 \Path\Http\MiddleWare\Auth::class,
                 function (Request $request, Response $response) {
                 // a call back function that wil be called if middle-ware returns a false
