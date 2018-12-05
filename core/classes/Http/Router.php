@@ -461,6 +461,10 @@ class Router
         $this->processRequest($path,$callback,"GET");
         return $this;
     }
+    public function any($path, $callback){
+        $this->processRequest($path,$callback,"ANY");
+        return $this;
+    }
     public function post($path, $callback){
         $this->processRequest($path,$callback,"POST");
         return $this;
