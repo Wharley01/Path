@@ -24,30 +24,25 @@ try {
         return $response->json(["error" => $error['msg']]);
     });
 
+    $router->any([
+        "path"          => "/",
+        "middleware"    => Request::MiddleWare(
+            \Path\Http\MiddleWare\isProd::class,
+            function (Request $request,Response $response){
+//                Development Mode
+                return \Path\Views::Render("views/index.html");
+            }
+        )
+    ],function (Request $request,Response $response){
+//        Production Mode
+        return $response->json(['mode' => 'Production Mode']);
+    });
+
     $router->group(["path" => "/api/@version:{[1-3]}/"], function (Router $router) {//path can use Regex too
         // A route group
-        $router->get("search/@query", function (Request $req, Response $res) {//@query will be treated as variable and will be available in $req->params object as $req->params->query
-            // this will listen to http://yourhost.com/api/@version:{[1-3]}/search/@query
-            return $res->json((array)$req->params);
-        });
+        //probably for API
 
-        $router->get([
-            "path" => "/user/profile/@user_id:int",
-            // Middle ware to authenticate USer
-            "middleware" => Request::MiddleWare(
-                \Path\Http\MiddleWare\Auth::class,
-                function (Request $request, Response $response) {
-                // a call back function that wil be called if middle-ware returns a false
-                    return \Path\Views::Render("includes/header");//return a json content with response code 401
-                }
-            )
-        ], "User->Profile");//This route uses Controller Class "User" and access its method Profile(Profile method will receive both Request and Response)
 
-        $router->post("/user/search/@user_name", "User->UploadPicture");
-        // Method fires when no route from this group is matched
-        $router->error404(function (Request $request, Response $response) {
-            return $response->json(['error' => "Ops, error 404"], 404);
-        });
 
     });
 
