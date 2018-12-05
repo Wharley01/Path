@@ -396,7 +396,9 @@ class Router
                 if($paths[$i]['is_group'] AND self::is_root($real_path,$paths[$i]['path'])){
                     return false;
                 }
-                if(self::compare_path($real_path,$root.$paths[$i]['path']) && ($paths[$i]['method'] == $current_method && $paths[$i]['method'] != "ANY")) return false;
+                if(self::compare_path($real_path,$root.$paths[$i]['path']) && ($paths[$i]['method'] == $current_method || $paths[$i]['method'] == "ANY")){
+                    return false;
+                }
             }
         }
 
@@ -445,7 +447,7 @@ class Router
 
         $real_path = trim($this->real_path);
 //Check if path is the one actively visited in browser
-        if(strtoupper($this->request->METHOD) == $method && self::compare_path($real_path,$this->root_path.$_path)) {
+        if((strtoupper($this->request->METHOD) == $method || $method == "ANY") && self::compare_path($real_path,$this->root_path.$_path)) {
 
 //            Check if $callback is a string, parse appropriate
             $this->response($method,"/", $_path, $callback,$_middle_ware);
