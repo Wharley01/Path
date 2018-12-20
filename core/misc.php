@@ -45,3 +45,22 @@ function load_class($classes, $from = "classes"){
     }
 
 }
+
+function get_cli_args(array $listening,array $args){
+    array_shift($args);//remove the first one
+    $res = [];
+    for($i = 0;$i < count($args); $i ++){
+        $arg = trim($args[$i]);
+        if(in_array($arg,$listening)){
+//            found a listening
+//            get the next arg
+            if(in_array(@$args[$i + 1],$listening)){
+                $res[$arg] = true;
+            }else{
+                $res[$arg] = @$args[$i + 1] ?? true;
+            }
+
+        }
+    }
+    return $res;
+}
