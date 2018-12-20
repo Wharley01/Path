@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+require_once "core/kernel.php";
+load_class("CLI/Console");
+
+$console = new \Path\Console($argv);
+
+$console->loadDefaultCLIs();
+$console->loadAllCommands();
+$console->executeCLI();
+//var_dump(get_cli_args(["email@send","name","school"],$argv));
+
