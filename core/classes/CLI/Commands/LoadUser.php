@@ -9,7 +9,7 @@
 namespace Path\Console;
 load_class("Database/Models/User");
 
-use Path\Database;
+use Path\Database\Models;
 
 class LoadUser extends CLInterface
 {
@@ -32,7 +32,7 @@ class LoadUser extends CLInterface
 
     public function entry(object $argument)
     {
-        $user = (new Database\User)
+        $user = (new Models\User)
             ->identify($argument->list)
             ->all();
         var_dump($user);

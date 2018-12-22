@@ -6,7 +6,7 @@
  * Time: 2:07 AM
  */
 
-namespace Path\Database;
+namespace Path\Database\Models;
 load_class("Database/Model");
 
 use Data\Model;
