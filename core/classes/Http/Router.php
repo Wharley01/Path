@@ -9,7 +9,7 @@
 namespace Path\Http;
 load_class(["Utilities","Http/Request","Database/Model","Database/Connection"]);
 
-use Connection\Mysql;
+use Path\Database\Connection\Mysql;
 use Data\Database;
 use Path\Http\Request;
 use Path\RouterException;

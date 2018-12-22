@@ -1,6 +1,6 @@
 <?php
 namespace Data;
-use Connection\DB;
+use DatabseConnection\DB;
 class Database{
     public $db_con;
     public $query_data = array();

@@ -1,5 +1,5 @@
 <?php
-namespace Connection;
+namespace Path\Database\Connection;
 
 /**
  *

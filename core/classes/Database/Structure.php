@@ -9,7 +9,7 @@
 namespace Path\Database;
 
 
-use Connection\Mysql;
+use Path\Database\Connection\Mysql;
 use Path\DatabaseException;
 use Path\DataStructureException;
 

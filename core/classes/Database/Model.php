@@ -4,8 +4,8 @@
 namespace Data;
 load_class("Database/Connection");
 
-use Connection\DB;
-use Connection\Mysql;
+use Path\Database\Connection\DB;
+use Path\Database\Connection\Mysql;
 use Path\DatabaseException;
 use Path\FileSys;
 

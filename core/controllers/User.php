@@ -14,8 +14,6 @@ use Path\Controller;
 use Path\FileSys;
 use Path\Http\Request;
 use Path\Http\Response;
-use Path\Model;
-
 
 class User implements Controller
 {
@@ -23,7 +21,7 @@ class User implements Controller
     protected $fileSys;
     public function __construct()
     {
-        $this->userModel = (new Model\User());
+        $this->userModel = (new Database\User());
         $this->fileSys = new FileSys();
     }
 

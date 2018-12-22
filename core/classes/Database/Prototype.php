@@ -11,7 +11,7 @@ load_class("Database/Structure");
 load_class("Database/Connection");
 
 
-use Connection\Mysql;
+use Path\Database\Connection\Mysql;
 use Data\Database;
 use Path\Database\Structure;
 use Path\DataStructureException;

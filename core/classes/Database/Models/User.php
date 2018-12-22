@@ -6,7 +6,7 @@
  * Time: 2:07 AM
  */
 
-namespace Path\Model;
+namespace Path\Database;
 load_class("Database/Model");
 
 use Data\Model;
@@ -16,7 +16,7 @@ class User extends Model
 {
     protected $table_name           = "test_table";
 
-    protected $non_writable_cols    = ['name'];
+    protected $non_writable_cols    = ['Name'];
     protected $readable_cols        = ['Name','Age'];
 
     protected $fetch_method         = "FETCH_ASSOC";

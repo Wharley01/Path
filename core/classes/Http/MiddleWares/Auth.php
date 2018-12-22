@@ -1,7 +1,7 @@
 <?php
 
 namespace Path\Http\MiddleWare;
-use Connection\Mysql;
+use Path\Database\Connection\Mysql;
 use Data\Database;
 use Path\Controller\User;
 use Path\Http\MiddleWare;
