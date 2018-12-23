@@ -11,10 +11,6 @@ interface DB{
 
 class Mysql implements DB
 {
-    private $HOST = "localhost";
-    private $USER = "root";
-    private $PASSWORD = "";
-    private $DATABASE = "test_boostrap";
     public $connection = null;
 
     public function __construct()
@@ -36,12 +32,17 @@ class Mysql implements DB
             die($e->getMessage());
         }
         return $this->connection;
-
     }
 
     public function close()
     {
-        $this->Connection = null;
+        $this->connection = null;
     }
+    public function __destruct()
+    {
+        $this->connection = null;
+    }
+
+
 }
 ?>
