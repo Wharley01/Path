@@ -9,11 +9,11 @@
 namespace Path\Controller;
 load_class("Controller");
 load_class(["Database/Model","Database/Models/User","FileSys"]);
-use Data\Database;
 use Path\Controller;
 use Path\FileSys;
 use Path\Http\Request;
 use Path\Http\Response;
+use Path\Database\Models;
 
 class User implements Controller
 {
@@ -21,7 +21,7 @@ class User implements Controller
     protected $fileSys;
     public function __construct()
     {
-        $this->userModel = (new Database\User());
+        $this->userModel = (new Models\User());
         $this->fileSys = new FileSys();
     }
 
