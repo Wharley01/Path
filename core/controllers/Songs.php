@@ -28,7 +28,7 @@ class Songs
         return $response->text("Hello world");
     }
     public function Delete(Request $request, Response $response){
-        return $response->html("<b>Delete user</b>",201);
+        return $response->htmlString("<b>Delete user</b>",201);
     }
 
 }
