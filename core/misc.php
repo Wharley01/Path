@@ -64,3 +64,7 @@ function get_cli_args(array $listening,array $args){
     }
     return $res;
 }
+
+function treat_path($path){
+   return (strripos($path,"/") == (strlen($path) - 1))?$path:$path."/";
+}
