@@ -22,6 +22,7 @@ class Router
     public $root_path;
     private $database;
     private $response_instance;
+    private $build_path = "";
     private $assigned_paths = [//to hold all paths assigned
 
     ];
@@ -56,7 +57,12 @@ class Router
         $this->database = null;
         $this->real_path = $this->request->server->REDIRECT_URL ?? $this->request->server->REQUEST_URI;
 //        TODO: Initialize model for database
-        $this->response_instance = new Response();
+        $this->response_instance = new Response($this->build_path);
+    }
+
+    public function setBuildPath($path){
+        $this->build_path = $path;
+        $this->response_instance = new Response($this->build_path);
     }
 
     /**
