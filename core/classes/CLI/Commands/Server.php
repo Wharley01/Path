@@ -23,7 +23,7 @@ class Server extends CLInterface
 
     public function entry(object $argument)
     {
-        $cmd = "php -S localhost:8000 index.php";
+        $cmd = "php -S localhost:8000";
         echo PHP_EOL;
         echo Console::build("---","green",false)." Server starts at: ".Console::build("localhost:8000",'light_green').PHP_EOL;
         echo Console::build("---","green",false)." You can use this as your proxy server in webpack".PHP_EOL.PHP_EOL;

@@ -55,7 +55,7 @@ class Router
         $this->root_path = $root_path;
         $this->request = new Request();
         $this->database = null;
-        $this->real_path = $this->request->server->REDIRECT_URL ?? $this->request->server->REQUEST_URI;
+        $this->real_path =  $this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL;
 //        TODO: Initialize model for database
         $this->response_instance = new Response($this->build_path);
     }
