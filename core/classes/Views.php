@@ -23,6 +23,6 @@ class Views
         if(!file_exists($path))
             throw new PathException(" \"{$file_path}\" does not exist");
 
-        return (new Response())->html(file_get_contents($path));
+        return (new Response())->htmlString(file_get_contents($path));
     }
 }
