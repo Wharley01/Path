@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 require_once "core/kernel.php";
 load_class("CLI/Console");
