@@ -56,6 +56,7 @@ class Router
         $this->request = new Request();
         $this->database = null;
         $this->real_path =  $this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL;
+//        echo $this->real_path;
 //        TODO: Initialize model for database
         $this->response_instance = new Response($this->build_path);
     }
@@ -104,7 +105,7 @@ class Router
     }
     private static function is_root($real_path, $path){
         $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
-            return strlen(trim($p)) > 0;
+            return strlen(trim($p)) > 0 && trim($p[0]) != "?";
         }));//get all paths in a array, filter
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
@@ -141,11 +142,12 @@ class Router
          * $real_path holds the path from the browser
          */
         $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
-            return strlen(trim($p)) > 0;
+            return strlen(trim($p)) > 0 && trim($p[0]) != "?";
         }));//get all paths in a array, filter
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
         }));
+
         if($real_path == $path){//if the path are literally the same, don't do much hard job, return true
             return true;
         }
@@ -395,6 +397,7 @@ class Router
     private function should_fall_back(){
         $real_path = trim($this->real_path);
         $current_method = strtoupper($this->request->METHOD);
+
         foreach ($this->assigned_paths as $root => $paths){
             $root = $root == "/" ? "":$root;
             for ($i = 0;$i < count($this->assigned_paths);$i++){

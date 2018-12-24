@@ -17,7 +17,7 @@ load_class(
 
 try {
     $router = new Router();
-    $router->setBuildPath("public");
+    $router->setBuildPath("/public");
 
     // Catches any error,(for example Invalid parameter from user(browser))
     $router->exceptionCatch(function (Request $request, Response $response, array $error) {
