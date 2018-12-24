@@ -13,6 +13,11 @@ abstract class CLInterface
 {
     protected $name;
     protected $description;
+    protected $arguments = [
+        "param" => [
+            "desc" => "param description"
+        ]
+    ];
     abstract protected function entry(object $argument);
 
 
