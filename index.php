@@ -17,6 +17,7 @@ load_class(
 
 try {
     $router = new Router();
+    $router->setBuildPath("public");
 
     // Catches any error,(for example Invalid parameter from user(browser))
     $router->exceptionCatch(function (Request $request, Response $response, array $error) {
@@ -30,7 +31,7 @@ try {
             \Path\Http\MiddleWare\isProd::class,
             function (Request $request,Response $response){
 //                Development Mode
-                return \Path\Views::Render("views/index.html");
+                return $response->html("index.html");
             }
         )
     ],function (Request $request,Response $response){
@@ -38,12 +39,18 @@ try {
         return $response->json(['mode' => 'Production Mode']);
     });
 
-    $router->group(["path" => "/api/@version:{[1-3]}/"], function (Router $router) {//path can use Regex too
+    $router->group(["path" => "/api/@version/"], function (Router $router) {//path can use Regex too
         // A route group
         //probably for API
+        $router->get("user",function(Request $request, Response $response){
+            return $response->json(["hello world"],200);
+        });
 
-
-
+        $router->error404(function (Request $request, Response $response) {
+            return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
+                "Access-Control-Allow-Origin" => "*"
+            ]);
+        });
     });
 
 
