@@ -28,14 +28,16 @@ class Prototype
         $proto->action = "creating";
 
         $structure($proto);
-        echo $proto->getRawQuery();
+        $proto->executeQuery();
+        return $proto;
     }
     public function alter(string $table,callable $structure){
         $proto = new Structure($table);
         $proto->action = "altering";
 
         $structure($proto);
-        echo $proto->getRawQuery();
+        $proto->executeQuery();
+        return $proto;
     }
 
     public function drop(...$tables){

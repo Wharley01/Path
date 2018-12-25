@@ -66,7 +66,7 @@ class Structure
             }
             $this->existing_columns = $cols;
         }catch (\PDOException $e){
-            throw new DatabaseException($e->getMessage());
+            $this->existing_columns = [];
         }
     }
 
@@ -82,7 +82,7 @@ class Structure
 
         array_push($this->columns,
             $structure
-            );
+        );
         return $this;
     }
 
@@ -144,11 +144,17 @@ class Structure
     }
 
     public function type($type){
+        if(!isset($this->columns[count($this->columns)-1]))
+            throw new DataStructureException("Specify a column to set type");
+
         $this->columns[count($this->columns)-1]["type"] = $type;
         return $this;
     }
 
     public function nullable(){
+        if(!isset($this->columns[count($this->columns)-1]))
+            throw new DataStructureException("Specify a column ");
+
         $this->columns[count($this->columns)-1]["is_nullable"] = true;
         return $this;
     }
@@ -211,6 +217,7 @@ class Structure
         return $str;
     }
     public function getRawQuery(){
+
         if($this->action == "creating"){
             $query = "
             CREATE TABLE IF NOT EXISTS `{$this->table}` (
@@ -246,22 +253,25 @@ class Structure
             }
         }elseif($this->action == "altering"){
             foreach ($this->columns as $column){
-               $str  = "";
-               if(!$this->colExists($column['name'])){
-                   $str .= " ADD ";
-                   $str .= " `{$column['name']}` {$column['type']}";
+                if(!isset($column['name']))
+                    continue;
 
-                   $str .= $this->genColQueryStr($column);
-               }else{
-                   if (isset($column['is_dropping'])){
-                       $str .= " DROP ";
-                       $str .= " `{$column['name']}`";
-                   }else if(isset($column['is_updating'])){
-                       $str .= " CHANGE ";
-                       $str .= " `{$column['name']}` `{$column['new_name']}` {$column['type']}";
-                       $str .= $this->genColQueryStr($column);
-                   }
-               }
+                $str  = "";
+                if(!$this->colExists($column['name'])){
+                    $str .= " ADD ";
+                    $str .= " `{$column['name']}` {$column['type']}";
+
+                    $str .= $this->genColQueryStr($column);
+                }else{
+                    if (isset($column['is_dropping'])){
+                        $str .= " DROP ";
+                        $str .= " `{$column['name']}`";
+                    }else if(isset($column['is_updating'])){
+                        $str .= " CHANGE ";
+                        $str .= " `{$column['name']}` `{$column['new_name']}` {$column['type']}";
+                        $str .= $this->genColQueryStr($column);
+                    }
+                }
 
                 if(strlen(trim($appended_query)) > 0){
 //                   echo "........TEST....'{$appended_query}'".PHP_EOL;
@@ -279,6 +289,7 @@ class Structure
     }
 
     public function executeQuery(){
+        var_dump($this->columns);
         try{
             $query = $this->db_conn->query($this->getRawQuery());
         }catch (\PDOException $e){
@@ -286,7 +297,4 @@ class Structure
         }
         return $this->db_conn;
     }
-
-
-
 }
