@@ -35,7 +35,9 @@ class Structure
      * */
     private $columns = [];
     private $primary_keys = ["id"];
-    private $unique_keys = [];
+    private $unique_keys  = [];
+    private $foreign_keys = [];
+    private $foreign_key_references = [];
     public $action = "creating";#(creating || altering)
     private $engine = "InnoDB";
     private $charset = "latin1";
@@ -189,6 +191,16 @@ class Structure
         return $this;
     }
 
+    /**
+     * @param $reference
+     * @return $this
+     */
+    public function references($reference){
+        $this->key([],"foreign");
+        $this->foreign_key_references[] = $reference;
+        return $this;
+    }
+
     public function increments(){
         if(!preg_match("/^int/mi",$this->columns[count($this->columns)-1]["type"]))
             throw new DataStructureException("You can only increment INT(integer) Column");
@@ -251,11 +263,16 @@ class Structure
                 $unique_key = join(",",array_unique($this->unique_keys));
                 $appended_query .= ", UNIQUE KEY({$unique_key})";
             }
+
+            if($this->foreign_keys){
+//                $foreign_keys = join(",",array_unique($this->foreign_keys));
+                for ($i = 0; $i < count($this->foreign_keys);$i++){
+                    $foreign_keys = $this->foreign_keys[$i];
+                    $appended_query .= ", FOREIGN KEY({$foreign_keys}) REFERENCES {$this->foreign_key_references[$i]}";
+                }
+            }
         }elseif($this->action == "altering"){
             foreach ($this->columns as $column){
-                if(!isset($column['name']))
-                    continue;
-
                 $str  = "";
                 if(!$this->colExists($column['name'])){
                     $str .= " ADD ";
@@ -289,7 +306,7 @@ class Structure
     }
 
     public function executeQuery(){
-        var_dump($this->columns);
+//        var_dump($this->columns);
         try{
             $query = $this->db_conn->query($this->getRawQuery());
         }catch (\PDOException $e){
@@ -297,4 +314,7 @@ class Structure
         }
         return $this->db_conn;
     }
+
+
+
 }
