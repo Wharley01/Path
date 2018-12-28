@@ -7,7 +7,7 @@
  */
 
 namespace Path;
-
+load_class("CLI/CLInterface");
 
 class Console
 {
@@ -73,13 +73,21 @@ class Console
                     $cli_class_name = basename($entry,".php");
                     load_class("CLI/Commands/".$cli_class_name);
                     $class = "Path\Console\\".$cli_class_name;
-                    $class = new $class();
-                    $this->commands[$class->name]['class'] = $class;
-                    $this->commands[$class->name]['entry'] = $this->cmd_entry;
-                    if(isset($class->arguments)){
-                        $this->commands[$class->name]['arguments'] = $class->arguments;
+                    try{
+                        $class = new $class();
+                        $this->commands[$class->name]['class'] = $class;
+                        $this->commands[$class->name]['class_name'] = "Path\Console\\".$cli_class_name;
+                        $this->commands[$class->name]['entry'] = $this->cmd_entry;
+                        if(isset($class->arguments)){
+                            $this->commands[$class->name]['arguments'] = $class->arguments;
+                        }
+                        $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
+                    }catch (\Throwable $e){
+                        echo PHP_EOL.self::build("There is an error in:","light_red").PHP_EOL;
+                        echo self::build($e->getTraceAsString(),"red");
+                        continue;
                     }
-                    $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
+
                 }
             }
 
@@ -108,21 +116,35 @@ class Console
         $commands = array_values(array_filter(array_keys($this->commands),function ($cmd){
             return self::shouldRun($cmd,$this->args);
         }));//filter those commands not entered by user to console
-        $commands = [$commands[0]];
+        $commands_unfitered = array_values(array_filter(array_values($this->args),function ($cmd){
+            return self::shouldRun($cmd,$this->args);
+        }));//filter those commands not entered by user to console
+        if(count($commands) > 0){
+            $commands = [@$commands[0]];
 //            get all commands
-        foreach ($commands as $command){
+            foreach ($commands as $command){
 
 //            The initiated class of the command
-            $method = $this->commands[$command]['class'];
-            $args = [];
-            if(isset($this->commands[$command]['arguments'])){
-                $args = array_keys($this->commands[$command]['arguments']);
+                $method = $this->commands[$command]['class'];
+                $args = [];
+                if(isset($this->commands[$command]['arguments'])){
+                    $args = array_keys($this->commands[$command]['arguments']);
 //               TODO: Validate argument
+                }
+                array_push($args,$command);
+                try{
+                    $method->{$this->commands[$command]['entry']}((object) get_cli_args($args,$this->args));
+                }catch (\Throwable $e){
+                    echo PHP_EOL.self::build("There was error in {$this->commands[$command]['class_name']}->{$this->commands[$command]['entry']}()","light_red").PHP_EOL;
+                    echo self::build($e->getTraceAsString(),"red");
+                }
+                echo PHP_EOL;
             }
-            array_push($args,$command);
-            $method->{$this->commands[$command]['entry']}((object) get_cli_args($args,$this->args));
-            echo PHP_EOL;
+        }else{
+
+            echo PHP_EOL.self::build("Invalid Commands: ".self::build(join(" , ",$commands_unfitered),"red",false).", write \"php path explain\" to seee list of available commands ","light_red",true);
         }
+
     }
     public function loadDefaultCLIs(){
         //        add some default commands
