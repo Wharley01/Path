@@ -7,7 +7,7 @@
  */
 
 namespace Path\Console;
-load_class("Database/Models/User");
+//load_class("Database/Models/User");
 
 use Path\Database\Models;
 
@@ -28,6 +28,7 @@ class LoadUser extends CLInterface
     ];
     public function __construct()
     {
+
     }
 
     public function entry(object $argument)
