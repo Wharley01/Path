@@ -48,6 +48,7 @@ abstract class Model
     protected $non_readable_cols    = [];//non readable (Can be overridden)
 
     private   $writing              = [];//currently updated column and value
+    private   $reading              = [];//currently updated column and value
     public    $last_insert_id;
     private   $table_cols;
 
@@ -179,13 +180,10 @@ abstract class Model
         return true;
     }
     private function isReadable($key){
-        if($this->readable_cols && in_array(trim($key),$this->readable_cols))
+        if(($this->readable_cols && in_array(trim($key),$this->readable_cols)) || ($this->non_readable_cols && !in_array(trim($key),$this->non_readable_cols))){
             return true;
-
-        if($this->non_readable_cols && in_array(trim($key),$this->non_readable_cols))
-            return false;
-
-        return true;
+        }
+        return false;
     }
     private function filterNonWritable(Array $data){
         foreach ($data as $key => $value){
@@ -195,9 +193,9 @@ abstract class Model
         return $data;
     }
     private function filterNonReadable(Array $data){
-        foreach ($data as $key => $value){
+        foreach ($data as $index => $key){
             if(!$this->isReadable($key))
-                unset($data[$key]);
+                unset($data[$index]);
         }
         return $data;
     }
@@ -243,10 +241,10 @@ abstract class Model
     public function identify(
         $id = false
     ){
-            if(!$this->primary_key)
-                throw new DatabaseException("specify primary key in {$this->model_name}");
-            if($id === false)
-                throw new DatabaseException("specify id in identify method of \"{$this->model_name}\"");
+        if(!$this->primary_key)
+            throw new DatabaseException("specify primary key in {$this->model_name}");
+        if($id === false)
+            throw new DatabaseException("specify id in identify method of \"{$this->model_name}\"");
 
         $this->where_gen([$this->primary_key => $id],"AND");
         return $this;
@@ -281,11 +279,11 @@ abstract class Model
                 $query      = $command;
                 break;
             case "DELETE":
-            $query      = "DELETE FROM {$this->table_name} ";
+                $query      = "DELETE FROM {$this->table_name} ";
 
-            if($this->query_structure["WHERE"])
-                $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];
-            break;
+                if($this->query_structure["WHERE"])
+                    $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];
+                break;
             case "SELECT":
                 $params     = $this->query_structure["SELECT"];
                 $query      = "SELECT SQL_CALC_FOUND_ROWS {$params}";
@@ -295,7 +293,7 @@ abstract class Model
                 }
                 if(@$this->query_structure["WHERE"])
                     $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];                       if(@$this->query_structure["GROUP_BY"])
-                    $query .= PHP_EOL." GROUP BY ".$this->query_structure["WHERE"];
+                $query .= PHP_EOL." GROUP BY ".$this->query_structure["WHERE"];
                 if(@$this->query_structure['ORDER_BY'])
                     $query .= PHP_EOL." ORDER BY ".$this->query_structure['ORDER_BY'];
                 if(@$this->query_structure['LIMIT'])
@@ -311,7 +309,7 @@ abstract class Model
                 return false;
         }
 
-
+//echo  $query;
         return $query;
     }
 
@@ -401,11 +399,11 @@ abstract class Model
     }
 
     /**
- * @param array $cols
- * @param bool $sing_record
- * @return array|mixed
- * @throws DatabaseException
- */
+     * @param array $cols
+     * @param bool $sing_record
+     * @return array|mixed
+     * @throws DatabaseException
+     */
     public function all(
         $cols = [],
         $sing_record = false
@@ -477,6 +475,29 @@ abstract class Model
         $this->params["LIMIT"]          = [$_from,$_to];
         return $this;
     }
+
+    public function paginate($page = 1){
+//        get total record
+        $page -= 1;
+        $total_records = $this->conn->query("SELECT SQL_CALC_FOUND_ROWS id FROM {$this->table_name} LIMIT 0,1");
+        $total_records = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
+
+        $offset =  $this->record_per_page * $page;
+        $total = $this->record_per_page;
+//        generate available pages
+        $current_page = 0;
+        while(($current_page + $this->record_per_page-1) < $total_records){
+            $this->pages[] = [
+                "page_number"   => $current_page+1,
+                "navigable"     => ($current_page != $page)
+            ];
+            $current_page ++;
+        }
+        $this->query_structure["LIMIT"] = "?,?";
+        $this->params["LIMIT"]          = [$offset,$total];
+        return $this;
+    }
+
     public function sortBy($sort){
         if(is_array($sort)){
             $str = "";
