@@ -17,7 +17,7 @@ load_class(
 
 try {
     $router = new Router();
-    $router->setBuildPath("/public");
+    $router->setBuildPath("/dist");
 
     // Catches any error,(for example Invalid parameter from user(browser))
     $router->exceptionCatch(function (Request $request, Response $response, array $error) {
@@ -31,20 +31,24 @@ try {
             \Path\Http\MiddleWare\isProd::class,
             function (Request $request,Response $response){
 //                Development Mode
-                return $response->html("index.html");
+                return $response->json(['mode' => 'Development Mode']);
             }
         )
     ],function (Request $request,Response $response){
 //        Production Mode
-        return $response->json(['mode' => 'Production Mode']);
+        return $response->html("index.html");
     });
 
     $router->group(["path" => "/api/@version/"], function (Router $router) {//path can use Regex too
         // A route group
         //probably for API
         $router->get("user",function(Request $request, Response $response){
-            return $response->json(["hello world"],200);
+            return $response->json(["hello world",$request->fetch("ID")],200);
         });
+//fetch all services
+        $router->get("services/fetch/all","Services->fetchAll");
+//fetch all project type
+        $router->get("project-types/fetch/all","ProjectTypes->fetchAll");
 
         $router->error404(function (Request $request, Response $response) {
             return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
@@ -67,8 +71,3 @@ try {
 } catch (\Path\DatabaseException $e) {
     echo "Database error: " . $e->getMessage() . " trace: <pre>" . $e->getTraceAsString() . "</pre>";
 }
-
-
-
-
-
