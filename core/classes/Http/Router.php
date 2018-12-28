@@ -55,7 +55,8 @@ class Router
         $this->root_path = $root_path;
         $this->request = new Request();
         $this->database = null;
-        $this->real_path =  $this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL;
+        $this->real_path =  preg_replace("/[^\w:\/\d\-].*$/m","",$this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL);
+
 //        echo $this->real_path;
 //        TODO: Initialize model for database
         $this->response_instance = new Response($this->build_path);
@@ -142,7 +143,7 @@ class Router
          * $real_path holds the path from the browser
          */
         $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
-            return strlen(trim($p)) > 0 && trim($p[0]) != "?";
+            return strlen(trim($p)) > 0;
         }));//get all paths in a array, filter
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
