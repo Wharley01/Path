@@ -15,8 +15,12 @@ class Request
     public $server;
     public $params;
     public $inputs;
+
     public function __construct(){
         $this->METHOD = @$_SERVER["REQUEST_METHOD"];
+        if($_SERVER['REQUEST_METHOD']==='POST' && empty($_POST)) {
+            $_REQUEST = array_merge($_REQUEST,json_decode(file_get_contents('http://php://input')));
+        }
         $this->inputs = @$_REQUEST;
 
         if(!@$_SERVER['REDIRECT_URL'])
