@@ -23,6 +23,7 @@ class Response
         return $this;
     }
     public function json($arr,$status = 200){
+        $arr = $this->convertToUtf8($arr);
         $this->content = json_encode((array)$arr);
         $this->status = $status;
         $this->headers = ["Content-Type" => "application/json; charset=UTF-8"];
@@ -82,5 +83,15 @@ class Response
     }
     public function file($file_path){
 
+    }
+    private function convertToUtf8($d) {
+        if (is_array($d)) {
+            foreach ($d as $k => $v) {
+                $d[$k] = $this->convertToUtf8($v);
+            }
+        } else if (is_string ($d)) {
+            return utf8_encode($d);
+        }
+        return $d;
     }
 }
