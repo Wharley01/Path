@@ -26,8 +26,21 @@ class Prototype
     public function create(string $table,callable $structure){
         $proto = new Structure($table);
         $proto->action = "creating";
-
         $structure($proto);
+
+//        Add extra setup column
+        $proto->column("is_deleted")
+            ->type("boolean")
+            ->default(0);
+
+        $proto->column("date_added")
+            ->type("int")
+            ->nullable();
+
+        $proto->column("last_update_date")
+            ->type("int")
+            ->nullable();
+
         $proto->executeQuery();
         return $proto;
     }
