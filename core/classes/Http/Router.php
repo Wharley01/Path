@@ -380,7 +380,12 @@ class Router
             $request->params = $params;
             if(is_string($callback)){
                 $_callback = $this->breakController($callback);
-                $class = $_callback->ini_class->{$_callback->method}($request,$this->response_instance);
+
+                try{
+                    $class = $_callback->ini_class->{$_callback->method}($request,$this->response_instance);
+                }catch (\Throwable $e){
+                    throw new RouterException($e->getMessage().PHP_EOL."<pre>".$e->getTraceAsString()."</pre>");
+                }
                 if($class instanceof Response){//Check if return value from callback is a Response Object
                     $this->write_response($class);
                 }
@@ -466,7 +471,11 @@ class Router
 
 //        load_class($class_ini,"controllers");
         $class_ini = "Path\Controller\\".$class_ini;
-        $class_ini = new $class_ini();
+        try{
+            $class_ini = new $class_ini();
+        }catch (\Throwable $e){
+            throw new RouterException($e->getMessage().PHP_EOL.$e->getTraceAsString());
+        }
 
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
     }
