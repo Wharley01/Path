@@ -22,10 +22,10 @@ abstract class CLInterface
 
     public function confirm($quest){
         $handle = fopen ("php://stdin","r");
-        echo $quest."  Y/N:";
+        echo $quest."  Y/N:".PHP_EOL;
         $input = strtolower(trim(fgets($handle)));
         if($input != "y" && $input != "n"){
-            echo "Enter Y/N";
+            echo "Enter Y/N".PHP_EOL;
             $this->confirm($quest);
         }
         return $input == "y";
