@@ -111,7 +111,12 @@ class Router
         $b_path = array_values(array_filter(explode("/",$path),function ($p){
             return strlen(trim($p)) > 0;
         }));
-//        var_dump($b_real_path,$b_path);
+//        echo "Comparing: ".$path.PHP_EOL;
+//        var_dump([
+//            "b_real_path" => $b_real_path,
+//            "b_path" => $b_path,
+//        ]);
+//        echo PHP_EOL.PHP_EOL.PHP_EOL;
         if($real_path == $path)
             return true;
 
@@ -127,6 +132,8 @@ class Router
                 $matches++;
             }
         }
+//        echo PHP_EOL."it was:";
+//        var_dump($matches == count($b_path));
 //        echo var_dump($matches == count($b_path));
         return $matches == count($b_path);
 
@@ -179,8 +186,7 @@ class Router
             throw new RouterException("Callback function expected to return an instance of Response Class");
         http_response_code($response->status);//set response code
         self::set_header($response->headers);//set header
-        echo $response->content;
-        return true;
+        die($response->content);
     }
 
     /**
@@ -301,7 +307,7 @@ class Router
     /**
      * @param $method
      * @param $root
-     * @param $path
+     * @param $_path
      * @param $callback
      * @param null $middle_ware
      * @param bool $is_group
@@ -316,15 +322,17 @@ class Router
         $middle_ware = null,
         $is_group = false
     ){
-        $path = $this->concat_path($this->root_path,$path);
+
+        $_path = $this::joinPath($root,$path);
         $real_path = trim($this->real_path);
-        $params = $this->get_params($real_path,$path);
-        if(!self::compare_path($real_path,$path) && !$is_group) {//if the browser path doesn't match specified path template
+        $params = $this->get_params($real_path,$_path);
+        if(!self::compare_path($real_path,$_path) && !$is_group) {//if the browser path doesn't match specified path template
             return false;
         }
 
+
         $this->assigned_paths[$root][] = [
-            "path"      => $path,
+            "path"      => $_path,
             "method"    => $method,
             "is_group"  => $is_group
         ];
@@ -335,7 +343,7 @@ class Router
             load_class("Http/MiddleWares/{$middle_ware_name}");
 
             if(!class_implements($middle_ware->method)['Path\Http\MiddleWare'])
-                throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"MiddleWare\" interface in \"{$path}\"");
+                throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"MiddleWare\" interface in \"{$_path}\"");
             $fallback = null;
             if($middle_ware->fallback != null || $middle_ware->fallback) {
                 $fallback = ($middle_ware->fallback) ? $middle_ware->fallback : null;
@@ -365,7 +373,7 @@ class Router
 //        TODO: check if path contains a parameter path/$id
 //            Check if method calling response is
         if($is_group){
-            $router = new Router($path);
+            $router = new Router($_path);
             $c = $callback($router);//call the callback, pass the params generated to it to be used
         }else{
             $request = new Request();
@@ -382,7 +390,7 @@ class Router
                 if($c instanceof Response){//Check if return value from callback is a Response Object
                     $this->write_response($c);
                 }elseif($c AND !$c instanceof Response){
-                    throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$path\"");
+                    throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$_path\"");
                 }
             }
             //call the callback, pass the params generated to it to be used
@@ -414,8 +422,20 @@ class Router
 
         return true;
     }
+    static function joinPath($root,$path){
+        if($root != "/"){
+            $root = (strripos($root,"/") == (strlen($root) - 1))?$root:$root."/";
+        }else{
+            $root = "";
+        }
 
+        $path = (strripos($path,"/") == 0)?(substr_replace($path,"",0,0)):$path;
+//        var_dump($root.$path);
+
+        return $root.$path;
+    }
     public function group($path, $callback){
+
         if(is_array($path)){//check if path is associative array or a string
             $_path = @$path['path'];
             $_middle_ware = @$path['middleware'];
@@ -423,10 +443,14 @@ class Router
             $_path = $path;
             $_middle_ware = null;
         }
+
         $real_path = trim($this->real_path);
-        if(self::is_root($real_path,$_path)){
-            $this->response("ANY","/",$_path,$callback,$_middle_ware,true);
+        if(self::is_root($real_path,self::joinPath($this->root_path,$_path))) {
+            $this->response("ANY", $this->root_path, $_path, $callback, $_middle_ware, true);
         }
+//        }else{
+////            echo "it's not root".self::joinPath($this->root_path,$_path);
+//        }
     }
     private function breakController($controller_str){
 //        break string
@@ -447,6 +471,7 @@ class Router
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
     }
     private function processRequest($path, $callback, $method){
+//        var_dump($path);
         if(is_array($path)){//check if path is associative array or a string
             $_path = @$path['path'];
             $_middle_ware = @$path['middleware'];
@@ -454,13 +479,11 @@ class Router
             $_path = $path;
             $_middle_ware = null;
         }
-
         $real_path = trim($this->real_path);
 //Check if path is the one actively visited in browser
-        if((strtoupper($this->request->METHOD) == $method || $method == "ANY") && self::compare_path($real_path,$this->root_path.$_path)) {
-
+        if((strtoupper($this->request->METHOD) == $method || $method == "ANY") && self::compare_path($real_path,self::joinPath($this->root_path,$_path))) {
 //            Check if $callback is a string, parse appropriate
-            $this->response($method,"/", $_path, $callback,$_middle_ware);
+            $this->response($method,$this->root_path, $_path, $callback,$_middle_ware);
         }
     }
 
