@@ -39,22 +39,38 @@ try {
         return $response->html("index.html");
     });
 
-    $router->group(["path" => "/api/@version/"], function (Router $router) {//path can use Regex too
+    $router->group(["path" => "api/@version/"], function (Router $router) {//path can use Regex too
         // A route group
         //probably for API
-        $router->get("user",function(Request $request, Response $response){
-            return $response->json(["hello world",$request->fetch("ID")],200);
+        $router->get("/test",function (Request $request,Response $response){
+           return $response->text("Hello world");
         });
-//fetch all services
-        $router->get("services/fetch/all","Services->fetchAll");
-//fetch all project type
-        $router->get("project-types/fetch/all","ProjectTypes->fetchAll");
+        $router->group("user",function(Router $router){
+            //fetch all services
+            $router->get("fetch/all",function (Request $request,Response $response){
+                return $response->json(["Showing /fetch/all"]);
+            });
+            $router->post("fetch/all",function (Request $request,Response $response){
+                return $response->json(["Showing /fetch/all - Post"]);
+            });
 
-        $router->error404(function (Request $request, Response $response) {
-            return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
-                "Access-Control-Allow-Origin" => "*"
-            ]);
         });
+
+        $router->group("admin",function (Router $router){
+            $router->group("view/",function (Router $router){
+                echo "sub-sub-sub- group";
+                $router->get("users/",function (){
+                    echo PHP_EOL."sub-sub-sub-sub-sub group";
+                });
+            });
+        });
+
+
+//        $router->error404(function (Request $request, Response $response) {
+//            return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
+//                "Access-Control-Allow-Origin" => "*"
+//            ]);
+//        });
     });
 
 
