@@ -59,9 +59,7 @@ try {
         $router->group("admin",function (Router $router){
             $router->group("view/",function (Router $router){
                 echo "sub-sub-sub- group";
-                $router->get("users/",function (){
-                    echo PHP_EOL."sub-sub-sub-sub-sub group";
-                });
+                $router->get("users/","User->testError");
             });
         });
 
