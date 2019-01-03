@@ -2,12 +2,16 @@
 
 
 namespace Data;
-load_class("Database/Connection");
+load_class([
+    "Database/Connection",
+    "Misc/Validator"
+]);
 
 use Path\Database\Connection\DB;
 use Path\Database\Connection\Mysql;
 use Path\DatabaseException;
 use Path\FileSys;
+use Path\Misc\Validator;
 
 abstract class Model
 {
@@ -34,13 +38,14 @@ abstract class Model
     ];
 
     public    $params       = [
-        "SELECT"    => [],
-        "WHERE"     => [],
-        "UPDATE"    => [],
-        "INSERT"    => [],
-        "SORT"      => [],
-        "LIMIT"     => []
+        "SELECT"            => [],
+        "WHERE"             => [],
+        "UPDATE"            => [],
+        "INSERT"            => [],
+        "SORT"              => [],
+        "LIMIT"             => []
     ];
+
     protected $writable_cols        = [];//writable columns(Can be overridden)
     protected $non_writable_cols    = [];//non writable (Can be overridden)
 
@@ -56,12 +61,13 @@ abstract class Model
     private   $pages                = [];
     private   $total_record;
 
+    private   $validator;
+
     public function __construct()
     {
         $this->conn = (new Mysql())->connection;
         $this->table_cols = $this->getColumns($this->table_name);
         $this->model_name =  get_class($this);
-
     }
     private function getColumns($table){
         try{
@@ -85,17 +91,22 @@ abstract class Model
     {
         return preg_match("/^[_\w\.]*$/",$col);
     }
-    public function __set($name, $value)
+
+    /**
+     * @param $key
+     * @param $value
+     * @return $this
+     * @throws DatabaseException
+     */
+    public function set($key, $value)
     {
         $class_name = get_class($this);
-        if($this->writable_cols && !in_array($name,$this->writable_cols))
-            throw new DatabaseException("\"{$name}\" column is not writable in {$class_name}");
-
-        if($this->non_writable_cols && in_array($name,$this->non_writable_cols))
-            throw new DatabaseException("\"{$name}\" column is not writable in {$class_name}");
-
-        $this->writing[$name] = $value;
-        // TODO: Implement __set() method.
+        if($this->isWritable($key)){
+            $this->writing[$key] = $value;
+        }else{
+            throw new DatabaseException("can't write {$key} in {$class_name}");
+        }
+        return $this;
     }
 
 
@@ -171,16 +182,13 @@ abstract class Model
      * @return bool
      */
     private function isWritable($key){
-        if($this->writable_cols && in_array(trim($key),$this->writable_cols))
+        if(($this->writable_cols && in_array(trim($key),$this->writable_cols)) || ($this->non_writable_cols && !in_array(trim($key),$this->non_writable_cols))){
             return true;
-
-        if($this->non_writable_cols && in_array($key,$this->non_writable_cols))
-            return false;
-
-        return true;
+        }
+        return false;
     }
     private function isReadable($key){
-        if(($this->readable_cols && in_array(trim($key),$this->readable_cols)) || ($this->non_readable_cols && !in_array(trim($key),$this->non_readable_cols))){
+        if(in_array(trim($key),$this->readable_cols) || !in_array(trim($key),$this->non_readable_cols)){
             return true;
         }
         return false;
@@ -189,13 +197,16 @@ abstract class Model
         foreach ($data as $key => $value){
             if(!$this->isWritable($key))
                 unset($data[$key]);
+            if(!in_array($key,$this->table_cols))
+                unset($data[$key]);
         }
         return $data;
     }
     private function filterNonReadable(Array $data){
         foreach ($data as $index => $key){
-            if(!$this->isReadable($key))
+            if(!$this->isReadable($key)){
                 unset($data[$index]);
+            }
         }
         return $data;
     }
@@ -293,7 +304,7 @@ abstract class Model
                 }
                 if(@$this->query_structure["WHERE"])
                     $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];                       if(@$this->query_structure["GROUP_BY"])
-                $query .= PHP_EOL." GROUP BY ".$this->query_structure["WHERE"];
+                $query .= PHP_EOL." GROUP BY ".$this->query_structure["GROUP_BY"];
                 if(@$this->query_structure['ORDER_BY'])
                     $query .= PHP_EOL." ORDER BY ".$this->query_structure['ORDER_BY'];
                 if(@$this->query_structure['LIMIT'])
@@ -324,9 +335,19 @@ abstract class Model
     private function compileData($data){
 
     }
+
+    /**
+     * @param Validator $validator
+     * @return $this
+     */
+    public function setValidator(Validator $validator){
+        $validator->model = $this;
+        $this->validator = $validator;
+        return $this;
+    }
     public function update(array $data = null){
         if(!$data)
-            $data = $this->writing;
+            $data = $this->filterNonWritable($this->writing);
         elseif($data AND is_array($data))
             $data = array_merge($this->filterNonWritable($data),$this->writing);
 
@@ -334,6 +355,10 @@ abstract class Model
             throw new DatabaseException("Error Attempting to update Empty data set");
         if(!$this->table_name)
             throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+
+        if($this->validator && $this->validator->hasError()){
+            return false;
+        }
 
 //        GET and set raw query from array
         $this->rawKeyValueBind($data,"UPDATE");
@@ -408,9 +433,13 @@ abstract class Model
         $cols = [],
         $sing_record = false
     ){
+        if(!is_array($cols) && is_string($cols))
+            $cols = explode(",",$cols);
         if(is_array($cols)){
             if(!$cols)
                 $cols = $this->filterNonReadable($this->table_cols);
+
+            $cols = $this->filterNonReadable($cols);
 
             if(!$cols)
                 throw new DatabaseException("Error Attempting to update Empty data set");
@@ -643,6 +672,7 @@ abstract class Model
      */
     public function count(){
         $this->query_structure["SELECT"] = "COUNT({$this->primary_key}) as total";
+        $this->groupBy($this->primary_key);
         return $this->all(null,true)["total"];
     }
 
@@ -685,10 +715,9 @@ abstract class Model
                     $columns = $this->filterNonReadable($this->table_cols);
 
                 if(!$columns)
-                    throw new DatabaseException("Error Attempting to update Empty data set");
+                    throw new DatabaseException("Error Attempting to fetch Empty column set");
                 if(!$this->table_name)
                     throw new DatabaseException("No Database table name specified, Configure Your model or  ");
-
                 $columns = $this->filterNonReadable($columns);
                 if(!$columns)
                     throw new DatabaseException("Can't read empty sets of columns in \"select()\" Method ");
