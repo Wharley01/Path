@@ -7,14 +7,19 @@
  */
 
 namespace Path\Http;
-load_class(["Utilities","Http/Request","Database/Model","Database/Connection"]);
 
 use Path\Database\Connection\Mysql;
-use Data\Database;
 use Path\Http\Request;
 use Path\RouterException;
 use Path\Utilities;
-//use Path\Controller\User;
+
+import(
+    "Core/Classes/Http/MiddleWare",
+    "Core/Classes/Utilities",
+    "Core/Classes/Http/Request",
+    "Core/Classes/Database/Model",
+    "Core/Classes/Database/Connection"
+);
 
 class Router
 {
@@ -23,6 +28,10 @@ class Router
     private $database;
     private $response_instance;
     private $build_path = "";
+    private $controllers_path = "Path/Controllers/";
+    private $controllers_namespace = "Path\Controller\\";
+    private $middleware_path = "Path/Http/MiddleWares/";
+    private $middleware_namespace = "Path\Http\MiddleWare\\";
     private $assigned_paths = [//to hold all paths assigned
 
     ];
@@ -340,9 +349,9 @@ class Router
             $middle_ware_name =  explode("\\",$middle_ware->method);
             $middle_ware_name = $middle_ware_name[count($middle_ware_name)-1];
 //            Load middleware class
-            load_class("Http/MiddleWares/{$middle_ware_name}");
+            import("{$this->middleware_path}{$middle_ware_name}");
 
-            if(!class_implements($middle_ware->method)['Path\Http\MiddleWare'])
+            if(!class_implements($this->middleware_namespace.$middle_ware_name)['Path\Http\MiddleWare'])
                 throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"MiddleWare\" interface in \"{$_path}\"");
             $fallback = null;
             if($middle_ware->fallback != null || $middle_ware->fallback) {
@@ -453,9 +462,7 @@ class Router
         if(self::is_root($real_path,self::joinPath($this->root_path,$_path))) {
             $this->response("ANY", $this->root_path, $_path, $callback, $_middle_ware, true);
         }
-//        }else{
-////            echo "it's not root".self::joinPath($this->root_path,$_path);
-//        }
+
     }
     private function breakController($controller_str){
 //        break string
@@ -467,10 +474,12 @@ class Router
             return strlen(trim($m)) > 0;
         }));//filter empty array
         $class_ini = $contr_breakdown[0];
-        load_class($class_ini,"controllers");
-
+        import(
+            "Core/Classes/Controller",
+            $this->controllers_path.$class_ini//load dynamic controller
+        );
 //        load_class($class_ini,"controllers");
-        $class_ini = "Path\Controller\\".$class_ini;
+        $class_ini = $this->controllers_namespace.$class_ini;
         try{
             $class_ini = new $class_ini();
         }catch (\Throwable $e){
@@ -479,7 +488,29 @@ class Router
 
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
     }
+    private function processMultipleRequestPath($path, $callback, $method){
+        if(is_array($path)){//check if path is associative array or a string
+            $_path = @$path['path'];
+            $_middle_ware = @$path['middleware'];
+        }else{
+            $_path = $path;
+            $_middle_ware = null;
+        }
+        if(is_string($_path)){
+            $_path = array_filter(explode("|",$_path),function ($path){
+                return strlen(trim($path)) > 0;
+            });
+        }
+
+
+        foreach ($_path as $each_path){
+            $this->processRequest(["path" => trim($each_path),"middleware" => $_middle_ware],$callback,$method);
+        }
+
+
+    }
     private function processRequest($path, $callback, $method){
+//        echo "<pre>";
 //        var_dump($path);
         if(is_array($path)){//check if path is associative array or a string
             $_path = @$path['path'];
@@ -502,63 +533,63 @@ class Router
      * @return $this
      */
     public function get($path, $callback){
-        $this->processRequest($path,$callback,"GET");
+        $this->processMultipleRequestPath($path,$callback,"GET");
         return $this;
     }
     public function any($path, $callback){
-        $this->processRequest($path,$callback,"ANY");
+        $this->processMultipleRequestPath($path,$callback,"ANY");
         return $this;
     }
     public function post($path, $callback){
-        $this->processRequest($path,$callback,"POST");
+        $this->processMultipleRequestPath($path,$callback,"POST");
         return $this;
     }
     public function put($path, $callback){
-        $this->processRequest($path,$callback,"PUT");
+        $this->processMultipleRequestPath($path,$callback,"PUT");
         return $this;
     }
     public function patch($path, $callback){
-        $this->processRequest($path,$callback,"PATCH");
+        $this->processMultipleRequestPath($path,$callback,"PATCH");
         return $this;
     }
     public function delete($path, $callback){
-        $this->processRequest($path,$callback,"DELETE");
+        $this->processMultipleRequestPath($path,$callback,"DELETE");
         return $this;
     }
     public function copy($path, $callback){
-        $this->processRequest($path,$callback,"COPY");
+        $this->processMultipleRequestPath($path,$callback,"COPY");
         return $this;
     }
     public function head($path, $callback){
-        $this->processRequest($path,$callback,"HEAD");
+        $this->processMultipleRequestPath($path,$callback,"HEAD");
         return $this;
     }
     public function options($path, $callback){
-        $this->processRequest($path,$callback,"HEAD");
+        $this->processMultipleRequestPath($path,$callback,"HEAD");
         return $this;
     }
     public function link($path, $callback){
-        $this->processRequest($path,$callback,"LINK");
+        $this->processMultipleRequestPath($path,$callback,"LINK");
         return $this;
     }
     public function unlink($path, $callback){
-        $this->processRequest($path,$callback,"UNLINK");
+        $this->processMultipleRequestPath($path,$callback,"UNLINK");
         return $this;
     }
     public function purge($path, $callback){
-        $this->processRequest($path,$callback,"PURGE");
+        $this->processMultipleRequestPath($path,$callback,"PURGE");
         return $this;
     }
     public function lock($path, $callback){
-        $this->processRequest($path,$callback,"LOCK");
+        $this->processMultipleRequestPath($path,$callback,"LOCK");
         return $this;
     }
     public function propFind($path, $callback){
-        $this->processRequest($path,$callback,"PROPFIND");
+        $this->processMultipleRequestPath($path,$callback,"PROPFIND");
         return $this;
     }
     public function view($path, $callback){
-        $this->processRequest($path,$callback,"VIEW");
+        $this->processMultipleRequestPath($path,$callback,"VIEW");
         return $this;
     }
 
