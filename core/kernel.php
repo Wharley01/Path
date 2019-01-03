@@ -1,7 +1,7 @@
 <?php
-
+session_start();
 use Path\PathException;
-require_once "classes/Exceptions.php";
+require_once "Classes/Exceptions.php";
 
 /**
  * @param $classes
