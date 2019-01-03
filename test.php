@@ -5,7 +5,7 @@ use Path\Database\Prototype;
 use Path\FileSys;
 use Path\Database\Structure;
 
-require_once "core/kernel.php";
+require_once "Core/kernel.php";
 //load_class("Database/Models/User.php");
 load_class("Database/Prototype");
 //load_class("FileSys");
