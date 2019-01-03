@@ -7,15 +7,15 @@
  */
 
 namespace Path;
-load_class("CLI/CLInterface");
+load_class("CLI/CInterface");
 
 class Console
 {
     protected   $args;
-    protected $accepted_cmds;
-    protected $commands = [];
-    private $cmd_entry = "entry";
-    static   $foreground_colors = array(
+    protected   $accepted_cmds;
+    protected   $commands = [];
+    private     $cmd_entry = "entry";
+    static      $foreground_colors = array(
         'bold'         => '1',    'dim'          => '2',
         'black'        => '0;30', 'dark_gray'    => '1;30',
         'blue'         => '0;34', 'light_blue'   => '1;34',
@@ -28,7 +28,7 @@ class Console
         'normal'       => '0;39',
     );
 
-    static $background_colors = array(
+    static      $background_colors = array(
         'black'        => '40',   'red'          => '41',
         'green'        => '42',   'yellow'       => '43',
         'blue'         => '44',   'magenta'      => '45',
@@ -65,13 +65,14 @@ class Console
      *
      */
     public function loadAllCommands(){
-        if ($handle = opendir(__DIR__.DIRECTORY_SEPARATOR.'Commands/')) {
+        if ($handle = opendir("Path/Commands")) {
 
             while (false !== ($entry = readdir($handle))) {
 
                 if ($entry != "." && $entry != "..") {
                     $cli_class_name = basename($entry,".php");
-                    load_class("CLI/Commands/".$cli_class_name);
+//                    load_class("CLI/Commands/".$cli_class_name);
+                    require_once "Path/Commands/{$cli_class_name}.php";
                     $class = "Path\Console\\".$cli_class_name;
                     try{
                         $class = new $class();
