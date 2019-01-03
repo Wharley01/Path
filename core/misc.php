@@ -24,11 +24,11 @@ function config($key)
  * @param string $from
  * @throws PathException
  */
-function load_class($classes, $from = "classes"){
+function load_class($classes){
 
     if(!is_array($classes)){
         $classes = preg_replace("/\.php$/","",trim($classes));
-        $path = __DIR__.DIRECTORY_SEPARATOR.$from.DIRECTORY_SEPARATOR."{$classes}.php";
+        $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$classes}.php";
         if(!file_exists($path))
             throw new PathException("Class {$classes} not found; Path: {$path}");
         /** @var String $path */
@@ -36,7 +36,7 @@ function load_class($classes, $from = "classes"){
     }else{
         foreach ($classes as $class) {
             $class = preg_replace("/\.php$/","",trim($class));
-            $path = __DIR__.DIRECTORY_SEPARATOR.$from.DIRECTORY_SEPARATOR."{$class}.php";
+            $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$class}.php";
             if(!file_exists($path))
                 throw new PathException("Class {$class} not found; Path: {$path}");
             else
@@ -44,6 +44,21 @@ function load_class($classes, $from = "classes"){
         }
     }
 
+}
+
+function import(...$classes){
+    foreach ($classes as $class){
+        $path = $_SERVER['DOCUMENT_ROOT'].config("PROJECT->directory");
+        if(!file_exists($path))
+            throw new \Path\ConfigException("Set Project directory Appropriately in \"core/config.ini\" ->  ".getcwd());
+        $_class = preg_replace("/\.php$/","",trim($class));
+        $_class = $path.DIRECTORY_SEPARATOR.$class.".php";
+
+        if(!file_exists($_class)){
+            throw new PathException("Class \"{$class}\" not found in \"{$_class}\"");
+        }
+        require_once $_class;
+    }
 }
 
 function get_cli_args(array $listening,array $args){
