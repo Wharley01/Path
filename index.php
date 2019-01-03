@@ -1,18 +1,24 @@
 <?php
 
+use Path\Http\MiddleWare\isProd;
 use Path\Http\Request;
 use Path\Http\Response;
 use Path\Http\Router;
+use Path\Misc\Validator;
 
-require_once "core/kernel.php";
+require_once "Core/kernel.php";
 
 load_class(
     [
         "Http/Router",
         "Http/Response",
-        "Views"
+        "Misc/Validator"
     ]
 );
+
+//import(
+//    "Path/Commands/Create", "Path/Commands/Server"
+//);
 
 
 try {
@@ -26,18 +32,15 @@ try {
     });
 
     $router->any([
-        "path"          => "/",
+        "path"          => ['/','/home','/testing'],
         "middleware"    => Request::MiddleWare(
-            \Path\Http\MiddleWare\isProd::class,
+            isProd::class,
             function (Request $request,Response $response){
 //                Development Mode
                 return $response->json(['mode' => 'Development Mode']);
             }
         )
-    ],function (Request $request,Response $response){
-//        Production Mode
-        return $response->html("index.html");
-    });
+    ],"Test->fetchAll");
 
     $router->group(["path" => "api/@version/"], function (Router $router) {//path can use Regex too
         // A route group
@@ -50,8 +53,33 @@ try {
             $router->get("fetch/all",function (Request $request,Response $response){
                 return $response->json(["Showing /fetch/all"]);
             });
-            $router->post("fetch/all",function (Request $request,Response $response){
-                return $response->json(["Showing /fetch/all - Post"]);
+            $router->get("fetch/@user_id",function (Request $request,Response $response){
+
+                $validator = new Validator();
+
+                $validator->values($request->inputs)->validate([
+                    "name" => [
+                        [
+                            "rule" => "min:10",
+                            "error_msg"   => "name must be more than 10 characters",//you can have custom error message
+                        ],
+                        "min:5",//or just like this,(error msg will be generated on your behalf )
+                        [
+                            "rule"  =>  "required",//you can Omit the "error_msg key, it generates one for you
+                        ],[
+                            "rule"  =>  "regex:[\\d*]",//you can match a regex
+                        ]
+                    ],
+                    "school" => "required"//you don't necessarily have to use multiple rules
+                ]);
+
+                if($validator->hasError()){
+                    // do something if there was an error
+                }
+
+
+                return $response->json($validator->getErrors());//get all invalidity error based on your defined rules
+
             });
 
         });
@@ -74,14 +102,11 @@ try {
 
 
     $router->error404(function (Request $request, Response $response) {
-        return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
+        return $response->json(['error' => "Error 404", 'params' => getcwd()])->addHeader([
             "Access-Control-Allow-Origin" => "*"
         ]);
     });
-} catch (\Path\RouterException $e) {
-    echo "There was an error: " . $e->getMessage();
-} catch (\Path\PathException $e) {
+
+}catch (Throwable $e) {
     echo "Path error: " . $e->getMessage() . " trace: <pre>" . $e->getTraceAsString() . "</pre>";
-} catch (\Path\DatabaseException $e) {
-    echo "Database error: " . $e->getMessage() . " trace: <pre>" . $e->getTraceAsString() . "</pre>";
 }
