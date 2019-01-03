@@ -1,5 +1,5 @@
 <?php
-require_once "core/kernel.php";
+require_once "Core/kernel.php";
 load_class("CLI/Console");
 
 $console = new \Path\Console($argv);
