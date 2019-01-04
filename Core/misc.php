@@ -30,7 +30,7 @@ function load_class($classes){
 
     if(!is_array($classes)){
         $classes = preg_replace("/\.php$/","",trim($classes));
-        $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$classes}.php";
+        $path = __DIR__ . DIRECTORY_SEPARATOR .DIRECTORY_SEPARATOR."{$classes}.php";
         if(!file_exists($path))
             throw new PathException("Class {$classes} not found; Path: {$path}");
         /** @var String $path */
@@ -38,7 +38,7 @@ function load_class($classes){
     }else{
         foreach ($classes as $class) {
             $class = preg_replace("/\.php$/","",trim($class));
-            $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$class}.php";
+            $path = __DIR__ . DIRECTORY_SEPARATOR .DIRECTORY_SEPARATOR."{$class}.php";
             if(!file_exists($path))
                 throw new PathException("Class {$class} not found; Path: {$path}");
             else
