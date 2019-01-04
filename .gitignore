@@ -5,3 +5,5 @@ node_modules
 test.json
 test-new.php
 public
+test.php
+websocket.php
