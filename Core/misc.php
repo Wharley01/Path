@@ -8,7 +8,7 @@ use Path\PathException;
  */
 function config($key)
 {
-    $root_path = preg_replace("/Core$/","",__DIR__);
+    $root_path = preg_replace("/Core$/i","",__DIR__);
     $configs = parse_ini_file($root_path."Path".DIRECTORY_SEPARATOR."config.ini", true);
 
     $key = explode("->",$key);
