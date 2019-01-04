@@ -8,7 +8,9 @@ use Path\PathException;
  */
 function config($key)
 {
-    $configs = parse_ini_file(__DIR__.DIRECTORY_SEPARATOR."config.ini", true);
+    $root_path = preg_replace("/Core$/","",__DIR__);
+    $configs = parse_ini_file($root_path."Path".DIRECTORY_SEPARATOR."config.ini", true);
+
     $key = explode("->",$key);
 
     $root = $configs[$key[0]];
@@ -78,6 +80,11 @@ function get_cli_args(array $listening,array $args){
         }
     }
     return $res;
+}
+
+function get_full_path($file_path){
+    $path = $_SERVER['DOCUMENT_ROOT'];
+    return $path.$file_path;
 }
 
 function treat_path($path){
