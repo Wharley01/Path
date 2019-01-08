@@ -5,7 +5,9 @@ Path is an API-first PHP framework built with javascript in mind
 ## Contents
 
 [Installation](#Installation) <br>
-[Folder Structure](#Folder%20Structure)
+[Folder Structure](#Folder-Structure)
+[Folder Structure](#Folder-Structure)
+
 
 
 ## Installation
@@ -21,12 +23,21 @@ pull Path's source to the directory you created with:
 $ git pull https://github.com/Wharley01/Path.git
 ```
 
+If you are trying to download Path into an already existing git folder with unrelated history use:
+
+```bash
+$ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
+```
+
 ## Folder Structure
+
+
+## Your First API
 
 ## Usage
 
 ```php
-code
+//code
 ```
 
 ## Contributing
