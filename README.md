@@ -5,7 +5,7 @@ Path is an API-first PHP framework built with javascript in mind
 ## Contents
 
 [Installation](#Installation) <br>
-[Folder Structure](#Folder Structure)
+[Folder Structure](#Folder%20Structure)
 
 
 ## Installation
