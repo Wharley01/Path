@@ -43,6 +43,13 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 ------------ \\...\
 ------ config.ini *<------ Your Configuration file*\
 ------ Routes.php *<------ Contains your routes*\
+
+#### Folder structure In Image
+
+![Image](./docs/images/folder-structure.jpg)
+
+
+
 ## Your First API
 
 ## Usage
