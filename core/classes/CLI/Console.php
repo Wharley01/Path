@@ -7,7 +7,6 @@
  */
 
 namespace Path;
-load_class("CLI/CInterface");
 
 class Console
 {
