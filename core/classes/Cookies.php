@@ -11,8 +11,9 @@ namespace Path;
 
 class Cookies
 {
-    static $ONE_DAY = 86400;
-    static $ONE_WEEK = 604800;
+    public const ONE_DAY = 86400;
+    public const ONE_WEEK = 604800;
+
     public static function store(
         $key,
         $value,
@@ -23,7 +24,7 @@ class Cookies
         $httponly = false
 ){
         if(is_null($expire))
-            $expire = time() + 86400;
+            $expire = time() + self::ONE_DAY;
 
         setcookie($key,$value,$expire,$path,$domain,$secure,$httponly);
 
