@@ -182,11 +182,50 @@ abstract class Model
      * @return bool
      */
     private function isWritable($key){
-        if(($this->writable_cols && in_array(trim($key),$this->writable_cols)) || ($this->non_writable_cols && !in_array(trim($key),$this->non_writable_cols))){
+        if(in_array(trim($key),$this->writable_cols) || !in_array(trim($key),$this->non_writable_cols)){
             return true;
         }
         return false;
     }
+
+    /**
+     * @param array $columns
+     * @return $this
+     */
+    public function writable(array $columns){
+        $this->writable_cols = array_merge($this->writable_cols,$columns);
+        return $this;
+    }
+
+    /**
+     * @param array $columns
+     * @return $this
+     */
+    public function nonWritable(array $columns){
+        $this->non_writable_cols = array_merge($this->non_writable_cols,$columns);
+        return $this;
+    }
+    /**
+     * @param array $columns
+     * @return $this
+     */
+    public function readable(array $columns){
+        $this->readable_cols = array_merge($this->readable_cols,$columns);
+        return $this;
+    }
+    /**
+     * @param array $columns
+     * @return $this
+     */
+    public function nonReadable(array $columns){
+        $this->non_readable_cols = array_merge($this->non_readable_cols,$columns);
+        return $this;
+    }
+
+    /**
+     * @param $key
+     * @return bool
+     */
     private function isReadable($key){
         if(in_array(trim($key),$this->readable_cols) || !in_array(trim($key),$this->non_readable_cols)){
             return true;
