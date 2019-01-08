@@ -9,7 +9,7 @@
 namespace Path\Console;
 
 
-use Path\Console;
+//use Path\Console;
 
 class Create extends CInterface
 {
