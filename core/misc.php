@@ -8,8 +8,8 @@ use Path\PathException;
  */
 function config($key)
 {
-    $root_path = preg_replace("/Core$/i","",__DIR__);
-    $configs = parse_ini_file($root_path."Path".DIRECTORY_SEPARATOR."config.ini", true);
+    $root_path = preg_replace("/Core$/i","",__DIR__)."Path".DIRECTORY_SEPARATOR."config.ini";
+    $configs = parse_ini_file($root_path, true);
 
     $key = explode("->",$key);
 
@@ -30,7 +30,7 @@ function load_class($classes){
 
     if(!is_array($classes)){
         $classes = preg_replace("/\.php$/","",trim($classes));
-        $path = __DIR__ . DIRECTORY_SEPARATOR .DIRECTORY_SEPARATOR."{$classes}.php";
+        $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$classes}.php";
         if(!file_exists($path))
             throw new PathException("Class {$classes} not found; Path: {$path}");
         /** @var String $path */
@@ -38,7 +38,7 @@ function load_class($classes){
     }else{
         foreach ($classes as $class) {
             $class = preg_replace("/\.php$/","",trim($class));
-            $path = __DIR__ . DIRECTORY_SEPARATOR .DIRECTORY_SEPARATOR."{$class}.php";
+            $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$class}.php";
             if(!file_exists($path))
                 throw new PathException("Class {$class} not found; Path: {$path}");
             else
@@ -49,8 +49,8 @@ function load_class($classes){
 }
 
 function import(...$classes){
+    $path = preg_replace("/Core$/i","",__DIR__);
     foreach ($classes as $class){
-        $path = $_SERVER['DOCUMENT_ROOT'].config("PROJECT->directory");
         if(!file_exists($path))
             throw new \Path\ConfigException("Set Project directory Appropriately in \"core/config.ini\" ->  ".getcwd());
         $_class = preg_replace("/\.php$/","",trim($class));
