@@ -30,8 +30,19 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 ```
 
 ## Folder Structure
-
-
+--- core\
+------ \\...\
+--- path\
+------ Commands *<------ Contains All your custom Console Commands*\
+------ Controllers *<------ Contains Your API Controller*\
+------ Database \
+--------- Models *<-------- Contains your Database Models*\
+------------ \\...\
+------ Http\
+--------- MiddleWares *<-- Contains your Route MiddleWares*\
+------------ \\...\
+------ config.ini *<------ Your Configuration file*\
+------ Routes.php *<------ Contains your routes*\
 ## Your First API
 
 ## Usage
