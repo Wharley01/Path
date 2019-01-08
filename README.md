@@ -6,7 +6,6 @@ Path is an API-first PHP framework built with javascript in mind
 
 [Installation](#Installation) <br>
 [Folder Structure](#Folder-Structure)
-[Folder Structure](#Folder-Structure)
 
 
 
@@ -51,6 +50,41 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 
 
 ## Your First API
+ you can listen to your preferred URL with Path's Router, for example:
+
+ 
+ You initiate the use of router
+ ```php
++ use Path\Http\Router;
++ $router = new Router();
+ ```
+ 
+ proceed to listening to a request
+   ```php
+   use Path\Http\Router;
+   use Path\Http\Request;
+   use Path\Http\Response;
+   
+   $router = new Router();
+  
+   $router->get(
+        "/your/custom/url",//Route to listen to
+       function(Request $request, Response $response){
+   // call back function to fire when user visits 
+   // http://yoursite.dev/your/custom/url
+        return $request->json(['message' => 'this is my first route'],200);
+   })
+   ```
+   
+   In the code above, we are watching the route path `/your/custom/url` and we expect a callback function to execute when users requests that route. in the case of the above code, we are returning a json in our callback function.
+   
+   your call back function will be given two variables which is an instance of `Request` and `Response` 
+   
+   ````
+   NOTE: All routes codes must be written in path/Routes.php
+   ````
+   Now go on and visit http://yourproject.dev/your/custom/url you will get a json response
+ 
 
 ## Usage
 
