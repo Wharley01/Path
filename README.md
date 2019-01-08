@@ -24,11 +24,7 @@ $ git pull https://github.com/Wharley01/Path.git
 ## Usage
 
 ```php
-import foobar
-
-foobar.pluralize('word') # returns 'words'
-foobar.pluralize('goose') # returns 'geese'
-foobar.singularize('phenomena') # returns 'phenomenon'
+code
 ```
 
 ## Contributing
