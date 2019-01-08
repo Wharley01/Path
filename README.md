@@ -61,19 +61,24 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
  
  proceed to listening to a request
    ```php
-   use Path\Http\Router;
-   use Path\Http\Request;
-   use Path\Http\Response;
-   
-   $router = new Router();
-  
-   $router->get(
-        "/your/custom/url",//Route to listen to
-       function(Request $request, Response $response){
-   // call back function to fire when user visits 
-   // http://yoursite.dev/your/custom/url
-        return $request->json(['message' => 'this is my first route'],200);
-   })
+ use Path\Http\Request;
+ use Path\Http\Response;
+ use Path\Http\Router;
+ 
+ $router = new Router();
+ 
+ $router->get(
+     "/your/custom/path",//Route to listen to
+     function (
+         Request $request,
+         Response $response
+     ){
+         // call back function to fire when user visits 
+         // http://yoursite.dev/your/custom/url
+         return $response->json([
+             'message' => 'this is my first route'
+         ],200);//return a json response
+     });
    ```
    
    In the code above, we are watching the route path `/your/custom/url` and we expect a callback function to execute when users requests that route. in the case of the above code, we are returning a json in our callback function.
