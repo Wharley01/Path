@@ -102,7 +102,8 @@ Routes can be grouped too
 
  $router = new Router();
  
-  $router->group("/api/",function(Router $route){
+  $router->group("/api/",function(Router $router){
+   //   `$router` variable here is localized to this callback function
      //you can put multiple routes here
     $router->get("/user/custom/route",function(){
      //do something here
