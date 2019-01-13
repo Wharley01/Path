@@ -38,6 +38,9 @@ abstract class CInterface
         if($enforce && strlen($input) < 1){
             $this->ask($question);
         }
+        if(strlen($input) < 1){
+            return null;
+        }
         return $input;
     }
 
