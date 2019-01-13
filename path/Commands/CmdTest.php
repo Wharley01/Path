@@ -1,15 +1,8 @@
 <?php
-/**
- * @Author by Sulaiman Adewale.
- * @Date 12/6/2018
- * @Time 2:30 AM
- * @Project Path
- */
+
 
 namespace Path\Console;
-load_class([
-    "CLI/Console",
-]);
+
 
 use Path\Console;
 
