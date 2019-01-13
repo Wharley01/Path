@@ -18,18 +18,95 @@ class Create extends CInterface
     public $arguments = [
         "model" => [
             "desc" => "model name"
+        ],
+        "command" => [
+            "desc" => "Custom Command name"
         ]
     ];
 
     private $models_path = "Path/Database/Models/";
+    private $commands_path = "Path/Commands/";
     private $controllers_path = "Path/Controllers/";
 
     public function entry(object $params)
     {
         if(isset($params->model)){
             $this->createModel($params->model);
+        }elseif (isset($params->command)){
+            $this->createCommand($params->command);
         }
 
+    }
+    private function createCommandBoilerPlate($write_instance,$command_file_name){
+        $command_name = $this->ask("Enter command name: ") ?? strtolower($command_file_name);
+        $command_desc = $this->ask("Enter a description for this command: ") ?? "";
+        $command_param = $this->ask("Enter a parameter for this command: ");
+        $command_param_desc = $this->ask("Enter the parameter's description: ");
+
+        $code = "<?php
+
+
+namespace Path\Console;
+
+
+use Path\Console;
+
+class $command_file_name extends CInterface
+{
+
+
+    /*
+     * Command Line name
+     *
+     * @var String
+     * */
+    public \$name = \"{$command_name}\";
+    public \$description = \"{$command_desc}\";
+    ";
+        if(!is_null($command_param)){
+            $code .= PHP_EOL."
+    public \$arguments = [
+        \"{$command_param}\" => [
+            \"desc\" => \"{$command_param_desc}\"
+        ]
+    ];
+            
+            ";
+        }
+
+    $code .= "
+
+    public function __construct()
+    {
+    }
+
+    /**
+     * @param \$params
+     */
+    public function entry(object \$params)
+    {
+        var_dump(\$params);
+    }
+
+}
+        ";
+        fwrite($write_instance,$code);
+        echo PHP_EOL.PHP_EOL."[+] ----  Database model boiler plate for --{$command_file_name}-- generated in \"{$this->commands_path}\" ".PHP_EOL;
+        fclose($write_instance);
+
+
+    }
+    private function createCommand($command_file_name){
+        $command_file_path = "{$this->commands_path}{$command_file_name}.php";
+        if(file_exists($command_file_path)){
+            if($this->confirm("Command already exist, do you want to overwrite? ")){
+                $command_file_open = fopen($command_file_path,"w");
+                $this->createCommandBoilerPlate($command_file_open,$command_file_name);
+            }
+        }else{
+                $command_file_open = fopen($command_file_path,"w");
+                $this->createCommandBoilerPlate($command_file_open,$command_file_name);
+        }
     }
     private function createModelBoilerPlate($db_model_file,$model_name){
         $model_boiler_plate = "<?php
