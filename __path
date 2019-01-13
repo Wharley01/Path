@@ -1,6 +1,9 @@
 <?php
 require_once "core/kernel.php";
 load_class("CLI/Console");
+import("core/Classes/CLI/CInterface",
+    "core/Classes/CLI/Console"
+);
 
 $console = new \Path\Console($argv);
 
