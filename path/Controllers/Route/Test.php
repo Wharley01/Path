@@ -1,12 +1,11 @@
 <?php
-
 /*
 * This is automatically generated 
 * Edit to fit your need
 * Powered By: Path
 */
 
-namespace Path\Controller;
+namespace Path\Controller\Route;
 
 
 use Path\Controller;
