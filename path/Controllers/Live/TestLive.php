@@ -9,6 +9,8 @@
 namespace Path\Controller\Live;
 
 
+use Path\Cache;
+use Path\Http\Response;
 use Path\LiveController;
 use Path\Sessions;
 
@@ -19,13 +21,16 @@ class TestLive implements LiveController
         "profile" => 0
     ];
 
-    public $uri_template = "TestLive/isLogin/profile";
-    public function __construct()
+    public function __construct(Response $response,$params)
     {
-        $this->watch_list['isLogin'] = !is_null(Sessions::get("user_login_id"));
-        $this->watch_list['profile'] = Sessions::get("total_user");
+//        var_dump($params['name']);
+        $this->watch_list['isLogin'] = true;
+        $this->watch_list['profile'] = Cache::get("profile_name");
     }
     public function profile(){
-
+        echo "Coming from profile";
+        flush();
+        ob_flush();
+        return " this is a profile data from function profile_data";
     }
 }
