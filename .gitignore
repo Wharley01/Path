@@ -6,3 +6,10 @@ public
 websocket.php
 index.php
 tests
+sock-test.php
+test-watcher.php
+users.php
+websocket.html
+websocket-test.php
+websocket-test.html
+path/.Caches
