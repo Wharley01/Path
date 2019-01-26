@@ -28,8 +28,8 @@ class Router
     private $database;
     private $response_instance;
     private $build_path = "";
-    private $controllers_path = "Path/Controllers/";
-    private $controllers_namespace = "Path\Controller\\";
+    private $controllers_path = "Path/Controllers/Route/";
+    private $controllers_namespace = "Path\Controller\Route\\";
     private $middleware_path = "Path/Http/MiddleWares/";
     private $middleware_namespace = "Path\Http\MiddleWare\\";
     private $assigned_paths = [//to hold all paths assigned
