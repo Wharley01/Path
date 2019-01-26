@@ -1,5 +1,6 @@
 <?php
 session_start();
+ob_start();
 use Path\PathException;
 require_once "Classes/Exceptions.php";
 
