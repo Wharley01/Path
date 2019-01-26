@@ -85,7 +85,7 @@ $router->group(["path" => "api/@version/"], function (Router $router) {//path ca
 
 
 $router->error404(function (Request $request, Response $response) {
-    return $response->json(['error' => "Error 404", 'params' => getcwd()])->addHeader([
+    return $response->json(['error' => "Error 404", 'params' => $request->server->REQUEST_URI])->addHeader([
         "Access-Control-Allow-Origin" => "*"
     ]);
 });
