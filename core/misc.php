@@ -3,12 +3,20 @@
 use Path\PathException;
 
 /**
+ * get root path
+ * @return mixed
+ */
+function root_path(){
+    return preg_replace("/Core$/i","",__DIR__);
+}
+
+/**
  * @param $key
  * @return mixed
  */
 function config($key)
 {
-    $root_path = preg_replace("/Core$/i","",__DIR__)."Path".DIRECTORY_SEPARATOR."config.ini";
+    $root_path = root_path()."Path".DIRECTORY_SEPARATOR."config.ini";
     $configs = parse_ini_file($root_path, true);
 
     $key = explode("->",$key);
@@ -19,6 +27,7 @@ function config($key)
     }
     return $root;
 }
+
 
 
 /**
@@ -49,7 +58,7 @@ function load_class($classes){
 }
 
 function import(...$classes){
-    $path = preg_replace("/Core$/i","",__DIR__);
+    $path = root_path();
     foreach ($classes as $class){
         if(!file_exists($path))
             throw new \Path\ConfigException("Set Project directory Appropriately in \"core/config.ini\" ->  ".getcwd());
