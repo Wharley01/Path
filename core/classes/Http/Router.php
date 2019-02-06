@@ -313,6 +313,62 @@ class Router
         return (object) $params;
     }
 
+    private function validateAllMiddleWare($middle_wares,$params,$_path,$real_path){
+        if(!is_array($middle_wares) || is_string($middle_wares))
+            $middle_wares = [$middle_wares];
+
+        $request = new Request();
+        $request->params = $params;
+        foreach ($middle_wares as $middle_ware){
+//            echo $middle_ware;
+            if($middle_ware) {
+                $middle_ware_name = explode("\\", $middle_ware);
+                $middle_ware_name = $middle_ware_name[count($middle_ware_name) - 1];
+//            Load middleware class
+                import("{$this->middleware_path}{$middle_ware_name}");
+                $ini_middleware = new $middle_ware();
+
+                if ($ini_middleware instanceof MiddleWare) {
+//            initialize middleware
+//                call the fall_back response
+                    $fallback_response = $ini_middleware->fallBack($request,$this->response_instance);
+
+
+//            Check middle ware return
+                    $check_middle_ware = $ini_middleware->validate($request, $this->response_instance);
+                    if (!$check_middle_ware) {//if the middle ware control method returns false
+
+                        if (!is_null($fallback_response)) {//if user has a fallback method
+
+                            if ($fallback_response && !$fallback_response instanceof Response){
+                                throw new RouterException(" \"fallBack\" method for \"{$middle_ware_name}\" MiddleWare is expected to return an instance of Response");
+                            }else{
+                                $this->write_response($fallback_response);
+                                return true;
+                            }
+
+                        }
+
+                        if ($this->exception_callback) {
+                            $exception_callback = call_user_func_array($this->exception_callback, [$request, $this->response_instance, ['error_msg' => "MiddleWare validation failed for \"{$real_path}\""]]);
+                            if ($exception_callback instanceof Response) {
+                                $this->write_response($exception_callback);
+                            }
+                        } else {
+                            throw new RouterException("MiddleWare validation failed for \"{$real_path}\"");
+                        }
+
+                    }
+                }else{
+                    throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"Path\\Http\\MiddleWare\" interface in \"{$_path}\"");
+                }
+            }
+        }
+
+
+
+    }
+
     /**
      * @param $method
      * @param $root
@@ -351,58 +407,8 @@ class Router
             "method"    => $method,
             "is_group"  => $is_group
         ];
-        if($middle_ware){
-            $middle_ware_name =  explode("\\",$middle_ware);
-            $middle_ware_name = $middle_ware_name[count($middle_ware_name)-1];
-//            Load middleware class
-            import("{$this->middleware_path}{$middle_ware_name}");
 
-            if(!class_implements($this->middleware_namespace.$middle_ware_name)['Path\Http\MiddleWare'])
-                throw new RouterException("Expected \"{$middle_ware->method}\" to implement \"MiddleWare\" interface in \"{$_path}\"");
-
-//            initialize middleware
-            $ini_middleware = new $middle_ware();
-            $request = new Request();
-            $request->params = $params;
-
-            if(!is_null($fallback)) {//if user has a fallback method
-
-                if(is_string($fallback)){
-                    $fallback = $this->breakController($fallback);
-                    $fallback = $fallback->ini_class->{$fallback->method}($request,$this->response_instance);
-                    echo "it's string";
-                }else{
-                    if (is_callable($fallback)) {
-                        $fallback = $fallback($request,$this->response_instance);
-                    }else{
-                        throw new RouterException(" \"fallback\" for \"{$middle_ware_name}\" must be Callable function or A controller->method");
-                    }
-                }
-                if($fallback && !$fallback instanceof Response)
-                    throw new RouterException(" \"fallback\" method for \"{$middle_ware_name}\" MiddleWare is expected to return an instance of Response");
-            }
-
-
-
-//            Check middle ware return
-            $check_middle_ware = $ini_middleware->control($request,$this->response_instance);
-            if(!$check_middle_ware){//if the middle ware control method returns false
-                if($fallback instanceof Response){//if there is a fallback function parsed
-                    $this->write_response($fallback);
-                    return true;
-                }
-                if($this->exception_callback){
-                    $exception_callback = call_user_func_array($this->exception_callback,[$request,$this->response_instance,['error_msg' => "You don't have permission to access \"{$real_path}\""]]);
-                    if($exception_callback instanceof Response){
-                        $this->write_response($exception_callback);
-                    }
-                }else{
-                    throw new RouterException("Middleware failed, no exception catch specified");
-                }
-
-                return false;//stop write response execution if middle fails
-            }
-        }
+        $this->validateAllMiddleWare($middle_ware,$params,$_path,$real_path);
 
         //        Set the path to list of paths
 
@@ -470,9 +476,8 @@ class Router
             $root = "";
         }
 
-        $path = (strripos($path,"/") == 0)?(substr_replace($path,"",0,0)):$path;
-//        var_dump($root.$path);
-
+        $path = (
+            strripos($path,"/") == 0) ? (substr_replace($path,"",0,0)):$path;
         return $root.$path;
     }
     public function group($path, $callback){
