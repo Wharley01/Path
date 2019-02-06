@@ -9,28 +9,55 @@
 namespace Path\Controller\Live;
 
 
-use Path\Cache;
+use Path\Storage\Caches;
 use Path\Http\Response;
+use Path\Http\Watcher;
 use Path\LiveController;
-use Path\Sessions;
+use Path\Storage\Sessions;
 
 class TestLive implements LiveController
 {
+    // this array of methods that can be watched
+    // the array key here can either represent a method of dynamic data being set in constructor
     public $watch_list = [
         "isLogin" => false,
         "profile" => 0
     ];
-
-    public function __construct(Response $response,$params)
+    //every time the watcher checks this Live Controller, it passes some data to it 
+    public function __construct(
+        Sessions $sessions,//the session instance that can be used for auth. with the client side
+        $params,//the params parsed from Javascript Path-Watcher
+        $message//message sent from User(client Side)
+    )
     {
-//        var_dump($params['name']);
-        $this->watch_list['isLogin'] = true;
-        $this->watch_list['profile'] = Cache::get("profile_name");
+        // to avoid executing every methods every time in the Watcher server(Websocket),
+        
+        /*
+        *  
+        * you should set the value of each key(which represents methods in this class)
+        * to something that changes based on the return value
+        * of the method they represents
+        *
+         */    
+        $this->watch_list['isLogin'] =  "hello";
+
+        /* this will emit changes anytime session value of 
+        * is_logged_in changes(maybe when user logs out),
+        * isLogin does not have a method representation so is_logged_in session value 
+        * will ve received in the client side(js Path-Watcher) 
+        */
+        $this->watch_list['profile'] = [
+            "name" => "Adewale",
+            "this" => "should work"
+        ];
+        /*
+        * because this is not a dynamic value like session or a database content, 
+        * it will only emit changes once
+        */
     }
-    public function profile(){
-        echo "Coming from profile";
-        flush();
-        ob_flush();
-        return " this is a profile data from function profile_data";
+
+    public function profile(Response $response,?String $message,Sessions $sessions){
+
+        return $response->json(['message_sent' => "hello"]);
     }
 }
