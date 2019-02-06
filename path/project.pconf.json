@@ -14,5 +14,10 @@
     "version": "1.0",
     "directory": "",
     "server": "path.loc"
+  },
+  "WEBSOCKET":{
+    "host": "path.loc",
+    "port": 443,
+    "scheme": "SSL"
   }
 }
