@@ -23,9 +23,11 @@ abstract class CInterface
     public function confirm($quest){
         $handle = fopen ("php://stdin","r");
         echo $quest."  Y/N:";
+        ob_flush();
         $input = strtolower(trim(fgets($handle)));
         if($input != "y" && $input != "n"){
             echo "Enter Y/N";
+            ob_flush();
             $this->confirm($quest);
         }
         return $input == "y";
@@ -42,6 +44,11 @@ abstract class CInterface
             return null;
         }
         return $input;
+    }
+
+    public function write($text){
+        echo $text;
+//        ob_flush();
     }
 
 }
