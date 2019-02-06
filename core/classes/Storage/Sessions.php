@@ -6,30 +6,48 @@
  * @Project Path
  */
 
-namespace Path;
+namespace Path\Storage;
 
 
 class Sessions
 {
-    private static $session_id;
+    private  $session_id;
 
-    public static function start($session_key){
-        if(!preg_match("/^[-,a-zA-Z0-9]{1,128}$/",$session_key))
-            throw new \Exception("Invalid Session ID");
-        if(session_id() != ''){
-            session_write_close();
+    public function __construct($session_id = null)
+    {
+        if(is_null($session_id))
+            $session_id = session_id();
+
+        if(!preg_match("/^[-,a-zA-Z0-9]{1,128}$/",$session_id) OR strlen($session_id) < 5 OR !preg_match('/[0-9]/',$session_id)){
+            $this->session_id = bin2hex(openssl_random_pseudo_bytes(32));
+        }else{
+            $this->session_id = $session_id;
         }
+    }
 
-        session_name($session_key);
+    private function close(){
+        session_write_close();
+    }
+
+    private function start(){
+        session_write_close();
+        session_id($this->session_id);
         session_start();
     }
-    public static function store($key,$value){
+    public function store($key,$value){
+        $this->start();
         $_SESSION[$key] = $value;
+        $this->close();
     }
-    public static function get($key){
-        return $_SESSION[$key] ?? null;
+    public function get($key){
+        $this->start();
+        $value = @$_SESSION[$key];
+        $this->close();
+        return $value ?? null;
     }
-    public static function delete($key){
+    public function delete($key){
+        $this->start();
         unset($_SESSION[$key]);
+        $this->close();
     }
 }
