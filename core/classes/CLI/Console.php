@@ -84,6 +84,7 @@ class Console
                         $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
                     }catch (\Throwable $e){
                         echo PHP_EOL.self::build("There is an error in:","light_red").PHP_EOL;
+                        echo self::build($e->getMessage(),"red");
                         echo self::build($e->getTraceAsString(),"red");
                         continue;
                     }
@@ -136,6 +137,7 @@ class Console
                     $method->{$this->commands[$command]['entry']}((object) get_cli_args($args,$this->args));
                 }catch (\Throwable $e){
                     echo PHP_EOL.self::build("There was error in {$this->commands[$command]['class_name']}->{$this->commands[$command]['entry']}()","light_red").PHP_EOL;
+                    echo PHP_EOL.self::build($e->getMessage(),"red").PHP_EOL.PHP_EOL;
                     echo self::build($e->getTraceAsString(),"red");
                 }
                 echo PHP_EOL;
