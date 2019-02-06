@@ -1,0 +1,18 @@
+{
+  "DATABASE":{
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "name": "test_boostrap"
+  },
+  "FILE":{
+    "max_size":  5242880
+  },
+  "PROJECT":{
+    "name": "Path",
+    "status": "production",
+    "version": "1.0",
+    "directory": "",
+    "server": "path.loc"
+  }
+}
