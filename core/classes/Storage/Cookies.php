@@ -6,7 +6,7 @@
  * @Project Path
  */
 
-namespace Path;
+namespace Path\Storage;
 
 
 class Cookies
@@ -45,8 +45,13 @@ class Cookies
     public static function delete($key){
             self::change($key,"",time() - 3600);
     }
-    public static function all():bool {
+
+    public static function all():array {
         return $_COOKIE;
+    }
+
+    public static function get($key){
+        return $_COOKIE[$key];
     }
     public function isEnabled():bool {
         self::store("path_12__cookie_test","test",3600);
