@@ -10,7 +10,9 @@ namespace Path\Plugins\PathSocket;
 use Path\Http\Watcher;
 use Path\Plugins\PathSocket\Client;
 import(
-    "core/Plugins/PathSocket/src/Client"
+    "core/Plugins/PathSocket/src/Client",
+    "core/Classes/Watcher",
+    "core/Classes/Http/Response"
 );
 class Server
 {
@@ -20,6 +22,7 @@ class Server
     protected $max_clients = null;
     protected $clients = [];
     protected $watching = [];//array of ids of clients being watched
+    protected $pending_msg = [];
     protected $buffer_size = 1024;
     protected $delay = 1;
     public function __construct()
@@ -35,6 +38,7 @@ class Server
             $writes = null;
             $excepts = null;
 //            start watching all active watchers
+            $this->watchAllControllers();
             $total_changes = socket_select(
                 $reads,
                 $writes,
@@ -57,16 +61,18 @@ class Server
 
 //                    get client's request payload
                     $bytes = $this->getClientRequest($socket_id,$buffer);
+//                    return;
                     if($bytes === false){
 //                        there was an error getting client request payload
                         $this->logLastError($socket);
                     }else{
 //                        generate header for this socket based on buffer gotten
- //                    check if client hasn't done handshake,
+                        //                    check if client hasn't done handshake,
                         if(!$this->hasDoneHandShake($socket_id)){
 //                            check if client is done sending header,
                             if($this->isDoneBuffering($buffer)){
-                                $this->generateHeaderForClient($socket_id,$buffer);
+                                $this->generateHeaderForClient($socket_id,trim($buffer));
+
 //                                initiate current client live server
                                 $this->initiateLiveWatcher($socket_id);
                                 //                            do handshake
@@ -79,9 +85,11 @@ class Server
                             }
                         }else{
 //                            has done handshake, that means there a new command from user
-                            $this->processInput($socket_id,$buffer,$bytes);
-
-                                $this->logText("buffer received: {$buffer}");
+                            if($buffer){
+                                $this->processInput($socket_id,$buffer,$bytes);
+                            }else{
+                                $this->removeClient($socket_id);
+                            }
                         }
                     }
 
@@ -106,6 +114,21 @@ class Server
         return substr($buffer,$offset);
     }
 
+    private function getPayloadoffset($headers){
+        $offset = 2;
+        if ($headers['hasmask']) {
+            $offset += 4;
+        }
+        if ($headers['length'] > 65535) {
+            $offset += 8;
+        } elseif ($headers['length'] > 125) {
+            $offset += 2;
+        }
+        return $offset;
+    }
+
+
+
     private function getPayloadHeader($buffer){
         $header = array(
             'fin'     => $buffer[0] & chr(128),
@@ -122,9 +145,9 @@ class Server
                 $buffer[1]
             ) >= 128
         ) ? ord(
-            $buffer[1]
-            ) - 128 : ord(
                 $buffer[1]
+            ) - 128 : ord(
+            $buffer[1]
         );
 
 
@@ -171,12 +194,57 @@ class Server
         }
 
 //        continue code execution
+//        get message, since no action taken
+        $this->readStream($client_id,$input,$size);
 
-        $this->sendMsg(
-            $client_id,
-            chr(129)
-            . chr(strlen("hello world"))
-            . "hello world");
+    }
+
+    private function readStream($client_id,$packet,$size){
+        $client = $this->clients[$client_id];
+//        check if user has a buffer on pending
+        if($client->partialBuffer){
+//            concat it with the new packet of buffer
+            $packet = $client->partialBuffer . $packet;
+            $size = strlen($packet);
+        }
+        $frame_position = 0;
+        $frame_id = 1;
+        $full_packet = $packet;
+        while($frame_position < $size){
+            $headers = $this->getPayloadHeader($packet);
+            $buffer_start_offset = $this->getPayloadoffset($headers);
+            $frame_size = $headers["length"]+$buffer_start_offset;
+//            split frame from packet and process
+            $frame = substr($full_packet,$frame_position,$frame_size);
+//            unmask the current frame
+
+            $frame_position+=$frame_size;
+            $packet = substr($full_packet,$frame_position);
+            $frame_id++;
+
+            $message = $this->processBuffer($client_id,$frame);
+            if(!is_null($message)){
+                if ((preg_match('//u', $message)) || ($headers['opcode']==2)) {
+//                    convert message to json
+                    $this->processClientMessage($client_id,$message);
+                }
+            }
+        }
+
+    }
+
+    private function processClientMessage($client_id,$message){
+        $client = &$this->clients[$client_id];
+        if(!$data = json_decode($message,true)){
+            $this->clientMessageWatcher($client_id,$message);
+        }else{
+            if($data['type'] == "navigate"){
+//                navigate instead
+                $this->navigateWatcher($client_id,$data['params'],$data['data']);
+            }elseif ($data['type'] == "message"){
+                $this->clientMessageWatcher($client_id,$data['data']);
+            }
+        }
     }
 
     private function takeAction(
@@ -190,10 +258,10 @@ class Server
                 break;
             case 8:
                 // todo: close the connection
-               $this->removeClient($client_id);
+                $this->removeClient($client_id);
                 return true;
             case 9:
-                $this->checkWatcher($client_id);
+                $this->checkClientWatcher($client_id);
                 return true;
             case 10:
                 break;
@@ -207,37 +275,197 @@ class Server
 
     }
 
+    private function watchAllControllers(){
+        foreach ($this->watching as $client_id => $is_watching){
+            $client = @$this->clients[$client_id];
+            $watcher = $client->watching;
+            if($watcher instanceof Watcher){
+                $watcher->watch();
+                if($watcher->changesOccurred() AND is_null($watcher->error)){
+//                       check if returned data from watcher is an instance of Response
+//                        $watcher->getResponse();
+                    $this->sendMsg($client_id,json_encode($watcher->getResponse("watcher")));
+                }
+
+            }
+        }
+    }
+
     private function initiateLiveWatcher($client_id){
-            $client = $this->clients[$client_id];
+        $client = $this->clients[$client_id];
         if(!$client->watching instanceof Watcher){
             $url = $client->headers['get'];
-            $client->watching = new Watcher($url);
+            $key = $client->headers['sec-websocket-key'];
+            $session_id = $client->headers["PHPSESSID"];
+            $client->watching = new Watcher(
+                $url,
+                $session_id
+            );
+            $client->watching->socket_key = $key;
+//            $client->watching->session_id = "session-id";
             $this->watching[$client_id] = true;
         }
     }
 
-    protected function checkWatcher($client_id){
-            if(isset($this->clients[$client_id]->watching)){
-                $watching = $this->clients[$client_id]->watching;
-                if($watching instanceof Watcher) {
-                    $watching->watch();
-                    if(!$watching->error){
-                        if($watching->has_changes){
-                            $this->logText(json_encode($watching->getResponse()));
-                        }
+    protected function checkClientWatcher($client_id){
+        $client = &$this->clients[$client_id];
+
+        if($client->watching){
+            $watching = &$client->watching;
+            if($watching instanceof Watcher) {
+                $watching->watch();
+                if(!$watching->error){
+                    if($watching->changesOccurred()){
+                        $this->sendMsg($client_id,json_encode($watching->getResponse("check-watcher")));
                     }
                 }
-
             }
 
+        }
     }
 
-    private function unMask($buffer):?array{
+    private function clientMessageWatcher($client_id, $message){
+        if(isset($this->clients[$client_id])){
+            $client = &$this->clients[$client_id];
+            $watching = &$client->watching;
+            if($watching instanceof Watcher) {
+                $watching->sendMessage($message);
+                if(!$watching->error){
+                    if($watching->changesOccurred()){
+//                        send response to client
+                        $response = json_encode($watching->getResponse("sending-message"));
+                        $this->sendMsg($client_id,$response);
+                    }
+                }
+            }
+
+        }
+    }
+
+    private function navigateWatcher($client_id, $params, $message = null){
+        if(isset($this->clients[$client_id])){
+            $client = &$this->clients[$client_id];
+            $watching = &$client->watching;
+            if($watching instanceof Watcher) {
+                $watching->navigate($params,$message);
+                if(!$watching->error){
+                    if($watching->changesOccurred()){
+//                        send response to client
+                        $response = json_encode($watching->getResponse("sending-message"));
+                        $this->sendMsg($client_id,$response);
+                    }
+                }
+            }
+
+        }
+    }
+
+
+
+    private function processBuffer($client_id, $buffer):?string {
+
         $payload_headers = $this->getPayloadHeader($buffer);
 //        take action using the header
-
+        $payload = $this->decodePayload($payload_headers,$this->getPayloadContent($buffer,$payload_headers));
+        $payload_size = strlen($payload);
+//        check if total size of the buffer is bigger than the one already sent from browser
+        if($payload_headers['length'] > $payload_size){
+            $this->clients[$client_id]->partialBuffer = $buffer;
+            return null;
+        }
+        if ($payload_headers['fin']) {
+            return $payload;
+        }
+        return null;
     }
 
+    private function decodePayload($headers, $payload){
+        $effectiveMask = "";
+        if ($headers['hasmask']) {
+            $mask = $headers['mask'];
+        }
+        else {
+            return $payload;
+        }
+        while (strlen($effectiveMask) < strlen($payload)) {
+            $effectiveMask .= $mask;
+        }
+        while (strlen($effectiveMask) > strlen($payload)) {
+            $effectiveMask = substr($effectiveMask,0,-1);
+        }
+        return $effectiveMask ^ $payload;
+    }
+
+    private function encodePayload(
+        $client_id,
+        $message,
+        $message_type = "text",
+        $continues = false
+    ){
+        $client = &$this->clients[$client_id];
+        switch ($message_type) {
+            case 'continuous':
+                $b1 = 0;
+                break;
+            case 'text':
+                $b1 = ($client->sendingContinues) ? 0 : 1;
+                break;
+            case 'binary':
+                $b1 = ($client->sendingContinues) ? 0 : 2;
+                break;
+            case 'close':
+                $b1 = 8;
+                break;
+            case 'ping':
+                $b1 = 9;
+                break;
+            case 'pong':
+                $b1 = 10;
+                break;
+        }
+
+        if($continues){
+            $client->sendingContinues = true;
+        }else{
+            $b1 += 128;
+            $client->sendingContinues = false;
+        }
+        $size = strlen($message);
+        $size_field = "";
+        if ($size < 126) {
+            $b2 = $size;
+        }elseif($size < 65536){
+            $b2 = 126;
+            $hex_size= dechex($size);
+            if (strlen($hex_size)%2 == 1) {
+                $hex_size = '0' . $hex_size;
+            }
+
+            $n = strlen($hex_size) - 2;
+            for ($i = $n; $i >= 0; $i=$i-2) {
+                $size_field = chr(hexdec(substr($hex_size, $i, 2))) . $size_field;
+            }
+            while (strlen($size_field) < 2) {
+                $size_field = chr(0) . $size_field;
+            }
+        }else{
+            $b2 = 127;
+            $hex_size = dechex($size);
+            if (strlen($hex_size)%2 == 1) {
+                $hex_size = '0' . $hex_size;
+            }
+            $n = strlen($hex_size) - 2;
+            for ($i = $n; $i >= 0; $i=$i-2) {
+                $size_field = chr(hexdec(substr($hex_size, $i, 2))) . $size_field;
+            }
+            while (strlen($size_field) < 8) {
+                $size_field = chr(0) . $size_field;
+            }
+        }
+
+        return chr($b1) . chr($b2) . $size_field . $message;
+
+    }
     private function genResponseSocketKey($request_socket_key){
         $key = base64_encode(pack(
             'H*',
@@ -252,14 +480,14 @@ class Server
     }
 
     private function getClientRequest($client_id, &$buffer){
-        $socket = $this->clients[$client_id]->socket;
-        $bytes = socket_recv($socket,$buffer,$this->buffer_size,0);
+        $socket = &$this->clients[$client_id];
+        $bytes = socket_recv($socket->socket,$buffer,$this->buffer_size,0);
         return $bytes;
     }
 
     private function generateHeaderForClient(
         $client_id,
-        &$buffer
+        $buffer
     ){
         $headers = array();
         $lines = explode("\n",$buffer);
@@ -273,6 +501,18 @@ class Server
                 $headers['get'] = trim($reqResource[1]);
             }
         }
+
+        if(isset($headers['cookie'])){
+            if(preg_match("/PHPSESSID=(.+)/", $headers['cookie'], $matches)){
+                $headers["PHPSESSID"] = $matches[1];
+            }else{
+                $headers["PHPSESSID"] = null;
+            }
+        }else{
+            $headers["PHPSESSID"] = null;
+        }
+        $this->logText("Session ID: ".$headers["PHPSESSID"]);
+
         $this->clients[$client_id]->headers = $headers;
     }
 
@@ -301,7 +541,7 @@ class Server
 
     private function doHandShake($client_id){
 //        TODO: validate client request header
-        $client = $this->clients[$client_id];
+        $client = &$this->clients[$client_id];
         $client_key = $client->headers['sec-websocket-key'];
 
         $key = $this->genResponseSocketKey($client_key);
@@ -312,7 +552,7 @@ class Server
         $headers .= "Sec-WebSocket-Accept: $key\r\n\r\n";
 
         if($this->writeResponse($client->socket,$headers))
-           $this->clients[$client_id]->has_done_handshake = true;
+            $client->has_done_handshake = true;
         else
             return false;
 
@@ -320,7 +560,13 @@ class Server
     }
 
     private function sendMsg($client_id,$text){
-        $client = $this->clients[$client_id];
+        $client = &$this->clients[$client_id];
+        if(!$this->hasDoneHandShake($client_id)){
+            $this->pending_msg[$client_id] = $text;
+            return;
+        }else{
+            $text = $this->encodePayload($client_id,$text);
+        }
         if(!$this->writeResponse($client->socket,$text))
             $this->logLastError();
     }
@@ -333,48 +579,48 @@ class Server
 
     private function iniServer(){
 //        if(is_null($this->server)){
-            $server = socket_create(
-                AF_INET,
-                SOCK_STREAM,
-                SOL_TCP
-            ) or die("Can't create server");
+        $server = socket_create(
+            AF_INET,
+            SOCK_STREAM,
+            SOL_TCP
+        ) or die("Can't create server");
 
-            if($server === false){
-                $this->logLastError();
-                exit();
-            }
-            $this->logText("Server Created");
+        if($server === false){
+            $this->logLastError();
+            exit();
+        }
+        $this->logText("Server Created");
 
-            socket_set_option(
-                $server,
-                SOL_SOCKET,
-                SO_REUSEADDR,
-                1
-            ) or die("unable to set option");
+        socket_set_option(
+            $server,
+            SOL_SOCKET,
+            SO_REUSEADDR,
+            1
+        ) or die("unable to set option");
 
-            if(!socket_bind(
-                $server,
-                $this->host,
-                $this->port
-            )){
-                $this->logLastError($server);
-                exit();
-            }
+        if(!socket_bind(
+            $server,
+            $this->host,
+            $this->port
+        )){
+            $this->logLastError($server);
+            exit();
+        }
 
-            $this->logText(
-                "Created server bound with host:{$this->host} and port:{$this->port} "
-            );
+        $this->logText(
+            "Created server bound with host:{$this->host} and port:{$this->port} "
+        );
 
 
-            socket_listen(
+        socket_listen(
             $server,
             20
-            );
+        );
 
-            $this->server = $server;
-            $this->logText("Server successfully started!");
-            $this->addNewClient($this->server,"server");
-            $this->logText("Added server socket to list of clients");
+        $this->server = $server;
+        $this->logText("Server successfully started!");
+        $this->addNewClient($this->server,"server");
+        $this->logText("Added server socket to list of clients");
 
 //        }
     }
@@ -394,9 +640,14 @@ class Server
     }
 
     private function removeClient($client_id){
-            $this->logText("{$this->clients[$client_id]->socket} Removed");
-           unset($this->clients[$client_id]);
-           unset($this->watching[$client_id]);
+        $this->logText("{$this->clients[$client_id]->socket} Removed");
+        if($this->clients[$client_id]->watching){
+            $this->clients[$client_id]->watching->clearCache();
+            $this->logText("...Cleared Caches");
+        }
+
+        unset($this->clients[$client_id]);
+        unset($this->watching[$client_id]);
     }
 
     /**
@@ -404,7 +655,7 @@ class Server
      * @return int
      */
     private function getSocketId($socket){
-            return intval($socket);
+        return intval($socket);
     }
 
     /**
@@ -435,7 +686,7 @@ class Server
 
     private function logText($text){
         echo PHP_EOL."[+] ".$text.PHP_EOL;
-        ob_flush();
+//        ob_flush();
     }
 
 }
