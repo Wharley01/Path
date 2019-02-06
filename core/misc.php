@@ -13,14 +13,18 @@ function root_path(){
 /**
  * @param $key
  * @return mixed
+ * @throws \Path\ConfigException
  */
 function config($key)
 {
-    $root_path = root_path()."Path".DIRECTORY_SEPARATOR."config.ini";
-    $configs = parse_ini_file($root_path, true);
+    $root_path = root_path()."Path".DIRECTORY_SEPARATOR."project.pconf.json";
+    if(!file_exists($root_path))
+        throw new \Path\ConfigException("config file \"{$root_path}\" not found");
+
+    if(!$configs = json_decode(file_get_contents($root_path),true))
+        throw new \Path\ConfigException("unable to parse json in \"{$root_path}\", please check the syntax docs for json");
 
     $key = explode("->",$key);
-
     $root = $configs[$key[0]];
     for($i = 1;$i < count($key);$i++){
         $root = @$root[$key[$i]];
