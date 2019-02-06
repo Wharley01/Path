@@ -1,5 +1,6 @@
 {
   "data":"my raw data",
   "type":"navigate",
+  "target": "method",
   "params": {"name":"adewale"}
 }
