@@ -8,7 +8,7 @@ use Path\Http\Router;
 use Path\Misc\Validator;
 
 $router = new Router();
-$router->setBuildPath("/dist");
+$router->setBuildPath("/");
 
 // Catches any error,(for example Invalid parameter from user(browser))
 $router->exceptionCatch(function (Request $request, Response $response, array $error) {
@@ -18,12 +18,12 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
 
 $router->any([
     "path"          => ['/','/home','/testing'],
-    "middleware"    => isProd::class,
-    "fallback"      =>         function (Request $request,Response $response){
-//                Development Mode
-        return $response->json(['mode' => 'Development Mode']);
-    }
+    "middleware"    => isProd::class
 ],"Test->fetchAll");
+
+$router->get("watcher-test",function (Request $request,Response $response){
+   return $response->html("websocket.html");
+});
 
 $router->group(["path" => "api/@version/"], function (Router $router) {//path can use Regex too
     // A route group
