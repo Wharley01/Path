@@ -19,6 +19,7 @@ class Client
     public $watching = null;
     public $response;
     public $headers;
+    public $sendingContinues = false;
     public $is_closed = false;
 
 }
