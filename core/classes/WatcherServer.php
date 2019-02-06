@@ -9,7 +9,21 @@
 namespace Path;
 
 
-class WatcherServer
+use Path\Plugins\PathSocket\Server;
+import(
+    "core/Plugins/PathSocket/src/Server"
+);
+
+class WatcherServer extends Server
 {
+
+    protected $host;
+    protected $port;
+    public function __construct()
+    {
+        $this->host = config("WEBSOCKET->host");
+        $this->port = config("WEBSOCKET->port");
+        parent::__construct();
+    }
 
 }
