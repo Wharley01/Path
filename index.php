@@ -1,5 +1,6 @@
 <?php
 
+session_start();
 use Path\Http\MiddleWare\isProd;
 use Path\Http\Request;
 use Path\Http\Response;
@@ -7,16 +8,7 @@ use Path\Http\Router;
 use Path\Misc\Validator;
 
 require_once "core/kernel.php";
-
-import(
-    "Core/Classes/Http/Router",
-    "Core/Classes/Http/Response",
-    "Core/Classes/Misc/Validator",
-    "Core/Classes/Cookies",
-    "Core/Classes/Sessions"
-);
-
-
+require_once "core/bootstrap.php";
 
 try {
     require_once "path/Routes.php";
