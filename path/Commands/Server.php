@@ -13,19 +13,30 @@ use Path\Console;
 
 class Server extends CInterface
 {
+    private const DEFAULT_PORT = 8080;
     public $name = "server";
+
     public $description = "start development server";
+
     public $arguments = [
         "start" => [
             "desc" => "starts server"
+        ],
+        "port"  => [
+            "desc" => "port to use"
         ]
     ];
 
+    private function getPort($port){
+        return $port ?? self::DEFAULT_PORT;
+    }
+
     public function entry(object $argument)
     {
-        $cmd = "php -S localhost:8000";
+        $port = $this->getPort(@$argument->port);
+        $cmd = "php -S localhost:{$port} index.php";
         echo PHP_EOL;
-        echo Console::build("---","green",false)." Server starts at: ".Console::build("localhost:8000",'light_green').PHP_EOL;
+        echo Console::build("---","green",false)." Server starts at: ".Console::build("localhost:{$port}",'light_green').PHP_EOL;
         echo Console::build("---","green",false)." You can use this as your proxy server in webpack".PHP_EOL.PHP_EOL;
         echo Console::build("---","green",false)." Press ^C to terminate";
 
