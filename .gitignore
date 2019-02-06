@@ -11,4 +11,7 @@ users.php
 websocket.html
 websocket-test.php
 websocket-test.html
-path/.Caches
+path/.Storage
+cache_modify.php
+path/struct.json
+path/structure.json
