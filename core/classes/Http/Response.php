@@ -46,7 +46,6 @@ class Response
 //        echo "file_path: ". $file_path.PHP_EOL;
         $file = $_SERVER['DOCUMENT_ROOT'].DIRECTORY_SEPARATOR.$this->build_path."/".$file_path;
         $public_path = treat_path($this->build_path);
-
         if(!file_exists($file))
             throw new PathException(" \"{$file_path}\" does not exist");
 
