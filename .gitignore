@@ -4,7 +4,6 @@ views
 node_modules
 public
 websocket.php
-index.php
 tests
 sock-test.php
 test-watcher.php
