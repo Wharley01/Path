@@ -125,21 +125,22 @@ class Watcher
         }
         return null;
     }
-    private function getWatchable(){
 
-    }
     public function watch($message = null){
         $controller = $this->getController($message);
-        if(!isset($controller->watch_list)){
-            $this->throwException("Specify \"watch_list\" in ". get_class($controller));
+        $watchable_list = $this->getWatchable($controller);
+        if(count(array_keys($watchable_list)) < 1){
+            $this->throwException("Specify at least 1 \"watchable\" as public properties in ". get_class($controller));
         }
 
-
-        $watch_list = self::castToString($controller->watch_list);
+        $watch_list = self::castToString($watchable_list);
 //        cache watch_list values if not already cached
         $this->execute($watch_list,$controller);
         $this->cache($watch_list);
+    }
 
+    private function getWatchable(LiveController $controller):?array {
+        return get_object_vars($controller);
     }
 
     private static function castToString($arr){
@@ -171,7 +172,8 @@ class Watcher
 
     public function clearCache(){
         $controller = $this->getController();
-        $watch_list = self::castToString($controller->watch_list);
+        $watch_list = $this->getWatchable($controller);
+        $watch_list = self::castToString($watch_list);
 
         foreach ($watch_list as $method => $value) {
             $method = $this->method($method);
@@ -202,11 +204,13 @@ class Watcher
                     $this->has_changes[$_method] = true;
                     $this->has_executed[$_method] = true;
                     if(!method_exists($controller,$_method)){
-                        $this->response[$_method] = $_value;
+                        $this->response[$_method][] = $_value;
+                        $this->response[$_method][] = $this->getPrevValue($_method);
                     }else{
 
                         $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
-                        $this->response[$_method] = $response;
+                        $this->response[$_method][] = $response;
+                        $this->response[$_method][] = $this->getPrevValue($_method);
                     }
                 }else{
                     $this->has_changes[$_method] = false;
@@ -222,10 +226,14 @@ class Watcher
                         $this->has_changes[$_method] = true;
                         $this->has_executed[$_method] = true;
                         if(!method_exists($controller,$_method)){
-                            $this->response[$_method] = $_value;
+                            $this->response[$_method][] = $_value;
+                            $this->response[$_method][] = $this->getPrevValue($_method);
+
                         }else{
                             $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
-                            $this->response[$_method] = $response;
+                            $this->response[$_method][] = $response;
+                            $this->response[$_method][] = $this->getPrevValue($_method);
+
                         }
                     }else{
                         $this->has_changes[$_method] = false;
@@ -237,7 +245,8 @@ class Watcher
     }
     public function sendMessage($message){
         $controller = $this->getController($message);
-        $watch_list = self::castToString($controller->watch_list);
+        $watch_list = $this->getWatchable($controller);
+        $watch_list = self::castToString($watch_list);
         $this->execute($watch_list,$controller,$message);
         $this->cache($watch_list);
     }
@@ -245,7 +254,8 @@ class Watcher
     public function navigate($params,$message = null){
         $this->controller_data['params'] = $params;
         $controller = $this->getController($message);
-        $watch_list = self::castToString($controller->watch_list);
+        $watch_list = $this->getWatchable($controller);
+        $watch_list = self::castToString($watch_list);
         $this->execute($watch_list,$controller,$message,true);
         $this->cache($watch_list);
     }
@@ -259,23 +269,24 @@ class Watcher
     }
     public function getResponse(){
         $response = [];
-        foreach ($this->response as $key => $value){
+        foreach ($this->response as $key => $values){
 //              check if value is an instance of response, then set to appropriate data type
             if($this->hasChanges($key)){
-                if($value instanceof Response){
-                    $response[$key] = [
-                        "data"           => $value->content,
-                        "status"         => $value->status,
-                        "headers"        => $value->headers,
-                        "has_changes"    => $this->hasChanges($key)
-                    ];
-                }else{
-                    $response[$key] = [
-                        "data"           => $value,
-                        "status"         => 200,
-                        "headers"        => [],
-                        "has_changes"    => $this->hasChanges($key)
-                    ];
+
+                foreach ($values as $value){
+                    if($value instanceof Response){
+                        $response[$key][] = [
+                            "data"           => $value->content,
+                            "status"         => $value->status,
+                            "headers"        => $value->headers,
+                        ];
+                    }else{
+                        $response[$key][] = [
+                            "data"           => $value,
+                            "status"         => 200,
+                            "headers"        => []
+                        ];
+                    }
                 }
             }
 
