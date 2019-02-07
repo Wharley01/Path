@@ -20,17 +20,18 @@ abstract class CInterface
     ];
     abstract protected function entry(object $argument);
 
-    public function confirm($quest){
+    public function confirm($question, $yes = ['y','yes'], $no = ['n','no']){
+        $yes = !is_array($yes) ? [$yes]:$yes;
+        $no = !is_array($no) ? [$no]:$no;
+
         $handle = fopen ("php://stdin","r");
-        echo $quest."  Y/N:";
-        ob_flush();
+        $this->write($question."  {$yes[0]}/$no[0]:");
+
         $input = strtolower(trim(fgets($handle)));
-        if($input != "y" && $input != "n"){
-            echo "Enter Y/N";
-            ob_flush();
-            $this->confirm($quest);
+        if(!in_array($input,array_map(function($op){ return strtolower($op); },$yes)) && !in_array($input,array_map(function($op){ return strtolower($op); },$no))){
+            $this->confirm($question,$yes,$no);
         }
-        return $input == "y";
+        return in_array($input,array_map(function($op){ return strtolower($op); },$yes));
     }
 
     public function ask($question,$enforce = false){
@@ -47,7 +48,7 @@ abstract class CInterface
     }
 
     public function write($text){
-        echo $text;
+        echo PHP_EOL.$text;
 //        ob_flush();
     }
 
