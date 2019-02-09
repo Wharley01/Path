@@ -64,7 +64,8 @@ class Server
 //                    return;
                     if($bytes === false){
 //                        there was an error getting client request payload
-                        $this->logLastError($socket);
+//                        $this->logLastError($socket);
+                        continue;
                     }else{
 //                        generate header for this socket based on buffer gotten
                         //                    check if client hasn't done handshake,
@@ -284,7 +285,7 @@ class Server
                 if($watcher->changesOccurred() AND is_null($watcher->error)){
 //                       check if returned data from watcher is an instance of Response
 //                        $watcher->getResponse();
-                    $this->sendMsg($client_id,json_encode($watcher->getResponse("watcher")));
+                    $this->sendMsg($client_id,json_encode($watcher->getResponse()));
                 }
 
             }
@@ -296,7 +297,9 @@ class Server
         if(!$client->watching instanceof Watcher){
             $url = $client->headers['get'];
             $key = $client->headers['sec-websocket-key'];
-            $session_id = $client->headers["PHPSESSID"];
+            $session_id = $client->cookies["PHPSESSID"];
+            $this->logText("Session ID: ".$session_id);
+
             $client->watching = new Watcher(
                 $url,
                 $session_id
@@ -305,6 +308,19 @@ class Server
 //            $client->watching->session_id = "session-id";
             $this->watching[$client_id] = true;
         }
+    }
+    private function fetchCookies($rawCookies){
+        $cookies = explode(";",$rawCookies);
+        $res = [];
+        foreach ($cookies as $cookie){
+            preg_match("/([^=]+)=([^=]+)/i",$cookie,$matches);
+            if($matches[1] && $matches[2]){
+                $key = $matches[1];
+                $val = $matches[2];
+                $res[$key] = $val;
+            }
+        }
+        return $res;
     }
 
     protected function checkClientWatcher($client_id){
@@ -481,7 +497,7 @@ class Server
 
     private function getClientRequest($client_id, &$buffer){
         $socket = &$this->clients[$client_id];
-        $bytes = socket_recv($socket->socket,$buffer,$this->buffer_size,0);
+        $bytes = @socket_recv($socket->socket,$buffer,$this->buffer_size,0);
         return $bytes;
     }
 
@@ -501,19 +517,20 @@ class Server
                 $headers['get'] = trim($reqResource[1]);
             }
         }
+        $client = &$this->clients[$client_id];
+//        if(isset($headers['cookie'])){
+//            if(preg_match("/PHPSESSID=(.+)/", $headers['cookie'], $matches)){
+//                $headers["PHPSESSID"] = $matches[1];
+//            }else{
+//                $headers["PHPSESSID"] = null;
+//            }
+//        }else{
+//            $headers["PHPSESSID"] = null;
+//        }
 
-        if(isset($headers['cookie'])){
-            if(preg_match("/PHPSESSID=(.+)/", $headers['cookie'], $matches)){
-                $headers["PHPSESSID"] = $matches[1];
-            }else{
-                $headers["PHPSESSID"] = null;
-            }
-        }else{
-            $headers["PHPSESSID"] = null;
-        }
-        $this->logText("Session ID: ".$headers["PHPSESSID"]);
+        $client->headers = $headers;
+        $client->cookies = $this->fetchCookies($headers['cookie']);
 
-        $this->clients[$client_id]->headers = $headers;
     }
 
 
