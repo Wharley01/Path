@@ -20,8 +20,11 @@ import(
     "core/Classes/Http/Response",
     "core/Classes/LiveController",
     "core/Classes/Storage/Caches",
-    "core/Classes/Storage/Sessions"
-    );
+    "core/Classes/Storage/Sessions",
+    "core/Classes/Storage/Cookies",
+    "core/Classes/Database/Model"
+
+);
 
 class Watcher
 {
@@ -140,13 +143,22 @@ class Watcher
     }
 
     private function getWatchable(LiveController $controller):?array {
-        return get_object_vars($controller);
+        $watch_lists = array_keys(get_object_vars($controller));
+        $resp = [];
+        foreach ($watch_lists as $property){
+            $resp[$property] = $controller->$property;
+        }
+        return $resp;
     }
 
+    private static function castBoolToStr($value){
+        return $value;
+    }
     private static function castToString($arr){
         $ret = [];
         foreach ($arr as $key => $value){
-            $ret[$key] = is_array($value)?json_encode($value):(string) $value;
+            $value = self::castBoolToStr($value);
+            $ret[$key] = is_array($value)?json_encode($value):$value;
         }
         return $ret;
     }
@@ -171,7 +183,7 @@ class Watcher
     }
 
     public function clearCache(){
-        $controller = $this->getController();
+        $controller = $this->controller;
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
 
@@ -196,7 +208,7 @@ class Watcher
     public function execute($watch_list,$controller,$message = null,$force_execute = false){
         $watchable_methods = $this->controller_data['watchable_methods'];
 //        var_dump($_SESSION);
-
+//        var_dump($watch_list);
         if(is_null($watchable_methods)){
 //            watch all watchable
             foreach ($watch_list as $_method => $_value){
@@ -220,8 +232,8 @@ class Watcher
 //            validate the watchlist
             foreach ($watchable_methods as $method){
                 $_method = $method;
-                if(isset($watch_list[$method])){
-                    $_value = @$watch_list[$method];
+                if(isset($watch_list[$_method])){
+                    $_value = @$watch_list[$_method];
                     if($this->shouldExecute($_method,$_value) OR $force_execute){
                         $this->has_changes[$_method] = true;
                         $this->has_executed[$_method] = true;
@@ -291,6 +303,7 @@ class Watcher
             }
 
         }
+        $this->response = [];
         return $response;
     }
     public static function log($text){
