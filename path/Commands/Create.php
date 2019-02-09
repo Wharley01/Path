@@ -75,7 +75,7 @@ class $command_file_name extends CInterface
             ";
         }
 
-    $code .= "
+        $code .= "
 
     public function __construct()
     {
@@ -107,8 +107,8 @@ class $command_file_name extends CInterface
                 $this->createCommandBoilerPlate($command_file_open,$command_file_name);
             }
         }else{
-                $command_file_open = fopen($command_file_path,"w");
-                $this->createCommandBoilerPlate($command_file_open,$command_file_name);
+            $command_file_open = fopen($command_file_path,"w");
+            $this->createCommandBoilerPlate($command_file_open,$command_file_name);
         }
     }
     private function createModelBoilerPlate($db_model_file,$model_name){
@@ -128,7 +128,7 @@ class {$model_name} extends Model
 {
     protected \$table_name               = \"".strtolower($model_name)."\";
     protected \$non_writable_cols        = [\"id\"];
-    protected \$readable_cols            = [];
+    protected \$readable_cols            = [\"id\",\"name\",\"description\"];
 
     public function __construct()
     {
@@ -137,7 +137,7 @@ class {$model_name} extends Model
 }";
         //        Write model boiler plate code to file
         fwrite($db_model_file,$model_boiler_plate);
-        echo PHP_EOL.PHP_EOL."[+] ----  Database model boiler plate for --{$model_name}-- generated in \"{$this->models_path}\" ".PHP_EOL;
+        echo PHP_EOL.PHP_EOL."[+] ----  Database model boiler plate for --{$model_name}-- generated".PHP_EOL;
         fclose($db_model_file);
     }
 
@@ -153,7 +153,6 @@ class {$model_name} extends Model
 
 namespace Path\\Controller\\Live;
 
-
 use Path\\Storage\\Caches;
 use Path\\Http\\Response;
 use Path\\Http\\Watcher;
@@ -161,19 +160,24 @@ use Path\\LiveController;
 use Path\Database\Models\\$model_name;
 use Path\Storage\Sessions;
 
+import(
+    \"Core/Classes/Database/Model\",
+    \"Path/Database/Models/Admin\"
+);
+
 class $controller_name implements LiveController
 {
     // this array of methods that can be watched
     // the array key here can either represent a method of dynamic data being set in constructor
     ";
-if(count($watchables) > 0){
-    foreach ($watchables as $method){
-        $boiler_plate .=" 
+        if(count($watchables) > 0){
+            foreach ($watchables as $method){
+                $boiler_plate .=" 
     public \$$method = \"initial value\";//Change 'initial value' in constructor of this class'";
-    }
-}
+            }
+        }
 
-$boiler_plate .= "    
+        $boiler_plate .= "    
     //every time the watcher checks this Live Controller, it passes some data to it 
     public function __construct(
         Sessions \$sessions,//the session instance that can be used for auth. with the client side
@@ -202,7 +206,7 @@ $boiler_plate .= "
         if(count($watchables) > 0){
 
             foreach ($watchables as $method){
-$boiler_plate .=" 
+                $boiler_plate .=" 
 public function $method(Response \$response,?String \$message,Sessions \$sessions){
 //response here will be sent to client side when \$this->watch_list[\"$method\"]'s value changes
         return \$response->json(['message_sent' => \"hello\"]);
@@ -212,7 +216,7 @@ public function $method(Response \$response,?String \$message,Sessions \$session
 
         }
 
-$boiler_plate .= "        
+        $boiler_plate .= "        
 
 }
         ";
@@ -231,7 +235,7 @@ $boiler_plate .= "
 * Powered By: Path
 */
 
-namespace Path\Controller;
+namespace Path\Controller\Route;
 
 
 use Path\Controller;
@@ -314,5 +318,6 @@ class {$controller_name} implements Controller
         }
         echo PHP_EOL.PHP_EOL."[+] ---- CLOSING -----".PHP_EOL.PHP_EOL;
 
+        echo $controller_name;
     }
 }
