@@ -19,10 +19,8 @@ class TestLive implements LiveController
 {
     // this array of methods that can be watched
     // the array key here can either represent a method of dynamic data being set in constructor
-    public $watch_list = [
-        "isLogin" => false,
-        "profile" => 0
-    ];
+    public $isLogin = false;
+    public $profile = 0;
     //every time the watcher checks this Live Controller, it passes some data to it 
     public function __construct(
         Sessions $sessions,//the session instance that can be used for auth. with the client side
@@ -39,16 +37,16 @@ class TestLive implements LiveController
         * of the method they represents
         *
          */    
-        $this->watch_list['isLogin'] =  "hello";
+        $this->isLogin =  "hellodd000";
 
         /* this will emit changes anytime session value of 
         * is_logged_in changes(maybe when user logs out),
         * isLogin does not have a method representation so is_logged_in session value 
         * will ve received in the client side(js Path-Watcher) 
         */
-        $this->watch_list['profile'] = [
-            "name" => "Adewale",
-            "this" => "should work"
+        $this->profile = [
+            "name" => "Adewalesss",
+            "this" => "should zzzzssworkddd"
         ];
         /*
         * because this is not a dynamic value like session or a database content, 
@@ -58,6 +56,6 @@ class TestLive implements LiveController
 
     public function profile(Response $response,?String $message,Sessions $sessions){
 
-        return $response->json(['message_sent' => "hello"]);
+        return $response->json($this->profile);
     }
 }
