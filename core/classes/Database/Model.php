@@ -336,7 +336,7 @@ abstract class Model
                 break;
             case "SELECT":
                 $params     = $this->query_structure["SELECT"];
-                $query      = "SELECT SQL_CALC_FOUND_ROWS {$params}";
+                $query      = "SELECT SQL_CALC_FOUND_ROWS {$_params}";
                 $query     .= PHP_EOL." FROM {$this->table_name} ";
                 if($this->query_structure["JOIN"]){
                     $query .= " ".$this->rawJoinGen($this->query_structure["JOIN"]);
@@ -801,15 +801,22 @@ abstract class Model
      * @return bool
      */
     public function exists():bool {
-        $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        if(strlen(trim($this->query_structure["SELECT"])) > 0){
+            $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        }else{
+            $this->query_structure["SELECT"] .= " COUNT({$this->primary_key}) as total";
+        }
         return $this->all(null,true)["total"] > 0;
     }
-
     /**
      * @return bool
      */
     public function doesntExists():bool {
-        $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        if(strlen(trim($this->query_structure["SELECT"])) > 0){
+            $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        }else{
+            $this->query_structure["SELECT"] .= " COUNT({$this->primary_key}) as total";
+        }
         return $this->all(null,true)["total"] < 1;
     }
 
