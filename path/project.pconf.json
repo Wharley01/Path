@@ -13,7 +13,10 @@
     "status": "production",
     "version": "1.0",
     "directory": "",
-    "server": "path.loc"
+    "server": "path.loc",
+    "protocol": "http",
+    "_comment":"SSE/WS can be value of watch_method",
+    "watch_method":"SSE"
   },
   "WEBSOCKET":{
     "host": "path.loc",
