@@ -195,7 +195,10 @@ class Router
             throw new RouterException("Callback function expected to return an instance of Response Class");
         http_response_code($response->status);//set response code
         self::set_header($response->headers);//set header
-        die($response->content);
+        print($response->content);
+        @ob_flush();
+        @flush();
+        die();
     }
 
     /**
@@ -421,7 +424,7 @@ class Router
             $request = new Request();
             $request->params = $params;
             if(is_string($callback)){
-                $_callback = $this->breakController($callback);
+                $_callback = $this->breakController($callback,$params);
 
                 try{
                     $class = $_callback->ini_class->{$_callback->method}($request,$this->response_instance);
@@ -498,7 +501,7 @@ class Router
         }
 
     }
-    private function breakController($controller_str){
+    private function breakController($controller_str,$params){
 //        break string
         if(!preg_match("/([\S]+)\-\>([\S]+)/",$controller_str))
             throw new RouterException("Invalid Router String");
@@ -515,7 +518,9 @@ class Router
 //        load_class($class_ini,"controllers");
         $class_ini = $this->controllers_namespace.$class_ini;
         try{
-            $class_ini = new $class_ini();
+            $request = new Request();
+            $request->params = $params;
+            $class_ini = new $class_ini($request,$this->response_instance);
         }catch (\Throwable $e){
             throw new RouterException($e->getMessage().PHP_EOL.$e->getTraceAsString());
         }
