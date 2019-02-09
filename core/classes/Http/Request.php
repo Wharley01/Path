@@ -38,7 +38,7 @@ class Request
         $this->server = (object)$_SERVER;
     }
     public function fetch($key){
-        return @$_REQUEST[$key];
+        return @$_REQUEST[$key] ?? null;
     }
 
     /**
