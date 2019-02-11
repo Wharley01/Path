@@ -11,28 +11,35 @@ namespace Path\Storage;
 
 class Sessions
 {
-    private  $session_id;
+    private  $session_id = null;
 
     public function __construct($session_id = null)
     {
-        if(is_null($session_id))
-            $session_id = session_id();
 
-        if(!preg_match("/^[-,a-zA-Z0-9]{1,128}$/",$session_id) OR strlen($session_id) < 5 OR !preg_match('/[0-9]/',$session_id)){
-            $this->session_id = bin2hex(openssl_random_pseudo_bytes(32));
-        }else{
-            $this->session_id = $session_id;
+        if(!is_null($session_id)){
+            if(!preg_match("/^[-,a-zA-Z0-9]{1,128}$/",$session_id) OR strlen($session_id) < 5 OR !preg_match('/[0-9]/',$session_id)){
+                $this->session_id = bin2hex(openssl_random_pseudo_bytes(32));
+            }else{
+                $this->session_id = $session_id;
+            }
         }
+
     }
 
     private function close(){
-        session_write_close();
+        if(!is_null($this->session_id)) {
+            session_write_close();
+        }
     }
 
     private function start(){
-        session_write_close();
-        session_id($this->session_id);
-        session_start();
+        if(!is_null($this->session_id)){
+            session_write_close();
+            session_id($this->session_id);
+            session_start();
+//            echo "using ID";
+        }
+
     }
     public function store($key,$value){
         $this->start();
