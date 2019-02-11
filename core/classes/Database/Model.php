@@ -336,7 +336,7 @@ abstract class Model
                 break;
             case "SELECT":
                 $params     = $this->query_structure["SELECT"];
-                $query      = "SELECT SQL_CALC_FOUND_ROWS {$_params}";
+                $query      = "SELECT SQL_CALC_FOUND_ROWS {$params}";
                 $query     .= PHP_EOL." FROM {$this->table_name} ";
                 if($this->query_structure["JOIN"]){
                     $query .= " ".$this->rawJoinGen($this->query_structure["JOIN"]);
