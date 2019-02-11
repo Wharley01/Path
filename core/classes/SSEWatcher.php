@@ -76,9 +76,9 @@ class SSEWatcher
     }
     private function executed($method){
         $has_executed = $this->session->get($this->method("has_executed")) ?? [];
-            $has_executed[$method] = "executed";
-            $this->session->store($this->method("has_executed"),$has_executed);
-            return true;
+        $has_executed[$method] = "executed";
+        $this->session->store($this->method("has_executed"),$has_executed);
+        return true;
     }
     private  function shouldExecute($method, $value){
         $_method = $this->method($method);
@@ -88,54 +88,54 @@ class SSEWatcher
     }
     private function execute(array $watch_list,LiveController $controller,?String $message = null,?Bool $force_execute = false){
 
-            $watchable_methods = $this->watching;
+        $watchable_methods = $this->watching;
 //        var_dump($_SESSION);
 //        var_dump($watch_list);
-            if(is_null($watchable_methods)){
+        if(is_null($watchable_methods)){
 //            watch all watchable
-                foreach ($watch_list as $_method => $_value){
+            foreach ($watch_list as $_method => $_value){
+                if($this->shouldExecute($_method,$_value) OR $force_execute){
+                    $this->has_changes[$_method] = true;
+                    $this->executed($_method);
+                    if(!method_exists($controller,$_method)){
+                        $this->response[$_method][] = $_value;
+                        $this->response[$_method][] = $this->getPrevValue($_method);
+                    }else{
+
+                        $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
+                        $this->response[$_method][] = $response;
+                        $this->response[$_method][] = $this->getPrevValue($_method);
+                    }
+                }else{
+                    $this->has_changes[$_method] = false;
+                }
+            }
+        }else{
+//            validate the watchlist
+            foreach ($watchable_methods as $method){
+                $_method = $method;
+                if(isset($watch_list[$_method])){
+                    $_value = @$watch_list[$_method];
                     if($this->shouldExecute($_method,$_value) OR $force_execute){
                         $this->has_changes[$_method] = true;
                         $this->executed($_method);
                         if(!method_exists($controller,$_method)){
                             $this->response[$_method][] = $_value;
                             $this->response[$_method][] = $this->getPrevValue($_method);
-                        }else{
 
+                        }else{
                             $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
                             $this->response[$_method][] = $response;
                             $this->response[$_method][] = $this->getPrevValue($_method);
+
                         }
                     }else{
                         $this->has_changes[$_method] = false;
-                    }
-                }
-            }else{
-//            validate the watchlist
-                foreach ($watchable_methods as $method){
-                    $_method = $method;
-                    if(isset($watch_list[$_method])){
-                        $_value = @$watch_list[$_method];
-                        if($this->shouldExecute($_method,$_value) OR $force_execute){
-                            $this->has_changes[$_method] = true;
-                            $this->executed($_method);
-                            if(!method_exists($controller,$_method)){
-                                $this->response[$_method][] = $_value;
-                                $this->response[$_method][] = $this->getPrevValue($_method);
 
-                            }else{
-                                $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
-                                $this->response[$_method][] = $response;
-                                $this->response[$_method][] = $this->getPrevValue($_method);
-
-                            }
-                        }else{
-                            $this->has_changes[$_method] = false;
-
-                        }
                     }
                 }
             }
+        }
     }
 
     public function sendMessage($message){
@@ -178,7 +178,7 @@ class SSEWatcher
             }
 
         }
-        $response['SESSIONS'] = $_SESSION;
+
         $this->response = [];
         return $response;
     }
@@ -285,13 +285,12 @@ class SSEWatcher
     public function reset()
     {
         $cached_values = $this->session->get("watcher___cached_methods") ?? [];
-        var_dump($cached_values);
+//        var_dump($cached_values);
         foreach ($cached_values as $method){
             $this->session->delete($method);
         }
         $this->session->delete("watcher___cached_methods");
 
-        var_dump($this->session->get("watcher___cached_methods"));
 
     }
 
