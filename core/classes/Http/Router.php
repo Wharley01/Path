@@ -14,11 +14,12 @@ use Path\RouterException;
 use Path\Utilities;
 
 import(
-    "Core/Classes/Http/MiddleWare",
-    "Core/Classes/Utilities",
-    "Core/Classes/Http/Request",
-    "Core/Classes/Database/Model",
-    "Core/Classes/Database/Connection"
+    "core/classes/Http/MiddleWare",
+    "core/classes/Utilities",
+    "core/classes/Http/Request",
+    "core/classes/Http/ModelController",
+    "core/classes/Database/Model",
+    "core/classes/Database/Connection",
 );
 
 class Router
@@ -28,9 +29,9 @@ class Router
     private $database;
     private $response_instance;
     private $build_path = "";
-    private $controllers_path = "Path/Controllers/Route/";
-    private $controllers_namespace = "Path\Controller\Route\\";
-    private $middleware_path = "Path/Http/MiddleWares/";
+    private $controllers_path = "path/Controllers/Route/";
+    private $controllers_namespace = "path\Controller\Route\\";
+    private $middleware_path = "path/Http/MiddleWares/";
     private $middleware_namespace = "Path\Http\MiddleWare\\";
     private $assigned_paths = [//to hold all paths assigned
 
@@ -436,7 +437,9 @@ class Router
                 }
 
             }else{
-                $c = $callback($request,$this->response_instance);
+                /**************************************************************************************************************/
+                //this is the only line of code i changed to allow new ModelController
+                $c = $callback instanceof ModelController ? $callback->view($request, $this->response_instance) : $callback($request,$this->response_instance);
                 if($c instanceof Response){//Check if return value from callback is a Response Object
                     $this->write_response($c);
                 }elseif($c AND !$c instanceof Response){
@@ -512,7 +515,7 @@ class Router
         }));//filter empty array
         $class_ini = $contr_breakdown[0];
         import(
-            "Core/Classes/Controller",
+            "core/classes/Controller",
             $this->controllers_path.$class_ini//load dynamic controller
         );
 //        load_class($class_ini,"controllers");
@@ -543,11 +546,9 @@ class Router
             });
         }
 
-
         foreach ($_path as $each_path){
             $this->processRequest(["path" => trim($each_path),"middleware" => $_middle_ware,"fallback" => $_fallback],$callback,$method);
         }
-
 
     }
     private function processRequest($path, $callback, $method){

@@ -1,7 +1,7 @@
 <?php
 
 /*
-* This is automatically generated 
+* This is automatically generated
 * Edit to fit your need
 * Powered By: Path
 */
@@ -17,8 +17,8 @@ use Path\SSEWatcher;
 use Path\Storage\Sessions;
 
 import(
-    "Path/Database/Models/SSEModel",
-    "core/Classes/SSEWatcher"
+    "path/Database/Models/SSEModel",
+    "core/classes/SSEWatcher"
     );
 
 class SSE implements Controller

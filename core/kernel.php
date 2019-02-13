@@ -1,7 +1,7 @@
 <?php
 
 use Path\PathException;
-require_once "Classes/Exceptions.php";
+require_once "classes/Exceptions.php";
 
 /**
  * @param $classes

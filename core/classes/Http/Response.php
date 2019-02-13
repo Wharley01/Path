@@ -24,7 +24,7 @@ class Response
     }
     public function json($arr,$status = 200){
         $arr = $this->convertToUtf8($arr);
-        $this->content = json_encode((array)$arr);
+        $this->content = json_encode((array)$arr, JSON_PRETTY_PRINT);
         $this->status = $status;
         $this->headers = ["Content-Type" => "application/json; charset=UTF-8"];
         return $this;
