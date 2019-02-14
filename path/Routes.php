@@ -22,7 +22,7 @@ $router->any([
 ],"Test->fetchAll");
 
 $router->get("watcher-test",function (Request $request,Response $response){
-   return $response->html("websocket.html");
+    return $response->html("websocket.html");
 });
 
 $router->group(["path" => "api/@version/"], function (Router $router) {//path can use Regex too

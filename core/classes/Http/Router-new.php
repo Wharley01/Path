@@ -23,17 +23,17 @@ import(
     "core/classes/Database/Connection"
 );
 
-class RouterOld
+class RouterN
 {
     public static $request;
-    public  $root_path = "";
-    private $database;
+    public static $root_path = "";
+    public static $controllers_path = "path/Controllers/Route/";
+    public static $controllers_namespace = "path\Controller\Route\\";
+    private static $database;
     private static $response_instance;
     private static $build_path = "";
-    private $controllers_path = "path/Controllers/Route/";
-    private $controllers_namespace = "path\Controller\Route\\";
-    private $middleware_path = "path/Http/MiddleWares/";
-    private $middleware_namespace = "Path\Http\MiddleWare\\";
+    private static $middleware_path = "path/Http/MiddleWares/";
+    private static $middleware_namespace = "Path\Http\MiddleWare\\";
     /*
       *
       * [//to hold all paths assigned
@@ -42,6 +42,9 @@ class RouterOld
       *
      * */
     public static $route_tree = [//to hold all paths assigned
+    ];
+    private static $route_tracker = [
+        //I guess this is another implementation of route tracker
     ];
     private static $exception_callback;//Callback exception
 
@@ -65,34 +68,80 @@ class RouterOld
 
     /**
      * Router constructor.
-     * @param string $root_path
      * @param string $path
      * @param null $callback
      * @param string $method
      * @param bool $is_group
+     * @param int $base
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
      */
-    public function __construct($root_path, $path = "",$callback = null,$method = "GET",$is_group = false)
-    {
-//        if($root_path){
-        $this->root_path = $root_path;
-//        }
+    public function __construct($path = "", $callback = null, $method = "GET", $is_group = false, $base = 0) {
+        //$base 0 is the first route
+
+        $path_string = is_array($path) ? $path['path'] : $path; //Fetching the path
+
+        if ( $is_group ) { //Check if this is a group request
+
+            if ($base === 0){
+
+                self::$root_path = ''; //This holds the link upto the last file eg. /user/admin => /user
+                self::$route_tracker = [] ; //make the path history empty since it's a base of 0
+                self::$route_tracker[0]=$path_string; //keeps the basic path string
+
+            }else{
+
+                self::$route_tracker[$base] = ltrim($path_string, '/'); //Add the base
+
+            }
+
+            //Pretty explanatory
+            self::$root_path = join("/", array_slice(self::$route_tracker, 0, $base, true));
+
+        } else {
+
+            self::$root_path = join("/", array_slice(self::$route_tracker, 0, sizeof(self::$route_tracker), true));
+
+        }
+
+        $absolute_path_string = self::$root_path.$path_string; //Actual path to the file.. This is what is forwarded as the path
+
+        if (is_array($path))
+            $path['path'] = $absolute_path_string; //Replace the path with the full path
+
+        else
+            $path = $absolute_path_string; //Replace the path with the full path
+
         self::$request = new Request();
+
         self::$real_path =  preg_replace(
             "/[^\w:\/\d\-].*$/m","",self::$request->server->REQUEST_URI
             ??
             self::$request->server->REDIRECT_URL
         );
+
         if(strlen(trim($path)) > 0){
+
             self::$response_instance = new Response(self::$build_path);
-            if(!$is_group)
-                $this->processMultipleRequestPath($path,$callback,"GET");
-            else
-                $this->handleGroupRequest($path,$callback);
+
+            if(!$is_group){
+                $this->processMultipleRequestPath($path, $callback,"GET");
+            }
+
+            else{
+                $this->handleGroupRequest($path, $callback);
+
+            }
+
         }
 
 
     }
 
+    /**
+     * @param $path
+     */
     public static function setBuildPath($path){
         self::$build_path = $path;
         self::$response_instance = new Response(self::$build_path);
@@ -107,6 +156,7 @@ class RouterOld
             header("{$header}: $value");
         }
     }
+
     private static function path_matches($param,$raw_param){
 //        echo $param,$raw_param;
         $raw_param = substr($raw_param,1);
@@ -135,6 +185,7 @@ class RouterOld
         }
         return true;
     }
+
     private static function is_root($real_path, $path){
         $b_real_path = array_values(array_filter(explode("/",$real_path),function ($p){
             return strlen(trim($p)) > 0 && trim($p[0]) != "?";
@@ -212,6 +263,10 @@ class RouterOld
 
     }
 
+    /**
+     * @param $response
+     * @throws RouterException
+     */
     private static function write_response($response){
         if(!$response instanceof Response)
             throw new RouterException("Callback function expected to return an instance of Response Class");
@@ -292,19 +347,31 @@ class RouterOld
         }
         return true;
     }
-    private function concat_path($root,$path){
+
+    /**
+     * @param $root
+     * @param $path
+     * @return string
+     */
+    private function concat_path($root, $path){
         return $root.$path;
     }
+
+    /**
+     * @param $raw_param
+     * @return mixed
+     */
     public static function get_param_name($raw_param){
         $param = explode(":",$raw_param);
         return $param[0];
     }
+
     /**
      * @param $real_path
      * @param $path
      * @return bool|object
      */
-    public function get_params(
+    public static function get_params(
         $real_path,
         $path
     ){
@@ -317,7 +384,6 @@ class RouterOld
         }));;
 
         $params = [];
-
 
         for($i = 0;$i < count($b_real_path); $i ++){
             if($i >= count($b_path)) {//if the amount of url path is more than required, return false
@@ -338,19 +404,29 @@ class RouterOld
         return (object) $params;
     }
 
-    private function validateAllMiddleWare($middle_wares,$params,$_path,$real_path){
+    /**
+     * @param $middle_wares
+     * @param $params
+     * @param $_path
+     * @param $real_path
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    private static function validateAllMiddleWare($middle_wares, $params, $_path, $real_path){
         if(!is_array($middle_wares) || is_string($middle_wares))
             $middle_wares = [$middle_wares];
 
         $request = new Request();
         $request->params = $params;
         foreach ($middle_wares as $middle_ware){
-//            echo $middle_ware;
+//          echo $middle_ware;
             if($middle_ware) {
                 $middle_ware_name = explode("\\", $middle_ware);
                 $middle_ware_name = $middle_ware_name[count($middle_ware_name) - 1];
 //            Load middleware class
-                import("{$this->middleware_path}{$middle_ware_name}");
+                $middle_ware_path = self::$middleware_path;
+                import("{$middle_ware_path}{$middle_ware_name}");
                 $ini_middleware = new $middle_ware();
 
                 if ($ini_middleware instanceof MiddleWare) {
@@ -390,10 +466,7 @@ class RouterOld
             }
         }
 
-
-
     }
-
 
 
     /**
@@ -406,9 +479,11 @@ class RouterOld
      * @param bool $is_group
      * @return bool
      * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
      * @internal param $_path
      */
-    private function response(
+    private static function response(
         $method,
         $root,
         $path,
@@ -421,35 +496,41 @@ class RouterOld
         if(!$path || is_null($path))
             throw new RouterException("Specify Path for your router");
 
-        $_path = $this::joinPath($root,$path);
+        $_path = $path;
+
         $real_path = trim(self::$real_path);
-        $params = $this->get_params($real_path,$_path);
+
+        $params = self::get_params($real_path, $_path);
+
         if(!self::compare_path($real_path,$_path) && !$is_group) {//if the browser path doesn't match specified path template
             return false;
         }
-
 
         static::$route_tree[$root][] = [
             "path"      => $_path,
             "method"    => $method,
             "is_group"  => $is_group
         ];
-//        var_dump(static::$route_tree);
 
-        $this->validateAllMiddleWare($middle_ware,$params,$_path,$real_path);
+//      var_dump(static::$route_tree);
+
+        self::validateAllMiddleWare($middle_ware,$params,$_path,$real_path);
 
         //        Set the path to list of paths
 
 //        TODO: check if path contains a parameter path/$id
 //            Check if method calling response is
         if($is_group){
-            $router = new Router($_path);
-            $c = $callback($router);//call the callback, pass the params generated to it to be used
+
+            $c = $callback();//call the callback, pass the params generated to it to be used
+
         }else{
+
             $request = new Request();
             $request->params = $params;
             if(is_string($callback)){
-                $_callback = $this->breakController($callback,$params);
+
+                $_callback = self::breakController($callback,$params);
 
                 try{
                     $class = $_callback->ini_class->{$_callback->method}($request,self::$response_instance);
@@ -487,10 +568,16 @@ class RouterOld
     }
 
     /**
+     * The implementation of this code isn't used by me
+     * I have no actual understanding of what it is trying to do
+     *Hence I have returned true as default without checking further
+     * DIRTY HACK.. WATCH OUT
      * @return bool
      */
     private static function should_fall_back(){
+
         $real_path = trim(self::$real_path);
+
         $current_method = strtoupper(self::$request->METHOD);
 
         foreach (static::$route_tree as $root => $paths){
@@ -508,7 +595,15 @@ class RouterOld
 
         return true;
     }
-    static function joinPath($root,$path){
+
+    /**
+     * This function is currently unused because Most of the heavy lifting
+     * it was supposed to do has been done manually in the __construct
+     * @param $root
+     * @param $path
+     * @return string
+     */
+    private static function joinPath($root, $path){
         if($root != "/"){
             $root = (strripos($root,"/") == (strlen($root) - 1))?$root:$root."/";
         }else{
@@ -520,10 +615,15 @@ class RouterOld
         return $root.$path;
     }
 
-    public static function group($path, $callback){
-        return new static(null,$path,$callback,"ANY",true);
-    }
-    private function breakController($controller_str,$params){
+    /**
+     * @param $controller_str
+     * @param $params
+     * @return object
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    private static function breakController($controller_str, $params){
 //        break string
         if(!preg_match("/([\S]+)\-\>([\S]+)/",$controller_str))
             throw new RouterException("Invalid Router String");
@@ -535,10 +635,10 @@ class RouterOld
         $class_ini = $contr_breakdown[0];
         import(
             "core/classes/Controller",
-            $this->controllers_path.$class_ini//load dynamic controller
+            self::controllers_path.$class_ini//load dynamic controller
         );
 //        load_class($class_ini,"controllers");
-        $class_ini = $this->controllers_namespace.$class_ini;
+        $class_ini = self::controllers_namespace.$class_ini;
         try{
             $request = new Request();
             $request->params = $params;
@@ -550,7 +650,15 @@ class RouterOld
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
     }
 
-    private function handleGroupRequest($path,$callback){
+    /**
+     * @param $path
+     * @param $callback
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    private function handleGroupRequest($path, $callback){
+
         if(is_array($path)){//check if path is associative array or a string
             $_path = $path['path'] ?? null;
             $_middle_ware = $path['middleware'] ?? null;
@@ -561,13 +669,21 @@ class RouterOld
             $_fallback  = null;
         }
 
-        $real_path = trim(self::$real_path);
-        if(self::is_root($real_path,self::joinPath($this->root_path,$_path))) {
-            $this->response("ANY", $this->root_path, $_path, $callback, $_middle_ware,$_fallback, true);
-        }
+//        $real_path = trim(self::$real_path);
+//        if(self::is_root($real_path,self::joinPath(self::$root_path,$_path))) {
+        self::response("ANY", $path, $_path, $callback, $_middle_ware,$_fallback, true);
+//        }
 
     }
 
+    /**
+     * @param $path
+     * @param $callback
+     * @param $method
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
     private function processMultipleRequestPath($path, $callback, $method){
 
         if(is_array($path)){//check if path is associative array or a string
@@ -579,6 +695,7 @@ class RouterOld
             $_middle_ware = null;
             $_fallback = null;
         }
+
         if(is_string($_path)){
             $_path = array_filter(explode("|",$_path),function ($path){
                 return strlen(trim($path)) > 0;
@@ -590,6 +707,15 @@ class RouterOld
         }
 
     }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @param $method
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
     private function processRequest($path, $callback, $method){
 //        echo "<pre>";
 //        var_dump($path);
@@ -603,66 +729,215 @@ class RouterOld
             $_fallback    = null;
         }
         $real_path = trim(self::$real_path);
+
 //Check if path is the one actively visited in browser
-        if((strtoupper(self::$request->METHOD) == $method || $method == "ANY") && self::compare_path($real_path,self::joinPath($this->root_path,$_path))) {
-//            Check if $callback is a string, parse appropriate
-            $this->response($method,$this->root_path, $_path, $callback,$_middle_ware,$_fallback,false);
+        if((strtoupper(self::$request->METHOD) == $method || $method == "ANY") && self::compare_path(ltrim($real_path, '/'),$_path)) {
+//          Check if $callback is a string, parse appropriate
+            self::response($method,self::$root_path, $_path, $callback,$_middle_ware,$_fallback,false);
         }
+    }
+
+
+    /**
+     * @param $path
+     * @param $callback
+     * @param int $base
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function group($path, $callback, $base=0){
+        new static($path, $callback, "ANY", true, $base);
+        unset(self::$route_tracker[$base]);
+    }
+
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function get($path, $callback){
+//   this is the bottle neck, not being able to use the current root
+        return new static($path, $callback, "GET");
     }
 
     /**
      * @param $path
      * @param $callback
-     * @return $this
+     * @return RouterN
      * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
      */
-    public static function get($path, $callback){
-//   this is the bottle neck, not being able to use the current root
-        return new static(self::$root_path,$path,$callback,"GET");
-    }
     public static function any($path, $callback){
-        return new static(null,$path,$callback,"ANY");
-    }
-    public static function post($path, $callback){
-        return new static(null,$path,$callback,"POST");
-    }
-    public static function put($path, $callback){
-        return new static(null,$path,$callback,"PUT");
-    }
-    public static function patch($path, $callback){
-        return new static(null,$path,$callback,"GET");
-    }
-    public static function delete($path, $callback){
-        return new static(null,$path,$callback,"DELETE");
-    }
-    public static function copy($path, $callback){
-        return new static(null,$path,$callback,"COPY");
-    }
-    public static function head($path, $callback){
-        return new static(null,$path,$callback,"HEAD");
-    }
-    public static function options($path, $callback){
-        return new static(null,$path,$callback,"OPTIONS");
-    }
-    public static function link($path, $callback){
-        return new static(null,$path,$callback,"LINK");
-    }
-    public static function unlink($path, $callback){
-        return new static(null,$path,$callback,"UNLINK");
-    }
-    public static function purge($path, $callback){
-        return new static(null,$path,$callback,"PURGE");
-    }
-    public static function lock($path, $callback){
-        return new static(null,$path,$callback,"LOCK");
-    }
-    public static function propFind($path, $callback){
-        return new static(null,$path,$callback,"PROPFIND");
-    }
-    public static function view($path, $callback){
-        return new static(null,$path,$callback,"VIEW");
+        return new static($path, $callback, "ANY");
     }
 
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function post($path, $callback){
+        return new static($path, $callback, "POST");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function put($path, $callback){
+        return new static($path, $callback, "PUT");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function patch($path, $callback){
+        return new static($path, $callback, "GET");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function delete($path, $callback){
+        return new static($path, $callback, "DELETE");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function copy($path, $callback){
+        return new static($path, $callback, "COPY");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function head($path, $callback){
+        return new static($path, $callback, "HEAD");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function options($path, $callback){
+        return new static($path, $callback, "OPTIONS");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function link($path, $callback){
+        return new static($path, $callback, "LINK");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function unlink($path, $callback){
+        return new static($path, $callback, "UNLINK");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function purge($path, $callback){
+        return new static($path, $callback, "PURGE");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function lock($path, $callback){
+        return new static($path, $callback, "LOCK");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function propFind($path, $callback){
+        return new static($path, $callback, "PROPFIND");
+    }
+
+    /**
+     * @param $path
+     * @param $callback
+     * @return RouterN
+     * @throws RouterException
+     * @throws \Path\ConfigException
+     * @throws \Path\PathException
+     */
+    public static function view($path, $callback){
+        return new static($path, $callback, "VIEW");
+    }
+
+    /**
+     * @param $callback
+     * @return bool
+     * @throws RouterException
+     */
     public static function exceptionCatch($callback){
         if(!is_callable($callback))
             throw new RouterException("ExceptionCatch expects a callable function");
@@ -670,6 +945,11 @@ class RouterOld
         self::$exception_callback = $callback;
         return true;
     }
+
+    /**
+     * @param $callback
+     * @throws RouterException
+     */
     public static function error404($callback){//executes when no route is specified
         if(self::should_fall_back()){//check if the current request doesn't match any request
 //            print_r($this->assigned_paths);
