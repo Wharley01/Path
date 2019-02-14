@@ -15,7 +15,6 @@ use Path\RouterException;
 abstract class Controller{
 
     protected  $request, $response;
-
     /**
      * @param Request $request
      * @param Response $response
