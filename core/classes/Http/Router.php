@@ -20,7 +20,7 @@ import(
     "core/classes/Http/Request",
     "core/classes/Controller",
     "core/classes/Database/Model",
-    "core/classes/Database/Connection",
+    "core/classes/Database/Connection"
 );
 
 class Router
