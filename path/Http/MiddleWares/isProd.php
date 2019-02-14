@@ -16,7 +16,6 @@ use Path\Storage\Sessions;
 
 class isProd implements MiddleWare
 {
-
     public function __construct()
     {
     }
