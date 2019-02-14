@@ -15,7 +15,7 @@ use Path\Database\Models;
 
 import("path/Database/Models/Test");
 
-class Test implements Controller
+class Test extends Controller
 {
     public  $_test;
 

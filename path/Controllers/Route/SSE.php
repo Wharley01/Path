@@ -21,7 +21,7 @@ import(
     "core/classes/SSEWatcher"
     );
 
-class SSE implements Controller
+class SSE extends Controller
 {
     private $session;
     private $sse_watcher;
