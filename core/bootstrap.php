@@ -1,21 +1,21 @@
 <?php
 
 import(
-    "Core/Classes/Database/Connection",
-    "Core/Classes/Utilities",
-    "Core/Classes/Http/Router",
-    "Core/Classes/Http/Response",
-    "Core/Classes/Misc/Validator",
-    "Core/Classes/Storage/Cookies",
-    "Core/Classes/Storage/Sessions",
-    "Core/Classes/Database/Model",
-    "Core/Classes/Controller",
-    "Core/Classes/Misc/Validator",
-    "Core/Classes/FileSys",
-    "Core/Classes/CLI/CInterface",
-    "Core/Classes/CLI/Console",
-    "Core/Classes/Database/Structure",
-    "Core/Classes/Database/Prototype"
+    "core/classes/Database/Connection",
+    "core/classes/Utilities",
+    "core/classes/Http/Router",
+    "core/classes/Http/Response",
+    "core/classes/Misc/Validator",
+    "core/classes/Storage/Cookies",
+    "core/classes/Storage/Sessions",
+    "core/classes/Database/Model",
+    "core/classes/Controller",
+    "core/classes/Misc/Validator",
+    "core/classes/FileSys",
+    "core/classes/CLI/CInterface",
+    "core/classes/CLI/Console",
+    "core/classes/Database/Structure",
+    "core/classes/Database/Prototype"
 );
 
 

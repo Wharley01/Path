@@ -31,6 +31,7 @@ $router->group(["path" => "api/@version/"], function (Router $router) {//path ca
     $router->get("/test",function (Request $request,Response $response){
         return $response->text("Hello world");
     });
+
     $router->group("user",function(Router $router){
         //fetch all services
         $router->get("fetch/all",function (Request $request,Response $response){
@@ -74,15 +75,12 @@ $router->group(["path" => "api/@version/"], function (Router $router) {//path ca
         });
     });
 
-
 //        $router->error404(function (Request $request, Response $response) {
 //            return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
 //                "Access-Control-Allow-Origin" => "*"
 //            ]);
 //        });
 });
-
-
 
 $router->error404(function (Request $request, Response $response) {
     return $response->json(['error' => "Error 404", 'params' => $request->server->REQUEST_URI])->addHeader([

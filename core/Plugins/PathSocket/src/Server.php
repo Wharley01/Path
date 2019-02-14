@@ -11,8 +11,8 @@ use Path\Http\Watcher;
 use Path\Plugins\PathSocket\Client;
 import(
     "core/Plugins/PathSocket/src/Client",
-    "core/Classes/Watcher",
-    "core/Classes/Http/Response"
+    "core/classes/Watcher",
+    "core/classes/Http/Response"
 );
 class Server
 {

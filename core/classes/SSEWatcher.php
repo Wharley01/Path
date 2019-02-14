@@ -12,9 +12,9 @@ namespace Path;
 use Path\Http\Response;
 use Path\Storage\Sessions;
 import(
-    "core/Classes/Storage/Sessions",
-    "core/Classes/LiveController",
-    "core/Classes/Http/Response"
+    "core/classes/Storage/Sessions",
+    "core/classes/LiveController",
+    "core/classes/Http/Response"
 );
 class SSEWatcher
 {

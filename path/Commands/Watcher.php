@@ -7,7 +7,7 @@ namespace Path\Console;
 use Path\Console;
 use Path\WatcherServer;
 
-import("core/Classes/WatcherServer");
+import("core/classes/WatcherServer");
 class Watcher extends CInterface
 {
 
@@ -19,15 +19,15 @@ class Watcher extends CInterface
      * */
     public $name = "watcher";
     public $description = "Start Watcher Server";
-    
+
 
     public $arguments = [
         "start" => [
             "desc" => "start watcher"
         ]
     ];
-            
-            
+
+
 
     public function __construct()
     {
@@ -42,4 +42,3 @@ class Watcher extends CInterface
     }
 
 }
-        
