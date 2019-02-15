@@ -11,6 +11,7 @@ namespace Path\Http;
 use Path\Controller;
 use Path\Database\Connection\Mysql;
 use Path\Http\Request;
+use Path\PathException;
 use Path\RouterException;
 use Path\Utilities;
 
@@ -335,12 +336,13 @@ class Router
 
                 if ($ini_middleware instanceof MiddleWare) {
 //            initialize middleware
-//                call the fall_back response
-                    $fallback_response = $ini_middleware->fallBack($request,$this->response_instance);
+
 
 
 //            Check middle ware return
                     $check_middle_ware = $ini_middleware->validate($request, $this->response_instance);
+                    //                call the fall_back response
+                    $fallback_response = $ini_middleware->fallBack($request,$this->response_instance);
                     if (!$check_middle_ware) {//if the middle ware control method returns false
 
                         if (!is_null($fallback_response)) {//if user has a fallback method
@@ -425,13 +427,13 @@ class Router
         }else{
             $request = new Request();
             $request->params = $params;
-            if(is_string($callback)){
+            if(is_string($callback) && strpos($callback,"->")){
                 $_callback = $this->breakController($callback,$params);
 
                 try{
                     $class = $_callback->ini_class->{$_callback->method}($request,$this->response_instance);
                 }catch (\Throwable $e){
-                    throw new RouterException($e->getMessage().PHP_EOL."<pre>".$e->getTraceAsString()."</pre>");
+                    throw new RouterException($e->getMessage(),0,$e);
                 }
                 if($class instanceof Response){//Check if return value from callback is a Response Object
                     $this->write_response($class);
@@ -440,6 +442,10 @@ class Router
             }else{
                 /** ************************************************ */
                 //Check if the callback is a Controller instance and call the response method with the $request and $response as parameter
+                if(is_string($callback)){
+//                    check if the string is used to represent the class and import amd instantiate it
+                    $callback = $this->importControllerFromString($callback,$params);
+                }
 
                 if ($callback instanceof \Closure)
                     $c = $callback($request, $this->response_instance);
@@ -535,10 +541,28 @@ class Router
             $request->params = $params;
             $class_ini = new $class_ini($request,$this->response_instance);
         }catch (\Throwable $e){
-            throw new RouterException($e->getMessage().PHP_EOL.$e->getTraceAsString());
+            throw new RouterException($e->getMessage());
         }
 
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
+    }
+
+    private function importControllerFromString($controller,$params){
+        $controller = trim($controller);
+        if(!preg_match("/^[\w]*$/i",$controller)){
+            throw new PathException("Invalid Controller string representation");
+        }
+//        import the controller
+        import(
+            "core/classes/Controller",
+            $this->controllers_path.$controller//load dynamic controller
+        );
+        $request = new Request();
+        $request->params = $params;
+        $controller = $this->controllers_namespace.$controller;
+        $controller_instance = new $controller($request,$this->response_instance);
+
+        return $controller_instance;
     }
     private function processMultipleRequestPath($path, $callback, $method){
 
@@ -669,7 +693,4 @@ class Router
         }
 
     }
-
-
-
 }
