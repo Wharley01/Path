@@ -17,7 +17,7 @@ function root_path(){
  */
 function config($key)
 {
-    $root_path = root_path()."Path".DIRECTORY_SEPARATOR."project.pconf.json";
+    $root_path = root_path()."path".DIRECTORY_SEPARATOR."project.pconf.json";
     if(!file_exists($root_path))
         throw new \Path\ConfigException("config file \"{$root_path}\" not found");
 
@@ -33,17 +33,15 @@ function config($key)
 }
 
 
-
 /**
  * @param mixed $classes
- * @param string $from
  * @throws PathException
  */
 function load_class($classes){
 
     if(!is_array($classes)){
         $classes = preg_replace("/\.php$/","",trim($classes));
-        $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$classes}.php";
+        $path = __DIR__ . DIRECTORY_SEPARATOR."classes".DIRECTORY_SEPARATOR."{$classes}.php";
         if(!file_exists($path))
             throw new PathException("Class {$classes} not found; Path: {$path}");
         /** @var String $path */
@@ -51,7 +49,7 @@ function load_class($classes){
     }else{
         foreach ($classes as $class) {
             $class = preg_replace("/\.php$/","",trim($class));
-            $path = __DIR__ . DIRECTORY_SEPARATOR."Classes".DIRECTORY_SEPARATOR."{$class}.php";
+            $path = __DIR__ . DIRECTORY_SEPARATOR."classes".DIRECTORY_SEPARATOR."{$class}.php";
             if(!file_exists($path))
                 throw new PathException("Class {$class} not found; Path: {$path}");
             else

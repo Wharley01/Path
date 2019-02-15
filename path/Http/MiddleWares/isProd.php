@@ -25,6 +25,7 @@ class isProd implements MiddleWare
      * @param Request $request
      * @param Response $response
      * @return mixed
+     * @throws \Path\ConfigException
      * @internal param $params
      */
     public function validate(Request $request, Response $response):bool

@@ -8,17 +8,19 @@
 
 namespace Path\Http;
 
+use Path\Controller;
 use Path\Database\Connection\Mysql;
 use Path\Http\Request;
 use Path\RouterException;
 use Path\Utilities;
 
 import(
-    "Core/Classes/Http/MiddleWare",
-    "Core/Classes/Utilities",
-    "Core/Classes/Http/Request",
-    "Core/Classes/Database/Model",
-    "Core/Classes/Database/Connection"
+    "core/classes/Http/MiddleWare",
+    "core/classes/Utilities",
+    "core/classes/Http/Request",
+    "core/classes/Controller",
+    "core/classes/Database/Model",
+    "core/classes/Database/Connection",
 );
 
 class Router
@@ -28,9 +30,9 @@ class Router
     private $database;
     private $response_instance;
     private $build_path = "";
-    private $controllers_path = "Path/Controllers/Route/";
-    private $controllers_namespace = "Path\Controller\Route\\";
-    private $middleware_path = "Path/Http/MiddleWares/";
+    private $controllers_path = "path/Controllers/Route/";
+    private $controllers_namespace = "path\Controller\Route\\";
+    private $middleware_path = "path/Http/MiddleWares/";
     private $middleware_namespace = "Path\Http\MiddleWare\\";
     private $assigned_paths = [//to hold all paths assigned
 
@@ -436,17 +438,28 @@ class Router
                 }
 
             }else{
-                $c = $callback($request,$this->response_instance);
+                /** ************************************************ */
+                //Check if the callback is a Controller instance and call the response method with the $request and $response as parameter
+
+                if ($callback instanceof \Closure)
+                    $c = $callback($request, $this->response_instance);
+                elseif ($callback instanceof Controller OR method_exists($callback, 'response'))
+                    $c = $callback->response($request, $this->response_instance);
+                else
+                    throw new RouterException('Custom Class Object must have a response method');
+
+//                $c = ! $callback instanceof \Closure ? $callback->response($request, $this->response_instance)
+//                    : $callback($request,$this->response_instance);
+
                 if($c instanceof Response){//Check if return value from callback is a Response Object
                     $this->write_response($c);
                 }elseif($c AND !$c instanceof Response){
                     throw new RouterException("Expecting an instance of Response to be returned at \"GET\" -> \"$_path\"");
                 }
+
             }
             //call the callback, pass the params generated to it to be used
         }
-
-
 
     }
 
@@ -512,7 +525,7 @@ class Router
         }));//filter empty array
         $class_ini = $contr_breakdown[0];
         import(
-            "Core/Classes/Controller",
+            "core/classes/Controller",
             $this->controllers_path.$class_ini//load dynamic controller
         );
 //        load_class($class_ini,"controllers");
@@ -528,6 +541,7 @@ class Router
         return (object)["ini_class" => $class_ini,"method" => $contr_breakdown[1]];
     }
     private function processMultipleRequestPath($path, $callback, $method){
+
         if(is_array($path)){//check if path is associative array or a string
             $_path = $path['path'] ?? null;
             $_middle_ware = $path['middleware'] ?? null;
@@ -543,11 +557,9 @@ class Router
             });
         }
 
-
         foreach ($_path as $each_path){
             $this->processRequest(["path" => trim($each_path),"middleware" => $_middle_ware,"fallback" => $_fallback],$callback,$method);
         }
-
 
     }
     private function processRequest($path, $callback, $method){
@@ -574,6 +586,7 @@ class Router
      * @param $path
      * @param $callback
      * @return $this
+     * @throws RouterException
      */
     public function get($path, $callback){
         $this->processMultipleRequestPath($path,$callback,"GET");

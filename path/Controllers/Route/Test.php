@@ -1,6 +1,6 @@
 <?php
 /*
-* This is automatically generated 
+* This is automatically generated
 * Edit to fit your need
 * Powered By: Path
 */
@@ -13,9 +13,9 @@ use Path\Http\Request;
 use Path\Http\Response;
 use Path\Database\Models;
 
-import("Path/Database/Models/Test");
+import("path/Database/Models/Test");
 
-class Test implements Controller
+class Test extends Controller
 {
     public  $_test;
 

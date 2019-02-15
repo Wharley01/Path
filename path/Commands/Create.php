@@ -161,7 +161,7 @@ use Path\Database\Models\\$model_name;
 use Path\Storage\Sessions;
 
 import(
-    \"Core/Classes/Database/Model\",
+    \"core/classes/Database/Model\",
     \"Path/Database/Models/Admin\"
 );
 

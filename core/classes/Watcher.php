@@ -17,12 +17,12 @@ use Path\Storage\Sessions;
 use Path\WatcherException;
 
 import(
-    "core/Classes/Http/Response",
-    "core/Classes/LiveController",
-    "core/Classes/Storage/Caches",
-    "core/Classes/Storage/Sessions",
-    "core/Classes/Storage/Cookies",
-    "core/Classes/Database/Model"
+    "core/classes/Http/Response",
+    "core/classes/LiveController",
+    "core/classes/Storage/Caches",
+    "core/classes/Storage/Sessions",
+    "core/classes/Storage/Cookies",
+    "core/classes/Database/Model"
 
 );
 
