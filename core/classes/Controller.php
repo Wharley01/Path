@@ -22,8 +22,9 @@ abstract class Controller{
      * @throws RouterException
      */
     final public function response(Request $request, Response $response){
-        $this->request = $request;$this->response = $response;
-
+        $this->request = $request;
+        $this->response = $response;
+        $controller_name = get_class($this);
         $_method_name = strtolower($request->METHOD);
         $_method_name[0] = strtoupper($_method_name[0]);
 
@@ -34,39 +35,39 @@ abstract class Controller{
 
         $_response = $this->$_call($request, $response);
 
-        if($_response === 0)
-            throw new RouterException("Request Method is not allowed");
+        if($_response === false)
+            throw new RouterException("Override \"$_call(){}\" method in  {$controller_name} to handle {$request->METHOD} Request");
 
         return $_response;
 
     }
 
     public function onDelete(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
     public function onPost(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
     public function onGet(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
     public function onPatch(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
     public function onRequest(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
     public function onPut(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
     public function onOptions(Request $request, Response $response){
-        return 0;
+        return false;
     }
 
 }
