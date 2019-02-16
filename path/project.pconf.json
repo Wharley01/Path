@@ -3,7 +3,7 @@
     "host": "localhost",
     "user": "root",
     "password": "",
-    "name": "test_boostrap"
+    "name": "macroware"
   },
   "FILE":{
     "max_size":  5242880
@@ -13,13 +13,18 @@
     "status": "production",
     "version": "1.0",
     "directory": "",
-    "server": "path.loc",
+    "host": "localhost",
+    "port": 3000,
+    "server": "http://macroware-vue.loc",
     "protocol": "http",
     "_comment":"SSE/WS can be value of watch_method",
-    "watch_method":"SSE"
+    "watch_method":"WS"
+  },
+  "WATCHER":{
+
   },
   "WEBSOCKET":{
-    "host": "path.loc",
+    "host": "macroware-vue.loc",
     "port": 443,
     "scheme": "SSL"
   }
