@@ -64,15 +64,15 @@ class Console
      *
      */
     public function loadAllCommands(){
-        if ($handle = opendir("Path/Commands")) {
+        if ($handle = opendir("path/Commands")) {
 
             while (false !== ($entry = readdir($handle))) {
 
                 if ($entry != "." && $entry != "..") {
                     $cli_class_name = basename($entry,".php");
 //                    load_class("CLI/Commands/".$cli_class_name);
-                    require_once "Path/Commands/{$cli_class_name}.php";
-                    $class = "Path\Console\\".$cli_class_name;
+                    require_once "path/Commands/{$cli_class_name}.php";
+                    $class = "path\Console\\".$cli_class_name;
                     try{
                         $class = new $class();
                         $this->commands[$class->name]['class'] = $class;
