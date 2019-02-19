@@ -24,10 +24,10 @@ class Create extends CInterface
         ]
     ];
 
-    private $models_path = "Path/Database/Models/";
-    private $commands_path = "Path/Commands/";
-    private $route_controllers_path = "Path/Controllers/Route/";
-    private $live_controllers_path = "Path/Controllers/Live/";
+    private $models_path = "path/Database/Models/";
+    private $commands_path = "path/Commands/";
+    private $route_controllers_path = "path/Controllers/Route/";
+    private $live_controllers_path = "path/Controllers/Live/";
 
     public function entry(object $params)
     {
