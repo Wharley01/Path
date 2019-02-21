@@ -6,7 +6,7 @@
 * Powered By: Path
 */
 
-namespace Path\Controller;
+namespace Path\Controller\Route;
 
 
 use Path\Controller;
@@ -17,7 +17,7 @@ use Path\Storage\Sessions;
 
 import("Path/Database/Models/Test");
 
-class MyController implements Controller
+class MyController extends Controller
 {
     private $session;
     public function __construct()
