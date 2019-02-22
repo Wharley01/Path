@@ -96,7 +96,6 @@ class Server
 
                 }
             }
-            sleep(1);
 
         }while(true);
     }
@@ -286,8 +285,9 @@ class Server
 //                       check if returned data from watcher is an instance of Response
 //                        $watcher->getResponse();
                     $this->sendMsg($client_id,json_encode($watcher->getResponse()));
+                }elseif ($watcher->hasPendingMessage()){
+                    $this->sendMsg($client_id,$watcher->getPendingMessage());
                 }
-
             }
         }
     }
@@ -305,7 +305,6 @@ class Server
                 $session_id
             );
             $client->watching->socket_key = $key;
-//            $client->watching->session_id = "session-id";
             $this->watching[$client_id] = true;
         }
     }
@@ -331,8 +330,13 @@ class Server
             if($watching instanceof Watcher) {
                 $watching->watch();
                 if(!$watching->error){
+                    $this->logText("Watching for Action");
                     if($watching->changesOccurred()){
-                        $this->sendMsg($client_id,json_encode($watching->getResponse("check-watcher")));
+                        $this->sendMsg($client_id,json_encode($watching->getResponse()));
+                    }elseif($watching->hasPendingMessage()){
+                        $this->logText("New Message in Pending");
+                        $response = $watching->getPendingMessage();
+                        $this->sendMsg($client_id,$response);
                     }
                 }
             }
@@ -345,11 +349,16 @@ class Server
             $client = &$this->clients[$client_id];
             $watching = &$client->watching;
             if($watching instanceof Watcher) {
-                $watching->sendMessage($message);
+                $watching->receiveMessage($message);
+
                 if(!$watching->error){
                     if($watching->changesOccurred()){
 //                        send response to client
-                        $response = json_encode($watching->getResponse("sending-message"));
+                        $response = json_encode($watching->getResponse());
+                        $this->sendMsg($client_id,$response);
+                    }elseif($watching->hasPendingMessage()){
+                        $response = $watching->getPendingMessage();
+                        var_dump($response);
                         $this->sendMsg($client_id,$response);
                     }
                 }
@@ -357,6 +366,8 @@ class Server
 
         }
     }
+
+
 
     private function navigateWatcher($client_id, $params, $message = null){
         if(isset($this->clients[$client_id])){
