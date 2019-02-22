@@ -39,12 +39,14 @@ class Watcher
     private $throw_exception = false;
     public  $error = null;
     public  $server;
+    public  $params = null;
+    public  $client;
     private $controller_data = [
         "root"                 => null,
         "watchable_methods"    => null,
         "params"               => null
     ];
-
+    private $pending_message = [];
     public $has_changes = [];
     /*
      * This will be set to true at first execution
@@ -58,13 +60,20 @@ class Watcher
     /*
      *
      * */
-    public function __construct(string $path,$session_id)
+    /**
+     * Watcher constructor.
+     * @param string $path
+     * @param $session_id
+     */
+    public function __construct(string $path, $session_id)
     {
         $this->path = trim($path);
         $this->response_instance = new Response();
         $this->session = new Sessions($session_id);
         $this->extractInfo();
+
     }
+
     private function getResources($payload):array {
         $split_load = explode("&",$payload);
         $all_params = [];
@@ -101,6 +110,7 @@ class Watcher
         $this->controller_data['root']                 = $path;
         $this->controller_data['watchable_methods']    = $url_resources['watchable_methods'];
         $this->controller_data['params']               = $url_resources['params'];
+        $this->params                                  = $url_resources['params'];
         $this->controller = $this->getController();
     }
 
@@ -119,8 +129,8 @@ class Watcher
             $path = $this->watcher_namespace.$path;
 
             $controller = new $path(
+                $this,
                 $this->session,
-                $this->controller_data['params'],
                 $message
             );
 
@@ -204,7 +214,14 @@ class Watcher
         $cached_value = Caches::get($_method);
         return $cached_value;
     }
-
+    private function getMethodValue($controller, $method, $message){
+        return $controller->{$method}(
+            $this->response_instance,
+            $this,
+            $this->session,
+            $message
+        );
+    }
     public function execute($watch_list,$controller,$message = null,$force_execute = false){
         $watchable_methods = $this->controller_data['watchable_methods'];
 //        var_dump($_SESSION);
@@ -220,7 +237,7 @@ class Watcher
                         $this->response[$_method][] = $this->getPrevValue($_method);
                     }else{
 
-                        $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
+                        $response = $this->getMethodValue($controller,$_method,$message);
                         $this->response[$_method][] = $response;
                         $this->response[$_method][] = $this->getPrevValue($_method);
                     }
@@ -242,10 +259,9 @@ class Watcher
                             $this->response[$_method][] = $this->getPrevValue($_method);
 
                         }else{
-                            $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
+                            $response = $this->getMethodValue($controller,$_method,$message);
                             $this->response[$_method][] = $response;
                             $this->response[$_method][] = $this->getPrevValue($_method);
-
                         }
                     }else{
                         $this->has_changes[$_method] = false;
@@ -255,7 +271,7 @@ class Watcher
             }
         }
     }
-    public function sendMessage($message){
+    public function receiveMessage($message){
         $controller = $this->getController($message);
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
@@ -263,6 +279,12 @@ class Watcher
         $this->cache($watch_list);
     }
 
+    public function sendMessage($message,$to = null){
+        $this->pending_message[] = [
+            'message' => $message,
+            'to'      => $to
+        ];
+    }
     public function navigate($params,$message = null){
         $this->controller_data['params'] = $params;
         $controller = $this->getController($message);
@@ -322,6 +344,60 @@ class Watcher
             }
         }
         return false;
+    }
+
+    public function hasPendingMessage():bool{
+        return count($this->pending_message) > 0;
+    }
+
+    public function getPendingMessage(){
+        $message = array_shift($this->pending_message);
+        $msg = $message['message'];
+        $to = $message['to'];
+        $response = [];
+
+        var_dump($message);
+        if($msg instanceof Response){
+            if(!is_null($to)){
+                $response[$to][] = [
+                    "data"           => $msg->content,
+                    "status"         => $msg->status,
+                    "headers"        => $msg->headers,
+                ];
+                $response[$to][] = [
+                    "data"           => $msg->content,
+                    "status"         => $msg->status,
+                    "headers"        => $msg->headers,
+                ];
+            }else{
+                $response = [
+                    "data"           => $msg->content,
+                    "status"         => $msg->status,
+                    "headers"        => $msg->headers,
+                ];
+            }
+
+        }else{
+            if(!is_null($to)){
+                $response[$to][] = [
+                    "data"           => $msg,
+                    "status"         => 200,
+                    "headers"        => [],
+                ];
+                $response[$to][] = [
+                    "data"           => $msg,
+                    "status"         => 200,
+                    "headers"        => [],
+                ];
+            }else{
+                $response = [
+                    "data"           => $msg,
+                    "status"         => 200,
+                    "headers"        => [],
+                ];
+            }
+        }
+        return json_encode($response);
     }
 
 
