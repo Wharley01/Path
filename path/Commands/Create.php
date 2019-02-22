@@ -142,7 +142,9 @@ class {$model_name} extends Model
     }
 
     private function createLiveControllerBoilerPlate($controller_file, $controller_name, $model_name){
-        $watchables = explode(",",$this->ask("Enter Watchable methods, separate with comma if one than one"));
+        $watchables = array_filter(explode(",",$this->ask("Enter Watchable methods, separate with comma if one than one")),function ($method){
+            return strlen(trim($method)) > 0;
+        });
 
         $boiler_plate = "<?php
 /*
@@ -167,21 +169,21 @@ import(
 
 class $controller_name implements LiveController
 {
-    // this array of methods that can be watched
-    // the array key here can either represent a method of dynamic data being set in constructor
     ";
         if(count($watchables) > 0){
             foreach ($watchables as $method){
                 $boiler_plate .=" 
-    public \$$method = \"initial value\";//Change 'initial value' in constructor of this class'";
+    public \$$method;
+
+     ";
             }
         }
 
         $boiler_plate .= "    
     //every time the watcher checks this Live Controller, it passes some data to it 
     public function __construct(
+        Watcher  &\$watcher,//watcher instance
         Sessions \$sessions,//the session instance that can be used for auth. with the client side
-        \$params,//the params parsed from Javascript Path-Watcher
         \$message//message sent from User(client Side)
     )
     {
@@ -197,7 +199,8 @@ class $controller_name implements LiveController
         if(count($watchables) > 0){
             foreach ($watchables as $method){
                 $boiler_plate .=" 
-        \$this->$method =  \"a dynamic value\";";
+        \$this->$method =  \"dynamic value\";
+        ";
             }
         }
         $boiler_plate .="
@@ -207,9 +210,14 @@ class $controller_name implements LiveController
 
             foreach ($watchables as $method){
                 $boiler_plate .=" 
-public function $method(Response \$response,?String \$message,Sessions \$sessions){
+public function $method(
+        Response \$response,
+        Watcher  &\$watcher,
+        Sessions \$sessions,
+        ?String  \$message
+    ){
 //response here will be sent to client side when \$this->watch_list[\"$method\"]'s value changes
-        return \$response->json(['message_sent' => \"hello\"]);
+        return \$response->json([\"from $method in $controller_name Live Controller\"]);
 }
         ";
             }
