@@ -7,9 +7,11 @@
  */
 
 namespace Path\Database;
-load_class("Database/Structure");
-load_class("Database/Connection");
 
+import(
+    "core/classes/Database/Structure",
+    "core/classes/Database/Connection"
+);
 
 use Path\Database\Connection\Mysql;
 use Data\Database;
