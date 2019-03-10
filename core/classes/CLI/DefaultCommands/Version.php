@@ -7,9 +7,7 @@
  */
 
 namespace Path\Console;
-load_class([
-    "CLI/Console",
-]);
+
 
 use Path\Console;
 
