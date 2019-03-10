@@ -11,6 +11,7 @@ namespace Path;
 class Console
 {
     protected   $args;
+    protected $default_cmd_path = "core/classes/CLI/DefaultCommands";
     protected   $accepted_cmds;
     protected   $commands = [];
     private     $cmd_entry = "entry";
@@ -64,7 +65,40 @@ class Console
      *
      */
     public function loadAllCommands(){
-        if ($handle = opendir("path/Commands")) {
+        /*
+         * Load default commands
+         * */
+        if ($handle = opendir("core/classes/CLI/DefaultCommands")) {
+            while (false !== ($entry = readdir($handle))) {
+
+                if ($entry != "." && $entry != "..") {
+                    $cli_class_name = basename($entry,".php");
+//                    load_class("CLI/Commands/".$cli_class_name);
+                    require "{$this->default_cmd_path}/{$cli_class_name}.php";
+                    $class = "path\Console\\".$cli_class_name;
+                    try{
+                        $class = new $class();
+                        $this->commands[$class->name]['class'] = $class;
+                        $this->commands[$class->name]['class_name'] = "Path\Console\\".$cli_class_name;
+                        $this->commands[$class->name]['entry'] = $this->cmd_entry;
+                        if(isset($class->arguments)){
+                            $this->commands[$class->name]['arguments'] = $class->arguments;
+                        }
+                        $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
+                    }catch (\Throwable $e){
+                        echo PHP_EOL.self::build("There is an error in:","light_red").PHP_EOL;
+                        echo self::build($e->getMessage(),"red");
+                        echo self::build($e->getTraceAsString(),"red");
+                        continue;
+                    }
+                }
+            }
+            closedir($handle);
+            }
+
+
+
+            if ($handle = opendir("path/Commands")) {
 
             while (false !== ($entry = readdir($handle))) {
 
