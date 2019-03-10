@@ -106,7 +106,7 @@ We can also listen for any request using the `Route::any` function. The usage of
 
 This is achieved by extending the `abstract Controller class`. An example is shown below 
 
-```
+```php
 use Path\Controller;
 
 class RequestHandler extends Controller{
@@ -131,7 +131,7 @@ class RequestHandler extends Controller{
 
 And the request listening mechanism as shown below is same as the previous ones shown above
 
-```
+```php
 $router->any('/route/my/route', RequestHandler::class)
 ```
 
