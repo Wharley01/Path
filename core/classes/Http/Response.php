@@ -9,7 +9,6 @@
 namespace Path\Http;
 use Path\PathException;
 
-load_class(["Http/MiddleWare"]);
 
 class Response
 {
