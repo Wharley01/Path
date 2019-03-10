@@ -8,7 +8,6 @@ ini_set(
     false
 );
 require_once "core/kernel.php";
-load_class("CLI/Console");
 import("core/classes/CLI/CInterface",
     "core/classes/CLI/Console"
 );
