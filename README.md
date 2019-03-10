@@ -79,7 +79,7 @@ $router = new Router();
 ```
 The code above does two things, the first is to listen for `GET` request to `/your/custom/route`(i.e: http://yourproj.dev/your/custom/route) while the second is to execute a particular `function`.
 
-The second argument may also be a `class` name. In this case, the `class` must have a `Function response` which 
+The second argument may also be a `class` name. In this case, the `class` must have an accessible method/function `response` which 
 serves as an entry point to your class after it has been instantiated.
 
    ```php
@@ -95,7 +95,7 @@ And the `class` may go like this
    ```php
     class RouteAction{
         ...
-        public function response () {
+        public function response (Request $request, Response $response) {
             // your awesome stuff goes here
         }
         ...
@@ -112,16 +112,16 @@ use Path\Controller;
 class RequestHandler extends Controller{
     
     //This function runs automatically on Get request to the route
-    public function onGet(){
+    public function onGet(Request $request, Response $response){
         //Your awesome stuff
     }
     
     //This function runs automatically on Post request to the route
-    public function onPost(){
+    public function onPost(Request $request, Response $response){
        //Your awesome stuff
     }   
     //This function runs automatically on Delete request to the route
-    public function onDelete(){
+    public function onDelete(Request $request, Response $response){
        //Your awesome stuff
     }
 
