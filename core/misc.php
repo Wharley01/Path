@@ -38,25 +38,7 @@ function config($key)
  * @throws PathException
  */
 function load_class($classes){
-
-    if(!is_array($classes)){
-        $classes = preg_replace("/\.php$/","",trim($classes));
-        $path = __DIR__ . DIRECTORY_SEPARATOR."classes".DIRECTORY_SEPARATOR."{$classes}.php";
-        if(!file_exists($path))
-            throw new PathException("Class {$classes} not found; Path: {$path}");
-        /** @var String $path */
-        include_once "{$path}";
-    }else{
-        foreach ($classes as $class) {
-            $class = preg_replace("/\.php$/","",trim($class));
-            $path = __DIR__ . DIRECTORY_SEPARATOR."classes".DIRECTORY_SEPARATOR."{$class}.php";
-            if(!file_exists($path))
-                throw new PathException("Class {$class} not found; Path: {$path}");
-            else
-                include_once $path;
-        }
-    }
-
+    return false;
 }
 
 function import(...$classes){
@@ -65,7 +47,8 @@ function import(...$classes){
         if(!file_exists($path))
             throw new \Path\ConfigException("Set Project directory Appropriately in \"core/config.ini\" ->  ".getcwd());
         $_class = preg_replace("/\.php$/","",trim($class));
-        $_class = $path.DIRECTORY_SEPARATOR.$class.".php";
+
+        $_class = $path.DIRECTORY_SEPARATOR.$_class.".php";
 
         if(!file_exists($_class)){
             throw new PathException("Class \"{$class}\" not found in \"{$_class}\"");
