@@ -19,7 +19,7 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
 $router->any([
     "path"          => ['/','/home','/testing'],
     "middleware"    => isProd::class
-],"Test->fetchAll");
+],\Path\Controller\Route\Test::class);
 
 $router->get("watcher-test",function (Request $request,Response $response){
     return $response->html("websocket.html");
@@ -75,11 +75,11 @@ $router->group(["path" => "api/@version/"], function (Router $router) {//path ca
         });
     });
 
-//        $router->error404(function (Request $request, Response $response) {
-//            return $response->json(['error' => "Error 404", 'params' => $request->fetch("name")])->addHeader([
-//                "Access-Control-Allow-Origin" => "*"
-//            ]);
-//        });
+        $router->error404(function (Request $request, Response $response) {
+            return $response->json(['error' => "Error 404 API", 'params' => $request->fetch("name")])->addHeader([
+                "Access-Control-Allow-Origin" => "*"
+            ]);
+        });
 });
 
 $router->error404(function (Request $request, Response $response) {
