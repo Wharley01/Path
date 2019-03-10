@@ -13,7 +13,7 @@ use Data\Model;
 use Path\Http\Request;
 use Path\ValidatorException;
 
-load_class("Http/Request");
+import("core/classes/Http/Request");
 
 class Validator
 {
