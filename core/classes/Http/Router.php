@@ -517,6 +517,7 @@ class Router
         $real_path = trim($this->real_path);
         if(self::is_root($real_path,self::joinPath($this->root_path,$_path))) {
             $this->response("ANY", $this->root_path, $_path, $callback, $_middle_ware,$_fallback, true);
+            die();
         }
 
     }
@@ -549,6 +550,8 @@ class Router
 
     private function importControllerFromString($controller,$params){
         $controller = trim($controller);
+        $controller = explode("\\",$controller);
+        $controller = $controller[count($controller)-1];
         if(!preg_match("/^[\w]*$/i",$controller)){
             throw new PathException("Invalid Controller string representation");
         }
