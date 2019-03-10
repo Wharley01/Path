@@ -2,10 +2,11 @@
 
 
 namespace Data;
-load_class([
-    "Database/Connection",
-    "Misc/Validator"
-]);
+
+import(
+    "core/classes/Database/Connection",
+    "core/classes/Misc/Validator"
+);
 
 use Path\Database\Connection\DB;
 use Path\Database\Connection\Mysql;
