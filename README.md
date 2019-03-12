@@ -35,18 +35,19 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 
 ## Folder Structure
 
-This are the folders you probably would be concerned with (unless you planning to contrib)
+This are the folders you probably would be concerned with (unless you planning to contribute)
 
-<strong>path</strong> <br>
-----Commands<br>
-----Controllers<br>
--------Live<br>
--------Route<br>
-----Database<br>
--------Migration<br>
--------Models<br>
-----Http<br>
--------MiddleWares<br>
+your-project-folder
+---<strong>path</strong>(your App's root folder) <br>
+   ----Commands<br>
+   ----Controllers<br>
+   -------Live<br>
+   -------Route<br>
+   ----Database<br>
+   -------Migration<br>
+   -------Models<br>
+   ----Http<br>
+   -------MiddleWares<br>
 
 #### Explanation
 
