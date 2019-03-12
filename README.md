@@ -51,9 +51,8 @@ This are the folders you probably would be concerned with (unless you planning t
 #### Explanation
 
 `Commands` Contains all your CLI commands, (can be created using `php __path create command your_command_name` )<br>
-<br>
 
-`Controllers` contains all your project's `Route`and `Live` Controllers (Can be generated with `php __path create controller yourControllerName`)<br><br>
+`Controllers` contains all your project's `Route`and `Live` Controllers (Can be generated with `php __path create controller yourControllerName`)<br>
 
 `Database` Folder contains database related codes, it has two folder which includes:<br>
 
