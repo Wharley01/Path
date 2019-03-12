@@ -46,7 +46,7 @@ class Structure
 
     public function __construct($table)
     {
-        $this->db_conn = (new Mysql())->connection;
+        $this->db_conn = Mysql::connection();
         $this->table = $table;
         $this->getExistingCols();
     }
