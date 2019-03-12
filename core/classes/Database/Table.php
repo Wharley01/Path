@@ -11,5 +11,8 @@ namespace Path\Database;
 
 interface Table
 {
-
+    public function install(Structure &$table);
+    public function uninstall();
+    public function populate(Model $table);
+    public function update(Structure &$table);
 }
