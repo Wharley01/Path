@@ -37,9 +37,6 @@ function config($key)
  * @param mixed $classes
  * @throws PathException
  */
-function load_class($classes){
-    return false;
-}
 
 function import(...$classes){
     $path = root_path();
