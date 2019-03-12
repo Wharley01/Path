@@ -31,8 +31,9 @@ class Server extends CInterface
         return $port ?? self::DEFAULT_PORT;
     }
 
-    public function entry(object $argument)
+    public function entry($argument)
     {
+        $argument = (object) $argument;
         $port = $this->getPort(@$argument->port);
         $cmd = "php -S localhost:{$port} index.php";
         echo PHP_EOL;
