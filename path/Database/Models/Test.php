@@ -8,12 +8,12 @@
 namespace Path\Database\Models;
 
 
-use Data\Model;
+use Path\Database\Model;
 use Path\Controller\Live\TestLive;
 
 class Test extends Model
 {
-    protected $table_name               = "test";
+    protected $table_name               = "bookings";
     protected $non_writable_cols        = ["id"];
     protected $readable_cols            = [];
 
