@@ -168,7 +168,7 @@ class Console
                 }
                 array_push($args,$command);
                 try{
-                    $method->{$this->commands[$command]['entry']}((object) get_cli_args($args,$this->args));
+                    $method->{$this->commands[$command]['entry']}(get_cli_args($args,$this->args));
                 }catch (\Throwable $e){
                     echo PHP_EOL.self::build("There was error in {$this->commands[$command]['class_name']}->{$this->commands[$command]['entry']}()","light_red").PHP_EOL;
                     echo PHP_EOL.self::build($e->getMessage(),"red").PHP_EOL.PHP_EOL;
@@ -191,7 +191,7 @@ class Console
     }
     public function getCommandsDetails($argument){
         echo PHP_EOL;
-        if($argument->explain === true){
+        if($argument['explain'] === true){
             foreach ($this->commands as $cmd => $desc){
                 $mask1 = "%30.30s      %30s \n";
                 printf($mask1,$this::build("".$cmd."    ",'light_green',false),$desc["description"]);
@@ -208,14 +208,14 @@ class Console
 
             }
         }else{
-            if(!isset($this->commands[$argument->explain])){
-                echo self::build("!{$argument->explain} not a recognized Command ","red")."".self::build("You can create a custom CLI Command in Path/core/classes/CLI/Commands Folder","light_green");
+            if(!isset($this->commands[$argument['explain']])){
+                echo self::build("!{$argument['explain']} not a recognized Command ","red")."".self::build("You can create a custom CLI Command in Path/core/classes/CLI/Commands Folder","light_green");
             }else{
                 $mask = "%-5s          %30.30s\n";
-                printf($mask,$this::build($argument->explain,'light_green',false),$this->commands[$argument->explain]["description"]);
+                printf($mask,$this::build($argument['explain'],'light_green',false),$this->commands[$argument['explain']]["description"]);
 
                 $mask = "--- %-5s   %18s\n";
-                foreach ($this->commands[$argument->explain]["arguments"] as $arg => $value){
+                foreach ($this->commands[$argument['explain']]["arguments"] as $arg => $value){
                     printf($mask,self::build($arg,'green',false),$value['desc']);
                 }
                 echo PHP_EOL.PHP_EOL;
