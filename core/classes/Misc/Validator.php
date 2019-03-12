@@ -9,7 +9,7 @@
 namespace Path\Misc;
 
 
-use Data\Model;
+use Path\Database\Model;
 use Path\Http\Request;
 use Path\ValidatorException;
 
