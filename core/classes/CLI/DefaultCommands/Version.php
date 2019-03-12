@@ -51,8 +51,9 @@ class Version  extends CInterface
 
     /**
      * @param $argument
+     * @return mixed|void
      */
-    public function entry(object $argument)
+    public function entry($argument)
     {
         echo "Path '{$argument->version}' version is ".config("PROJECT->version");
     }

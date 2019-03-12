@@ -35,8 +35,9 @@ class Watcher extends CInterface
 
     /**
      * @param $params
+     * @return mixed|void
      */
-    public function entry(object $params)
+    public function entry($params)
     {
         $server = new WatcherServer();
     }
