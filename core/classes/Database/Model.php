@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Data;
+namespace Path\Database;
 
 import(
     "core/classes/Database/Connection",
@@ -20,8 +20,8 @@ abstract class Model
     protected $table_name;
     private   $model_name;
     protected $primary_key     = "id";
-    protected $updated_col     = "updated_at";
-    protected $created_col     = "created_at";
+    protected $updated_col     = "last_update_date";
+    protected $created_col     = "date_added";
     protected $record_per_page = 10;
     private   $query_structure = [
         "WITH"              => "",
@@ -66,7 +66,7 @@ abstract class Model
 
     public function __construct()
     {
-        $this->conn = (new Mysql())->connection;
+        $this->conn = Mysql::connection();
         $this->table_cols = $this->getColumns($this->table_name);
         $this->model_name =  get_class($this);
     }
@@ -395,10 +395,13 @@ abstract class Model
             throw new DatabaseException("Error Attempting to update Empty data set");
         if(!$this->table_name)
             throw new DatabaseException("No Database table name specified, Configure Your model or  ");
-
-        if($this->validator && $this->validator->hasError()){
-            return false;
+        $data[$this->updated_col] = time();
+        if($this->validator instanceof Validator){
+            if($this->validator->hasError()){
+                return false;
+            }
         }
+
 
 //        GET and set raw query from array
         $this->rawKeyValueBind($data,"UPDATE");
@@ -427,6 +430,14 @@ abstract class Model
             throw new DatabaseException("Error Attempting to update Empty data set");
         if(!$this->table_name)
             throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+
+        $data[$this->updated_col] = time();
+        $data[$this->created_col] = time();
+        if($this->validator instanceof Validator){
+            if($this->validator->hasError()){
+                return false;
+            }
+        }
 
 //        GET and set raw query from array
         $this->rawKeyValueBind($data,"INSERT");
