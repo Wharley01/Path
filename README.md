@@ -39,15 +39,15 @@ This are the folders you probably would be concerned with (unless you planning t
 
 your-project-folder<br>
 ----<strong>path</strong>(your App's root folder) <br>
----------Commands<br>
----------Controllers<br>
-------------Live<br>
-------------Route<br>
----------Database<br>
-------------Migration<br>
-------------Models<br>
----------Http<br>
-------------MiddleWares<br>
+-------Commands<br>
+-------Controllers<br>
+----------Live<br>
+----------Route<br>
+-------Database<br>
+----------Migration<br>
+----------Models<br>
+-------Http<br>
+----------MiddleWares<br>
 
 #### Explanation
 
