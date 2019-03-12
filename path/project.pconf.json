@@ -3,7 +3,7 @@
     "host": "localhost",
     "user": "root",
     "password": "",
-    "name": "macroware"
+    "name": "event_db"
   },
   "FILE":{
     "max_size":  5242880
