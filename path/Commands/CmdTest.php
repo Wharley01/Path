@@ -24,8 +24,9 @@ class CmdTest extends CInterface
 
     /**
      * @param $argument
+     * @return mixed|void
      */
-    public function entry(object $argument)
+    public function entry($argument)
     {
         var_dump($argument);
     }
