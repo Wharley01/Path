@@ -8,7 +8,7 @@
 namespace Path\Database\Models;
 
 
-use Data\Model;
+use Path\Database;
 
 class SSEModel extends Model
 {
