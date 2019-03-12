@@ -5,7 +5,12 @@ Path is an API-first PHP framework built with javascript in mind
 ## Contents
 
 [Installation](#Installation) <br>
-[Folder Structure](#Folder-Structure)
+[Folder Structure](#Folder-Structure)<br>
+[Your First API](#your-first-api)<br>
+-----[Router](#router)
+
+       
+
 
 
 
@@ -29,25 +34,31 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 ```
 
 ## Folder Structure
---- core\
------- \\...\
---- path\
------- Commands *<------ Contains All your custom Console Commands*\
------- Controllers *<------ Contains Your API Controller*\
------- Database \
---------- Models *<-------- Contains your Database Models*\
------------- \\...\
------- Http\
---------- MiddleWares *<-- Contains your Route MiddleWares*\
------------- \\...\
------- config.ini *<------ Your Configuration file*\
------- Routes.php *<------ Contains your routes*\
 
-#### Folder structure In Image
+This are the folders you probably would be concerned with (unless you planning to contrib)
 
-![Image](./docs/images/folder-structure.jpg)
+<strong>path</strong> <br>
+----Commands<br>
+----Controllers<br>
+-------Live<br>
+-------Route<br>
+----Database<br>
+-------Migration<br>
+-------Models<br>
+----Http<br>
+-------MiddleWares<br>
 
+#### Explanation
 
+`Commands` Contains all your CLI commands, (can be created using `php __path create command your_command_name` )<br>
+<br>
+
+`Controllers` contains all your project's `Route`and `Live` Controllers (Can be generated with `php __path create controller yourControllerName`)<br><br>
+
+`Database` Folder contains database related codes, it has two folder which includes:<br>
+
+1. `Migration` folder contains on all database migration files (can be generated using `php __path create migration yourDBtableName`)
+2. `Models` folder contains all your database table models (can be generated during controller creation)
 
 ## Your First API
 
