@@ -14,21 +14,29 @@ import(
 );
 
 use Path\Database\Connection\Mysql;
-use Data\Database;
 use Path\Database\Structure;
 use Path\DataStructureException;
 
 class Prototype
 {
     private $db_conn;
+    protected $table_name = null;
+    protected $primary_key = null;
     public function __construct()
     {
-        $this->db_conn = (new Mysql())->connection;
+        $this->db_conn = Mysql::connection();
     }
-    public function create(string $table,callable $structure){
+    public function create(string $table,Table $table_instance){
         $proto = new Structure($table);
         $proto->action = "creating";
-        $structure($proto);
+        $primary_key = $table_instance->primary_key ?? "id";
+
+        $proto->column($primary_key)
+            ->type("INT")
+            ->primaryKey()
+            ->increments();
+
+        $table_instance->install($proto);
 
 //        Add extra setup column
         $proto->column("is_deleted")
@@ -46,11 +54,11 @@ class Prototype
         $proto->executeQuery();
         return $proto;
     }
-    public function alter(string $table,callable $structure){
+    public function alter(string $table,Table $table_instance){
         $proto = new Structure($table);
         $proto->action = "altering";
+        $table_instance->update($proto);
 
-        $structure($proto);
         $proto->executeQuery();
         return $proto;
     }
