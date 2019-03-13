@@ -1,10 +1,4 @@
 <?php
-/**
- * @Author by Sulaiman Adewale.
- * @Date 12/5/2018
- * @Time 3:05 AM
- * @Project Path
- */
 
 namespace Path\Http\MiddleWare;
 
@@ -16,9 +10,6 @@ use Path\Storage\Sessions;
 
 class isProd implements MiddleWare
 {
-    public function __construct()
-    {
-    }
 
     /**
      * @param Request $request
@@ -29,7 +20,7 @@ class isProd implements MiddleWare
      */
     public function validate(Request $request, Response $response):bool
     {
-        return config("PROJECT->status") == "production";
+        return config("PROJECT->status") != "production";
     }
 
     public function fallBack(Request $request, Response $response)
