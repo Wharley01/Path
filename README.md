@@ -1,13 +1,26 @@
 # PHP Path
 
-Path is an API-first PHP framework built with javascript in mind
+Path framework is an API-first PHP framework crafted for javascript.
+
+ Path is an MVC framework that uses your preferred javascript framework as the View while It handles the modelling and Controlling. Path is more Suitable for PWA and MVC modern web apps, can also be used to build just API for your existing App.
+
+ If you are someone that gets bored of single language on both client and server sides just like me, Path is for you. 
+
+Path can also be used to build real-time Apps, While all your data are still within your server (Seems like a better alternative to firebase?)
 
 ## Contents
 
 [Installation](#Installation) <br>
 [Folder Structure](#Folder-Structure)<br>
 [Your First API](#your-first-api)<br>
------[Router](#router)
+-----[Router](#router)<br>
+--------[Request](#request)<br>
+--------[Response](#response)<br>
+--------[Middle Ware](#middle-ware)<br>
+[Database Model](#database-model)<br>
+
+
+
 
        
 
@@ -16,7 +29,8 @@ Path is an API-first PHP framework built with javascript in mind
 
 ## Installation
 
-create your project directory and initialize as git directory but running this command in that dir.
+create your project directory and initialize it as git directory but running this command in that dir.
+
 ```bash
 $ git init
 ```
@@ -35,10 +49,11 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 
 ## Folder Structure
 
-This are the folders you probably would be concerned with (unless you planning to contribute)
+These are the folders you probably would be concerned with (unless you planning to contribute to Path's code development)
 
 your-project-folder<br>
 ----<strong>path</strong>(your App's root folder) <br>
+...<br>
 -------Commands<br>
 -------Controllers<br>
 ----------Live<br>
@@ -48,7 +63,7 @@ your-project-folder<br>
 ----------Models<br>
 -------Http<br>
 ----------MiddleWares<br>
-
+...
 #### Explanation
 
 `Commands` Contains all your CLI commands, (can be created using `php __path create command your_command_name` )<br>
@@ -66,7 +81,7 @@ your-project-folder<br>
 
 The backbone of every application is having an interface to interact with your data in the database, which is what will be demonstrated in this section.
 
-To create an API you need a router which will listen to a particular Route(or URL) and appropriate action may be taken and a response will be returned(shown) to user.
+To create an API you need a router which will listen to a particular Route(or URL) and appropriate action may be taken and a response will be returned(shown) to the user.
 
 you can listen to your preferred URL(Route) with Path's Router, for example:
 
@@ -90,65 +105,6 @@ $router = new Router();
 ```
 The code above does two things, the first is to listen for `GET` request to `/your/custom/route`(i.e: http://yourproj.dev/your/custom/route) while the second is to execute a particular `function`.
 
-The second argument may also be a `class` name. In this case, the `class` must have an accessible method/function `response` which 
-serves as an entry point to your class after it has been instantiated.
-
-   ```php
- use Path\Http\Request;
-
- $router = new Router();
- 
-  $router->get("/your/custom/route", RouteAction::class);
-  ```
-   
-And the `class` may go like this
-
-   ```php
-    class RouteAction{
-        ...
-        public function response (Request $request, Response $response) {
-            // your awesome stuff goes here
-        }
-        ...
-    }
-   ```
-
-We can also listen for any request using the `Route::any` function. The usage of this function can be extended to automatically run a certain block of code depending on `$_SERVER['REQUEST_METHOD']`.
-
-This is achieved by extending the `abstract Controller class`. An example is shown below 
-
-```php
-use Path\Controller;
-
-class RequestHandler extends Controller{
-    
-    //This function runs automatically on Get request to the route
-    public function onGet(Request $request, Response $response){
-        //Your awesome stuff
-    }
-    
-    //This function runs automatically on Post request to the route
-    public function onPost(Request $request, Response $response){
-       //Your awesome stuff
-    }   
-    //This function runs automatically on Delete request to the route
-    public function onDelete(Request $request, Response $response){
-       //Your awesome stuff
-    }
-
-}
-
-```
-
-And the request listening mechanism as shown below is same as the previous ones shown above
-
-```php
-$router->any('/route/my/route', RequestHandler::class)
-```
-
-NOTE: Using a custom class which extends the `abstract` `Controller` `class` on other route functions such as Route::post and Route::get will work fine, but it will only execute the function code that matches the REQUEST, Hence, this approach is not ideal.
-
-However, It is a valid use case provided the Controller class is not extended. In this scenario, Path will default to executing the response method in the Supplied Class. An exception is thrown if Path can not find a response method in the provided class.
 
 Path can also match dynamic url as seen below
 ```php
@@ -221,6 +177,74 @@ Routes may also be grouped depending on your use case, as shown below.
    NOTE: All routes codes must be written in path/Routes.php
    ````
    Now go on and visit http://yourproject.dev/your/custom/url you will get a json response
+
+
+The second argument of `$router->request_name` may also be a `class` name. In this case, the `class` must have an accessible method/function `response` which 
+serves as an entry point to your class after it has been instantiated.
+
+   ```php
+ use Path\Http\Request;
+
+ $router = new Router();
+ 
+  $router->get("/your/custom/route", RouteAction::class);
+  ```
+   
+And the `class` may look like this
+
+   ```php
+    class RouteAction{
+        ...
+        public function response (Request $request, Response $response) {
+            // your awesome stuff goes here
+        }
+        ...
+    }
+   ```
+
+We can also listen for any type of request (i.e: GET/POST/PUT e.t.c) using the `Route::any` function. The usage of this function can be extended to automatically run a certain block of code depending on `$_SERVER['REQUEST_METHOD']`(Request type).
+
+This can be achieved by extending the `abstract Controller class`. An example is shown below 
+
+```php
+use Path\Controller;
+
+class RequestHandler extends Controller{
+    
+    //This function runs automatically on Get request to the route
+    public function onGet(Request $request, Response $response){
+        //Your awesome stuff
+    }
+    
+    //This function runs automatically on Post request to the route
+    public function onPost(Request $request, Response $response){
+       //Your awesome stuff
+    }   
+    //This function runs automatically on Delete request to the route
+    public function onDelete(Request $request, Response $response){
+       //Your awesome stuff
+    }
+    ...
+
+}
+
+```
+
+The Controller Class Above can be used as shown below
+
+```php
+$router->any('/route/my/route', RequestHandler::class)
+```
+
+The method in class `RequestHandler` that will serve as response for `'/route/my/route'` depends on `$_SERVER['REQUEST_METHOD']`, for example:
+
+if a GET request is sent to `'/route/my/route'` the `public function onGet(){}` serves as the response. a `RouterException` will be thrown if required method for the user's current  `request method` is not found  in your `Controller` Class 
+
+
+NOTE: Using a custom class which extends the `abstract` `Controller` `class` on other route methods such as `$route->post()` and `$route->get()` will work fine, but it will only execute the function code that matches the REQUEST, Hence, this approach is not ideal.
+
+However, It is a valid use case to use a class that's not extending `Controller abstract class`. In this scenario, Path will default to executing the response method in the Supplied Class. A `RouterException` is thrown if Path can not find a response method in the provided class.
+
    
 ### Request
 To interact with all request properties such as headers, url path properties, request types etc. Path is bundled with  a `class Request`. 
@@ -234,7 +258,7 @@ Hence, our previous definitions may be redefined as follows to enable access to 
   ...
    
   $router->get("/your/custom/route",function(Request $request){
-     //do something here
+     //do something here or use $request here
   });
   
   $router->post("/another/custom/route",function(Request $request){
@@ -250,12 +274,23 @@ We get the parameter defined in the url path from the $request object passed to 
   ...
   
   $router->get("/user/@id:[\d]+/profile",function(Request $request){
-     echo "Your user id is " . $request->param['id'];
+     echo "Your user id is " . $request->param->id;
      //do something here
   });
 ```
 
-We can also get any header property using the `Request::fetch` method. Example is 
+Value of the `@id` parameter can be gotten using 
+
+```php
+  ...
+  $request->params->id//this depends on what you name your parameter
+  ...
+```
+
+when `http://yourproject.dev/user/2323/profile` is requested, the value of `$request->params->id` becomes `2323`
+
+
+header properties can also be fetched using the `$request->fetch()` method. Example is 
 
 ```php
   ...
@@ -268,7 +303,16 @@ We can also get any header property using the `Request::fetch` method. Example i
   ...
 ```
 
-If we're expecting a file as part of our request, We can get the file using the `Request::file` method.
+...Or a data sent via html form
+
+
+```php
+  ...
+   $request->fetch("input_name");
+  ...
+```  
+
+ Files sent via form can be retrieved using the `$request->file()` method.
 ```php
   ...
   
@@ -326,7 +370,7 @@ Modifying and returning a response is easy. All you have to do is as follows
 Note: You may decide to create a new response object and return it instead (if you wish)
 ```
 ##### Usage
-   Note that we used `$response->json()` method to return a json response in our callback function, which will execute when our route(`/your/custom/path`) is requested, there are many other available in `Response $response` as listed below:
+   Note that we used `$response->json()` method to return a json response in our callback function, which will execute when our route(`/your/custom/path`) is requested, there are many other available methods in `Response $response` as listed below:
 
    1. json( array $array, $status = 200 )
    2. text( string $text, $status = 200 )
@@ -337,6 +381,109 @@ Note: You may decide to create a new response object and return it instead (if y
    Methods that can be chained with the response method
       
    1. addHeader(array $headers)
+
+### Middle Ware
+
+The MiddleWare Concept was designed to add restriction(s) to accessibility of a particular route based on your preferred condition when needed, this can be very handy in cases like a restriction of API usage for the non-logged user, API-key system, request form validation and many more.
+
+A middleware, when specified is first executed and its conditions checked before Path would decide whether to proceed with the request of fallback to the middleWare's fallback method.
+
+##### The MiddleWare Class
+
+In Path, MiddleWares must me created as a class in `path/Http/MiddleWares/` folder and your class must implement `Path\Http\MiddleWare`, a typical middleware class Looks like this:
+
+```php
+namespace Path\Http\MiddleWare;
+
+
+use Path\Http\MiddleWare;
+use Path\Http\Request;
+use Path\Http\Response;
+use Path\Storage\Sessions;
+
+class isProd implements MiddleWare
+{
+
+
+    /**
+     * @param Request $request
+     * @param Response $response
+     * @return mixed
+     * @throws \Path\ConfigException
+     * @internal param $params
+     */
+    public function validate(Request $request, Response $response):bool
+    {
+        return config("PROJECT->status") == "production";
+    }
+
+    public function fallBack(Request $request, Response $response)
+    {
+            return $response->json(['mode' => 'Development Mode',"session_id" => session_id()]);
+    }
+}
+```
+```
+NOTE: In Path, Anywhere you are required to create a class, your `File` name must be the same as your `Class`'s name and each `Class` must be in separate file.
+```
+
+The code above describes two things for the router, 
+
+```php
+public function validate(Request $request, Response $response):bool
+```
+1. The `validate()` method returns a `Boolean` which will be checked by the router(When a user tries to request it), if the returned `Boolean` is `True` the router proceeds with the request.
+
+```php
+ public function fallBack(Request $request, Response $response):?Response
+    
+```
+2. if the validate() method's returned value is `False`, the router uses `fallBack()` method of your middleWare class as the route's response.
+
+
+#### Using the MiddleWare with Route
+
+After creating your middleWare class, the next thing to do is use the middleware with any of your preferred route as described below 
+
+```php
+...
+use Path\Http\MiddleWare\isProd;
+
+$router->get([
+   "path" => "/your/awesome/route",
+   "middleware" => isProd::class//this can be array of MiddleWares too
+   ],function(){
+// this will execute if the middleware "isProd"'s validate() method returns true
+
+   })
+...
+```
+
+You can use multiple middleWares this way:
+```php
+...
+use Path\Http\MiddleWare\IsValidPost;
+use Path\Http\MiddleWare\IsLoggedUser;
+
+$router->get([
+   "path" => "/your/awesome/route",
+   "middleware" => [
+      IsLoggedUser::class,
+      IsValidPost::class
+   ]//multiple middleWares are placed in array
+   ],function(){
+// this will execute if the middleware "isProd"'s validate() method returns true
+
+   })
+...
+```
+
+MiddleWares validation is done in order of how you place them in the array and appropriate response is sent to the user based on the currently failing(returning false) MiddleWare, Proceeds to other when current one passes(returns true).
+
+# Database Model
+What's the essence of an App without a Database? Useless? Well,maybe not all the time 😄, but either way, Path has a very flexible mechanism designed for you to interact with your Web App's database, In Path Every Table in your database must be represented with a Class (Called Model) which extends the `abstract Class Path\Database\Model` which you will have to override its properties to suit your use case. 
+
+
 
 # Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
