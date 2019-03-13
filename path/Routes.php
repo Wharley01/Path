@@ -1,6 +1,7 @@
 <?php
 
 
+use Path\Http\MiddleWare\IsLoggedUser;
 use Path\Http\MiddleWare\isProd;
 use Path\Http\Request;
 use Path\Http\Response;
@@ -18,7 +19,10 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
 
 $router->any([
     "path"          => ['/','/home','/testing'],
-    "middleware"    => isProd::class
+    "middleware"    => [
+        IsLoggedUser::class,
+        isProd::class
+        ]
 ],\Path\Controller\Route\Test::class);
 
 $router->get("watcher-test",function (Request $request,Response $response){
