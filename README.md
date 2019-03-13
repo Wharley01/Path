@@ -95,7 +95,7 @@ $router = new Router();
  
  proceed to listening to a request
 ```php
- use Path\Http\Request;
+ use Path\Http\Router;
 
  $router = new Router();
  
@@ -108,7 +108,7 @@ The code above does two things, the first is to listen for `GET` request to `/yo
 
 Path can also match dynamic url as seen below
 ```php
- use Path\Http\Request;
+ use Path\Http\Router;
 
  $router = new Router();
  
@@ -118,7 +118,7 @@ Path can also match dynamic url as seen below
 ```
 Regular expressions is also a valid in url in the format shown below
 ```php
- use Path\Http\Request;
+ use Path\Http\Router;
 
  $router = new Router();
  
@@ -131,7 +131,7 @@ There can be multiple routers listening to different routes with one `Router` ob
 The `Router` object is instantiated once as `$router` and used to listen to more than one request.
 
 ```php
- use Path\Http\Request;
+ use Path\Http\Router;
    
  $router = new Router(); //A router object is instantiated
  
@@ -147,7 +147,6 @@ The `Router` object is instantiated once as `$router` and used to listen to more
 Routes may also be grouped depending on your use case, as shown below.
 
 ```php
- use Path\Http\Request;
  use Path\Http\Router;
 
  $router = new Router();
@@ -174,12 +173,12 @@ Routes may also be grouped depending on your use case, as shown below.
 ```
 
    ````
-   NOTE: All routes codes must be written in path/Routes.php
+   NOTE: All routes codes must be written in `path/Routes.php`
    ````
    Now go on and visit http://yourproject.dev/your/custom/url you will get a json response
 
 
-The second argument of `$router->request_name` may also be a `class` name. In this case, the `class` must have an accessible method/function `response` which 
+The second argument of `$router->request_method()` may also be a `class` name. In this case, the `class` must have an accessible method/function `response` which 
 serves as an entry point to your class after it has been instantiated.
 
    ```php
@@ -254,6 +253,7 @@ Hence, our previous definitions may be redefined as follows to enable access to 
 
 ```php
  use Path\Http\Request;
+ use Path\Http\Router;
    
   ...
    
@@ -483,6 +483,11 @@ MiddleWares validation is done in order of how you place them in the array and a
 # Database Model
 What's the essence of an App without a Database? Useless? Well,maybe not all the time 😄, but either way, Path has a very flexible mechanism designed for you to interact with your Web App's database, In Path Every Table in your database must be represented with a Class (Called Model) which extends the `abstract Class Path\Database\Model` which you will have to override its properties to suit your use case. 
 
+A typical Database table model looks like this:
+
+```php
+
+```
 
 
 # Contributing
