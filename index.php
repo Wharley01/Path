@@ -2,11 +2,7 @@
 namespace Path\Http;
 session_start();
 
-use Path\Http\MiddleWare\isProd;
-use Path\Http\Request;
-use Path\Http\Response;
-use Path\Http\Router;
-use Path\Misc\Validator;
+use Throwable;
 
 require_once "core/kernel.php";
 require_once "core/bootstrap.php";
