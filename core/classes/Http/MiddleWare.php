@@ -5,7 +5,6 @@ namespace Path\Http;
 
 interface MiddleWare
 {
-    public function __construct();
 
     /**
      * @param Request $request
