@@ -2,11 +2,11 @@
 
 Path framework is an API-first PHP framework crafted for javascript.
 
- Path is an MVC framework that uses your preferred javascript framework as the View while It handles the modelling and Controlling. Path is more Suitable for PWA and MVC modern web apps, can also be used to build just API for your existing App.
+ Path framework is an MVC framework that uses your preferred javascript framework as the View while It handles the modeling and Controlling. Path framework is more Suitable for PWA and MVC modern web apps, can also be used to build just API for your existing App.
 
  If you are someone that gets bored of single language on both client and server sides just like me, Path is for you. 
 
-Path can also be used to build real-time Apps, While all your data are still within your server (Seems like a better alternative to firebase?)
+Path framework can also be used to build real-time Apps. While all your data are still within your server (Seems like a better alternative to firebase?)
 
 ## Contents
 
@@ -29,13 +29,13 @@ Path can also be used to build real-time Apps, While all your data are still wit
 
 ## Installation
 
-create your project directory and initialize it as git directory but running this command in that dir.
+Create your project directory and initialize it as git directory but running this command in that dir.
 
 ```bash
 $ git init
 ```
 
-pull Path's source to the directory you created with: 
+Pull Path's source to the directory you created with: 
 
 ```bash
 $ git pull https://github.com/Wharley01/Path.git
@@ -49,10 +49,10 @@ $ git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
 
 ## Folder Structure
 
-These are the folders you probably would be concerned with (unless you planning to contribute to Path's code development)
+These are the folders you probably would be concerned with (unless you planning to contribute to Path's core development)
 
-your-project-folder<br>
-----<strong>path</strong>(your App's root folder) <br>
+-<b>your-project-folder</b><br>
+----<strong>path</strong> (your App's root folder) <br>
 ...<br>
 -------Commands<br>
 -------Controllers<br>
@@ -70,7 +70,7 @@ your-project-folder<br>
 
 `Controllers` contains all your project's `Route`and `Live` Controllers (Can be generated with `php __path create controller yourControllerName`)<br>
 
-`Database` Folder contains database related codes, it has two folder which includes:<br>
+`Database` Folder contains database related codes, it has two folders which includes:<br>
 
 1. `Migration` folder contains on all database migration files (can be generated using `php __path create migration yourDBtableName`)
 2. `Models` folder contains all your database table models (can be generated during controller creation)
@@ -79,9 +79,9 @@ your-project-folder<br>
 
 ### Router
 
-The backbone of every application is having an interface to interact with your data in the database, which is what will be demonstrated in this section.
+The backbone of every application is; having a programmable interface for it, which may be consumed/used by your App or a third-party App. 
 
-To create an API you need a router which will listen to a particular Route(or URL) and appropriate action may be taken and a response will be returned(shown) to the user.
+To create an API you need a router which would be listening to a particular Route(or URL) and appropriate action may be taken and a response can be returned(shown) to the user.
 
 you can listen to your preferred URL(Route) with Path's Router, for example:
 
@@ -103,7 +103,7 @@ $router = new Router();
      //do something here
   });
 ```
-The code above does two things, the first is to listen for `GET` request to `/your/custom/route`(i.e: http://yourproj.dev/your/custom/route) while the second is to execute a particular `function`.
+The code above does two things; the first is to listen for `GET` request to `/your/custom/route`(i.e., http://yourproj.dev/your/custom/route) while the second is to execute a particular `function`.
 
 
 Path can also match dynamic url as seen below
@@ -242,7 +242,7 @@ if a GET request is sent to `'/route/my/route'` the `public function onGet(){}` 
 
 NOTE: Using a custom class which extends the `abstract` `Controller` `class` on other route methods such as `$route->post()` and `$route->get()` will work fine, but it will only execute the function code that matches the REQUEST, Hence, this approach is not ideal.
 
-However, It is a valid use case to use a class that's not extending `Controller abstract class`. In this scenario, Path will default to executing the response method in the Supplied Class. A `RouterException` is thrown if Path can not find a response method in the provided class.
+However, It is a valid use case to use a class that's not extending `Controller abstract class`. In this scenario, Path will default to executing the response method in the Supplied Class. A `RouterException` is thrown if Path cannot find a response method in the provided class.
 
    
 ### Request
@@ -481,13 +481,153 @@ $router->get([
 MiddleWares validation is done in order of how you place them in the array and appropriate response is sent to the user based on the currently failing(returning false) MiddleWare, Proceeds to other when current one passes(returns true).
 
 # Database Model
-What's the essence of an App without a Database? Useless? Well,maybe not all the time 😄, but either way, Path has a very flexible mechanism designed for you to interact with your Web App's database, In Path Every Table in your database must be represented with a Class (Called Model) which extends the `abstract Class Path\Database\Model` which you will have to override its properties to suit your use case. 
+What's the essence of an App without a Database? Useless? Well,maybe not all the time 😄, but either way, Path has a very flexible mechanism designed for you to interact with your Web App's database, The essence of Database Model it to give you the ability to configure how you want each table to be interacted with.
+
+ In Path Every Table in your database must be represented with a Class (Called Model) which extends the `abstract Class Path\Database\Model` which you will have to override its properties to suit your use case, a single database table can have multiple Database Model(if you want different set of rules for same table). All database model must be created in `path/Database/Models` folder.
 
 A typical Database table model looks like this:
 
 ```php
+<?php
+/*
+* This is automatically generated 
+* Edit to fit your need
+* Powered By: Path
+*/
+
+namespace Path\Database\Models;
+
+
+use Path\Database\Model;
+
+class Test extends Model
+{
+    protected $table_name        = "your_table_name";
+    protected $non_writable_cols = ["id"];//your primary key( default is "id")
+    protected $non_readable_cols = [];//columns that can not be read(retrieved ) using this model(Test) instance
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
+}
+```
+##### Explanation
+
+1. `protected $table_name        = "your_table_name";` specifies database table for this model.
+
+2. `protected $non_writable_cols = ["id"];` specifies the which column can not be changed(not writable)
+
+3. `protected $non_readable_cols = [];` specifies which columns cannot be read(would be filtered out if you try to read/fetch them)
+
+There are more model configurations which will be listed in the next sub-section
+
+#### Model Configuration reference
+
+| Properties | Default Value  | Description
+| :----------| ------------- | :--------------------  
+|$primary_key | `id`  | Specifies the Primary of your model's table(Defaul)
+|$table_name  | null  | Holds Model table name
+|$record_per_page  | 10  | Total number of rows to return per page 
+|$non_writable_cols | []   | The columns that can not be changed(not writable)
+|$non_readable_cols | []  |  The columns that cannot be read(would be filtered out if you try to read/fetch them)
+|$created_col | `date_added`  | Specifies the column that holds your timestamp when a new data was inserted
+|$updated_col  | `last_update_date`  | Specifies the table column name that holds the timestamp of when last the row updates
+|$fetch_method  | `FETCH_ASSOC`  | PDO Method to use in fetch result
+
+
+### Database Model usage
+
+After configuring your database Model, you can go on using your Model instantiating it, this way your have access to all the parent class `Path\Database\Model`'s objects.
+
+#### Fetching Data
+
+Below is an example of fetching data in database.
+
+```php
+...
+use Path\Database\Models;
+
+import(
+    "path/Database/Models/Test"//import needed model
+);
+
+// instantiate your model
+// and fetch  all data from your `your_table_name` as json response
+$test1 = (new Models\Test())
+         ->all();
+
+// fetch a particular set of column instead
+
+$test2 = (new Models\Test())
+         ->select(['name','age']);//select just age and name
+
+var_dump($test2->getAll());//return array of all data
+
+var_dump($test2->getFirst());//return the first record only
+
+var_dump($test2->getLast());//return the last row only
+
+// fetch data by ID
+
+...
+```
+
+##### Code explanation
+
+1. `(new Models\Test())` instantiate your database model.
+
+2. `->select(['name','age'])` specifies the columns you are interested in in this Model instance.
+
+below them are demonstrated ways to fetch the result
+
+1. `->getAll()` returns multi rows index based array of the data.
+
+2. `->getFirst()` returns first single record in an associative array.
+
+3. `->getLast()` returns last single record in an associative array.
+
+
+#### Adding constraint Clause
+
+Because you probably won't want to fetch all data in your database table all the time, you can use available constraint methods to your advantage.
+
+Below is an example of using a constraint clause while fetching data
+
+```php
+use Path\Database\Models;
+
+import(
+    "path/Database/Models/Test"//import needed model
+);
+
+$fetch_data = (new Models/Test)
+               ->select(['name'])//fetch only name column
+               ->where('age = 12')//where age is 12 using `where` constraint method
+               ->getFirst();//get the first record only
+
+var_dump($fetch_data);              
+
+$fetch_data2 = (new Models/Test)
+               ->where("name")
+               ->like("%ade")
+               ->orWhere("age > 40")
+               ->batch(1,10)//from 1st record to 10th
+               ->getAll();
 
 ```
+
+##### Code explanation
+
+In the code above, we made use of constraint clauses to further describe the kind of data we want, there are more constraint methods available which is listed below.
+
+#### constraint class  reference
+
+|  Clause | Possible values | Description        | Can be Chained With
+| :------ | :---------------| :------------------ | :----
+| `where(String|Array $condition)` |  column name, condition (i.e: age > 12) or an associative array(i.e: ['name' => 'adewale']) | This defines the WHERE clause to filter records | 1. `like(String $wild_card)` <br><br>2.`notLike(String $wild_card)` <br><br> 3. `between(mixed $start,mixed $stop)`
+| `like(String $wild_card)` | All SQL wildcard syntax (i.e: %value%) | Describes the LIKE wild card, equivalent to SQL's "`WHERE LIKE '%value'`", `like()` method should always be combined with `where()` method which will specify the column in this context | |
+
 
 
 # Contributing
