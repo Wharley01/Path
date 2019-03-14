@@ -623,9 +623,9 @@ In the code above, we made use of constraint clauses to further describe the kin
 
 #### constraint class  reference
 
-|  Clause | Possible values | Description        | Can be Chained With
+|  Clause | Possible values | Description        | Example
 | :------ | :---------------| :------------------ | :----
-| `where(String|Array $condition)` |  column name, condition (i.e: age > 12) or an associative array(i.e: ['name' => 'adewale']) | This defines the WHERE clause to filter records | 1. `like(String $wild_card)` <br><br>2.`notLike(String $wild_card)` <br><br> 3. `between(mixed $start,mixed $stop)`
+| `where(String|Array $condition)`  |  column name, condition (i.e: age > 12) or an associative array(i.e: ['name' => 'adewale']) | This defines the WHERE clause to filter records | 1. `where("column")->like("%a")` <br><br>2.`where("column")->notLike("e%")` <br><br> 3. `where("column")->between(10,20)`<br><br>`where("age > 20")`<br><br>4. `where(["name" => "John Doe"])`
 | `like(String $wild_card)` | All SQL wildcard syntax (i.e: %value%) | Describes the LIKE wild card, equivalent to SQL's "`WHERE LIKE '%value'`", `like()` method should always be combined with `where()` method which will specify the column in this context | |
 
 
