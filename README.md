@@ -626,7 +626,9 @@ In the code above, we made use of constraint clauses to further describe the kin
 |  Clause | Possible values | Description        | Example
 | :------ | :---------------| :------------------ | :----
 | `where(mixed $condition)`  |  column name, condition (i.e: age > 12) or an associative array(i.e: ['name' => 'adewale']) | This defines the WHERE clause to filter records | 1. `where("column")->like("%a")` <br><br>2.`where("column")->notLike("e%")` <br><br> 3.`where("column")->between(10,20)`<br><br>4.`where("age > 20")`<br><br>5. `where(["name" => "John Doe"])`
-| `like(String $wild_card)` | All SQL wildcard syntax (i.e: %value%) | Describes the LIKE wild card, equivalent to SQL's "`WHERE LIKE '%value'`", `like()` method should always be combined with `where()` method which will specify the column in this context | |
+|`orWhere`| ""   ""| Define Alternative condition, equivalent to SQL's "`OR WHERE `" clause| `where("score > 50")->orWhere("isPassed")`
+| `like(String $wild_card)` | All SQL wildcard syntax (i.e: %value%) | Describes the LIKE wild card, equivalent to SQL's "`WHERE column LIKE '%value'`", `like()` method should always be combined with `where()` method which will specify the column in this context | `where("column_name")->like("%a")` 
+| `notLike(string $wild_card)`| "" "" | Describes the LIKE wild card, equivalent to SQL's "WHERE column NOT LIKE '%value'", like() method should always be combined with where() method which will specify the column in this context|where("column_name")->notLike("%a")
 
 
 
