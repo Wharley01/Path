@@ -516,6 +516,12 @@ abstract class Model
             throw new DatabaseException($e->getMessage());
         }
     }
+    public function getAll(
+        $cols = [],
+        $sing_record = false
+    ){
+            $this->all($cols,$sing_record);
+    }
 
 
     /**
@@ -633,7 +639,7 @@ abstract class Model
     }
 
 
-    public function rawJoinGen($table_joins){
+    public function rawJoinGen(array $table_joins){
         $str = "";
         foreach ($table_joins as $table => $value) {
             $type = $value["type"];
@@ -648,7 +654,7 @@ abstract class Model
      * @param $on
      * @return $this
      */
-    private function join($type = "INNER JOIN", $table, $on){
+    private function join($type = "INNER", $table, $on){
         $this->query_structure["JOIN"][$table]["type"] =  $type." JOIN";
         $this->query_structure["JOIN"][$table]["on"] =  $this ->getOn($on);
         return $this;
