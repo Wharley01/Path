@@ -23,7 +23,7 @@ class IsLoggedUser implements MiddleWare
      */
     public function validate(Request $request, Response $response):bool
     {
-        return false;
+        return true;
     }
 
     public function fallBack(Request $request, Response $response)
