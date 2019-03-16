@@ -11,6 +11,13 @@ use Path\Database\Structure;
 use Path\Database\Table;
 use Path\DatabaseException;
 
+import(
+    "core/classes/Database/Prototype",
+    "core/classes/Database/Structure",
+    "core/classes/Database/Table",
+    "core/classes/Database/Model"
+);
+
 class Migration extends CInterface
 {
 
