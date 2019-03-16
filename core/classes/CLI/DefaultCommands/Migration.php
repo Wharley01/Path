@@ -75,10 +75,12 @@ class Migration extends CInterface
         }
 
     }
-
+    private function toLower($string){
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $string));
+    }
     private function runCommand($hook,$table = null){
         if($table && is_string($table)){
-            $table = strtolower($table);
+            $table = $this->toLower($table);
             $table_class_instance =  $this->tables[$table];
             if(!$table_class_instance){
                 throw new DatabaseException("\"{$table}\" Does not exist in {$this->migration_files_path}");
@@ -89,7 +91,7 @@ class Migration extends CInterface
             }
         }else{
             foreach ($this->tables as $table => $value){
-                $table = strtolower($table);
+                $table = $this->toLower($table);
                 $table_class_instance =  $this->tables[$table];
                 if(!$table_class_instance){
                     throw new DatabaseException("\"{$table}\" Does not exist in {$this->migration_files_path}");
@@ -145,7 +147,7 @@ class Migration extends CInterface
                     if(property_exists($class_instance,"table_name")){
                         $classes[$class_instance->table_name] = $class_instance;
                     }else{
-                        $classes[strtolower($class_name)] = $class_instance;
+                        $classes[$this->toLower($class_name)] = $class_instance;
                     }
                 }
             }
