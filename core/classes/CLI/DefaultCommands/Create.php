@@ -50,6 +50,9 @@ class Create extends CInterface
         }
 
     }
+    private function toLower($string){
+        return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $string));
+    }
     private function createCommand($command_file_name){
         if(strlen($command_file_name) < 2)
             $command_file_name = $this->ask('Please Specify Command Name');
@@ -374,7 +377,7 @@ import(
 
 class {$table_name} implements Table
 {
-    public \$table_name = \"".strtolower($table_name)."\";
+    public \$table_name = \"".$this->toLower($table_name)."\";
     public \$primary_key = \"id\";
     public function install(Structure &\$table)
     {
