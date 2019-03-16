@@ -20,7 +20,7 @@ class isProd implements MiddleWare
      */
     public function validate(Request $request, Response $response):bool
     {
-        return config("PROJECT->status") != "production";
+        return config("PROJECT->status") == "production";
     }
 
     public function fallBack(Request $request, Response $response)
