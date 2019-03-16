@@ -9,13 +9,13 @@ namespace Path\Database\Models;
 
 
 use Path\Database\Model;
-use Path\Controller\Live\TestLive;
 
 class Test extends Model
 {
     protected $table_name               = "bookings";
     protected $non_writable_cols        = ["id"];
     protected $readable_cols            = [];
+    protected $created_col;
 
     public function __construct()
     {
