@@ -26,7 +26,7 @@ class Create extends CInterface
             "desc" => "create migration file, e.g: __path create migration tableName"
         ],
         "middleware" => [
-            "desc" => "create route file, e.g: __path create migration tableName"
+            "desc" => "create route middleware, e.g: __path create middleware yourMiddleWareName"
         ]
     ];
 
