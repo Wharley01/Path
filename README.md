@@ -538,7 +538,7 @@ There are more model configurations which will be listed in the next sub-section
 
 ### Database Model usage
 
-After configuring your database Model, you can go on using your Model instantiating it, this way your have access to all the parent class `Path\Database\Model`'s objects.
+After configuring your database Model, you can go on using your Model by instantiating it, this way your have access to all the parent class `Path\Database\Model`'s objects.
 
 #### Fetching Data
 
@@ -553,11 +553,11 @@ import(
 );
 
 // instantiate your model
-// and fetch  all data from your `your_table_name` as json response
+// and fetch  all data from your `your_table_name` as multi-indexed array
 $test1 = (new Models\Test())
-         ->all();
+         ->getAll();
 
-// fetch a particular set of column instead
+// fetch a particular set of columns instead
 
 $test2 = (new Models\Test())
          ->select(['name','age']);//select just age and name
