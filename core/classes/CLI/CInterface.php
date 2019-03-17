@@ -77,10 +77,13 @@ abstract class CInterface
         return $input;
     }
 
-    public function write($text){
+    public function write($text,$format = null){
         $text = $this->parseText($text);
-        echo PHP_EOL.$text;
-//        ob_flush();
+        if($format){
+            printf($format,$text);
+        }else{
+            echo $text;
+        }
     }
 
     private function parseText($text){
