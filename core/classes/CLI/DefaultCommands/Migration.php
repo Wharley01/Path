@@ -5,6 +5,7 @@ namespace Path\Console;
 
 
 use Path\Console;
+use Path\Database\Connection\Mysql;
 use Path\Database\Model;
 use Path\Database\Prototype;
 use Path\Database\Structure;
@@ -15,7 +16,8 @@ import(
     "core/classes/Database/Prototype",
     "core/classes/Database/Structure",
     "core/classes/Database/Table",
-    "core/classes/Database/Model"
+    "core/classes/Database/Model",
+    "core/classes/Database/connection"
 );
 
 class Migration extends CInterface
@@ -43,6 +45,9 @@ class Migration extends CInterface
         ],
         "update" => [
             "desc" => "Runs Update hook in your migration classes"
+        ],
+        "describe" => [
+            "desc" => "Runs Update hook in your migration classes"
         ]
     ];
 
@@ -64,14 +69,10 @@ class Migration extends CInterface
     public function entry($params)
     {
         $params = (array) $params;
-        unset($params['app']);
-        if(@$params['create-table'] && is_string(@$params['create-table'])){
-            $this->createTable($params['create-table']);
-        }else{
-            unset($params['create-table']);
-            foreach ($params as $param => $arg){
+        unset($params['app']);//remove default root param
+
+         foreach ($params as $param => $arg){
                 $this->runCommand($param,$arg);
-            }
         }
 
     }
@@ -133,6 +134,34 @@ class Migration extends CInterface
         $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully Populated");
 
     }
+    private function printTableToTermical($table){
+        $q = (Mysql::connection())->query("DESCRIBE {$table}");
+        $cols = [];
+
+        $this->write(PHP_EOL.PHP_EOL."{$table}".PHP_EOL);
+
+        $this->write("`green`------------------------------------------------------`green`".PHP_EOL);
+        $mask = "| %-30.30s | %-15.30s | %-15.30s |\n";
+        printf($mask,"Column","Type","Default Value");
+        printf($mask,"","","");
+        $str = "";
+        foreach ($q as $k){
+            printf($mask,$k["Field"],$k["Type"],$k["Default"] === NULL ? "NULL":$k["Default"]);
+        }
+        $this->write("`green`--------------------------------------------------`green`");
+//        var_dump($cols);
+
+    }
+    private function describe($table){
+        if(is_string($table)){
+            $this->printTableToTermical($table);
+        }else{
+            foreach ($this->tables as $table){
+                var_dump($table);
+            }
+        }
+    }
+
     private function getAllMigrationClasses(){
         $classes = [];
 
