@@ -549,8 +549,7 @@ abstract class Model
     public function paginate($page = 1){
 //        get total record
         $page -= 1;
-        $total_records = $this->conn->query("SELECT SQL_CALC_FOUND_ROWS id FROM {$this->table_name} LIMIT 0,1");
-        $total_records = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
+        $total_records = $this->total_record;
 
         $offset =  $this->record_per_page * $page;
         $total = $this->record_per_page;
