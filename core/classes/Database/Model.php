@@ -430,6 +430,9 @@ abstract class Model
             throw new DatabaseException("Error Attempting to update Empty data set");
         if(!$this->table_name)
             throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+//        add miscellinouse data
+        $data[$this->created_col] = time();
+        $data[$this->updated_col] = time();
 
         $data[$this->updated_col] = time();
         $data[$this->created_col] = time();
@@ -546,17 +549,37 @@ abstract class Model
         return $this;
     }
 
+    public function fetchPerPage(Model $main_instance){
+        $this->select(['id']);
+        $this->query_structure['WHERE'] = $main_instance->query_structure['WHERE'];
+        $query      = $this->buildWriteRawQuery("SELECT");
+        $params     = array_merge($main_instance->params["SELECT"],$main_instance->params["WHERE"],$main_instance->params["LIMIT"]);
+
+//        var_dump($params);
+//        echo "<br>".$query."<br>";
+        try{
+            $prepare                = $this->conn->prepare($query);//Prepare query\
+            $prepare                ->execute($params);
+            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
+
+                return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
+        }catch (\PDOException $e){
+            throw new DatabaseException($e->getMessage());
+        }
+    }
+
     public function paginate($page = 1){
 //        get total record
-        $execute = $this->all();
+        $n_instance = new static();
+        $n_instance->fetchPerPage($this);
         $page -= 1;
-        $total_records = $this->total_record;
+        $total_records = $n_instance->total_record;
 
         $offset =  $this->record_per_page * $page;
         $total = $this->record_per_page;
 //        generate available pages
         $current_page = 0;
-        while(($current_page + $this->record_per_page-1) < $total_records){
+        while($current_page  < ($total_records/$this->record_per_page)){
             $this->pages[] = [
                 "page_number"   => $current_page+1,
                 "navigable"     => ($current_page != $page)
@@ -565,7 +588,7 @@ abstract class Model
         }
         $this->query_structure["LIMIT"] = "?,?";
         $this->params["LIMIT"]          = [$offset,$total];
-        return $execute;
+        return $this->all();
     }
 
     public function sortBy($sort){
