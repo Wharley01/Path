@@ -520,7 +520,7 @@ abstract class Model
         $cols = [],
         $sing_record = false
     ){
-            $this->all($cols,$sing_record);
+            return $this->all($cols,$sing_record);
     }
 
 
@@ -533,23 +533,7 @@ abstract class Model
     public function get(
         $sing_record = false
     ){
-
-        $query      = $this->buildWriteRawQuery("SELECT");
-        $params     = array_merge($this->params["SELECT"],$this->params["WHERE"],$this->params["LIMIT"]);
-
-        print_r($params);
-        echo "<br>".$query."<br>";
-        try{
-            $prepare                = $this->conn->prepare($query);//Prepare query\
-            $prepare                ->execute($params);
-            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
-            if($sing_record)
-                return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
-            else
-                return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
-        }catch (\PDOException $e){
-            throw new DatabaseException($e->getMessage());
-        }
+        return $this->all([],$sing_record);
     }
     /**
      * @param int $_from
@@ -715,6 +699,13 @@ abstract class Model
     }
 
     /**
+     * @return object
+     */
+    public function getFirst(){
+        return $this->first();
+    }
+
+    /**
      * @param array $cols
      * @return object
      */
@@ -722,6 +713,14 @@ abstract class Model
         $this->query_structure["ORDER_BY"] = "{$this->primary_key} DESC";
         $this->query_structure["LIMIT"]    = "0,1";
         return (object)$this->all($cols,true);
+    }
+
+
+    /**
+     * @return object
+     */
+    public function getLast(){
+        return $this->last();
     }
 
     /**
