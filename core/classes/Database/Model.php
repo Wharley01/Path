@@ -548,6 +548,7 @@ abstract class Model
 
     public function paginate($page = 1){
 //        get total record
+        $execute = $this->all();
         $page -= 1;
         $total_records = $this->total_record;
 
@@ -564,7 +565,7 @@ abstract class Model
         }
         $this->query_structure["LIMIT"] = "?,?";
         $this->params["LIMIT"]          = [$offset,$total];
-        return $this;
+        return $execute;
     }
 
     public function sortBy($sort){
