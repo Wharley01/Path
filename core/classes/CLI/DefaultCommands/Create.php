@@ -187,10 +187,10 @@ class $command_file_name extends CInterface
 * Powered By: Path
 */
 
-namespace Path\Database\Models;
+namespace Path\\Database\Models;
 
 
-use Path\Database;
+use Path\\Database\\Model;
 
 class {$model_name} extends Model
 {
