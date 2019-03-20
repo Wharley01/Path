@@ -10,15 +10,21 @@ namespace Path;
 
 
 
+use Path\Http\Request;
+
 class FileSys
 {
     private $file_name;
     private $files;
+    private $file_paths;
     private $errors         = [];
     private $rules = [
         "retain_name"       => false,
         "accepted_exts"     => [],
+        "restricted_exts"   => [],
         "accepted_types"    => [],
+        "restricted_types"  => [],
+        "max_size" => 0
         ];//accepted_exts,accepted_types,max_size(bytes),retain_name
     private $write_folder = "/";
     public function __construct(){
@@ -33,16 +39,12 @@ class FileSys
     public function file($file)
     {
 
-        if(is_string($file)){
-            if(isset($_FILES[$file])){
-                $this->files = is_array($_FILES[$file]['name']) ? $this->restructure($_FILES[$file]) : [$_FILES[$file]];
-            }else{
-                $this->files = $file;
-            }
-        }elseif(is_array($file)){
+        if($file instanceof Request){
+            $file = @$_FILES[$file->fetching];
             $this->files = is_array($file['name']) ? $this->restructure($file) : [$file];
+        }else{
+            $this->file_paths = $file;
         }
-
         return $this;
     }
 
@@ -76,7 +78,7 @@ class FileSys
      * @param callable $callback
      * @return FileSys
      */
-    public function moveTo($target_folder = null,callable $callback = null)
+    public function moveUploadedTo($target_folder = null, callable $callback = null)
     {
         $target_folder = $target_folder ?? $this->write_folder;
 //        var_dump($this->files);
@@ -98,12 +100,25 @@ class FileSys
                     $this->errors[$real_file_name][] = "Invalid Extension {$ext}";
                 }
             }
+
+            if (@$this->rules["restricted_exts"]) {
+                    if (in_array($ext, $this->rules["restricted_exts"])) {
+                        $this->errors[$real_file_name][] = "Invalid Extension {$ext}";
+                    }
+                }
+
 //            check for file type(MiME)
             if (@$this->rules["accepted_types"]) {
                 if (!in_array($file_type, $this->rules["accepted_types"])) {
-                    $this->errors[$real_file_name][] = "Invalid Extension {$ext}";
+                    $this->errors[$real_file_name][] = "Invalid File Type {$file_type}";
                 }
             }
+
+            if (@$this->rules["restricted_types"]) {
+                    if (in_array($file_type, $this->rules["restricted_types"])) {
+                        $this->errors[$real_file_name][] = "Invalid File type {$file_type}";
+                    }
+                }
 //            check if folder exists
             if(!file_exists($target_folder)){
                 $this->errors[$real_file_name][] = "target folder {$target_folder} does not exist";
@@ -118,7 +133,7 @@ class FileSys
                 $this->errors[$real_file_name][] = "file size exceeds {$size_in_mb}mb";
             }
 //            check if there is no error\
-            if(!$this->errors[$real_file_name]){
+            if(!isset($this->errors[$real_file_name])){
                 if(!move_uploaded_file($file_tmp_name,$target_folder.$file_name)){
                     $this->errors[$real_file_name][] = "There was an error while uploading {$real_file_name}";
                     $this->files[$i]["has_error"] = true;
@@ -146,6 +161,22 @@ class FileSys
 
         /** @var FileSys $this */
         return $this;
+    }
+
+    public function moveFileTo($target_folder = null, callable $callback = null){
+//        TODO: implement file movement to
+    }
+
+    public function delete(){
+//        TODO: implement delete
+    }
+
+    public function renameTo($new_name){
+//        TODO: implement rename of files
+    }
+
+    public function copyFileTo($target_folder){
+//        TODO: implement file copying
     }
 
     /**
