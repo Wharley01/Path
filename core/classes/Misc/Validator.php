@@ -117,9 +117,16 @@ class Validator
                 if (!$min_value || !is_numeric($min_value)){
                     throw new ValidatorException("max value for \"{$column}\" expects Integer got String");
                 }
-                if(strlen($value) < (int)$min_value){
-                    $this->addError($column,$_error_msg ?? "{$column}'s value length must not be less than {$min_value} ",$_id);
+                if(is_numeric($value)){
+                    if((int)$value < ($min_value)){
+                        $this->addError($column,$_error_msg ?? "{$column}'s  must not be less than {$min_value} ",$_id);
+                    }
+                }else{
+                    if(strlen($value) < (int)$min_value){
+                        $this->addError($column,$_error_msg ?? "{$column}'s value length must not be less than {$min_value} ",$_id);
+                    }
                 }
+
             }
             if(preg_match("/$this->php_filter_validate/i",$_rule)){
                 if(!filter_var($value,constant($_rule))){
