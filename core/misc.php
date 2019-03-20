@@ -2,6 +2,7 @@
 
 use Path\PathException;
 
+define("ROOT_PATH",preg_replace("/Core$/i","",__DIR__));
 /**
  * get root path
  * @return mixed
