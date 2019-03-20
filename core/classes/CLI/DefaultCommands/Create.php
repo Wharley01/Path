@@ -27,6 +27,9 @@ class Create extends CInterface
         ],
         "middleware" => [
             "desc" => "create route middleware, e.g: __path create middleware yourMiddleWareName"
+        ],
+        "model" => [
+            "desc" => "create database model, e.g: __path create model yourModelName"
         ]
     ];
 
@@ -40,13 +43,15 @@ class Create extends CInterface
     {
         $params = (object)$params;
         if(isset($params->controller)){
-            $this->createModel($params->controller);
+            $this->createController($params->controller);
         }elseif (isset($params->command)){
             $this->createCommand($params->command);
         }elseif (isset($params->migration)){
             $this->createMigration($params->migration);
         }elseif (isset($params->middleware)){
             $this->createMiddleWare($params->middleware);
+        }elseif(isset($params->model)){
+            $this->createModel($params->model);
         }
 
     }
@@ -126,7 +131,7 @@ class $command_file_name extends CInterface
 
 
     }
-    private function createModel($controller_name){
+    private function createController($controller_name){
         if($controller_name === true){
             $controller_name = $this->ask("Enter Controller's name",true);
         }
@@ -462,5 +467,18 @@ class {$middleware_name} implements MiddleWare
         $this->write("`green`[+]`green`  MiddleWare Boiler Code Generated in {$this->middleware_files_path} folder");
         fclose($middleware_file);
     }
+    private function createModel($model_name){
 
+        $model_file = "{$this->models_path}{$model_name}.php";
+
+        if(file_exists($model_file)){
+            if($this->confirm("{$model_name} Database model Already exists, Override?")){
+                $db_model_file = fopen($model_file,"w");
+                $this->writeModelBoilerPlate($db_model_file,$model_name);
+            }
+        }else{
+            $db_model_file = fopen($model_file,"w");
+            $this->writeModelBoilerPlate($db_model_file,$model_name);
+        }
+    }
 }
