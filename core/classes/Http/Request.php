@@ -15,7 +15,7 @@ class Request
     public $server;
     public $params;
     public $inputs;
-
+    public $fetching;
     public function __construct(){
         $this->METHOD = @$_SERVER["REQUEST_METHOD"];
         $input = file_get_contents("php://input");
@@ -49,8 +49,9 @@ class Request
         $this->params = $params;
     }
 
-    public function file($name){
-        return @$_FILES[$name];
+    public  function file($name){
+        $this->fetching = $name;
+        return $this;
     }
 
 
