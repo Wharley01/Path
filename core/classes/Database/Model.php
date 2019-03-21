@@ -628,8 +628,13 @@ abstract class Model
         if(!is_array($cols) && is_string($cols))
             $cols = explode(",",$cols);
         if(is_array($cols)){
-            if(!$cols)
-                $cols = $this->filterNonReadable($this->readable_cols ?? $this->table_cols);
+            if(!$cols){
+                if(is_array($this->readable_cols) && count($this->readable_cols) > 0){
+                    $cols = $this->filterNonReadable($this->readable_cols);
+                }else{
+                    $cols = $this->filterNonReadable($this->table_cols);
+                }
+            }
 
             $cols = $this->filterNonReadable($cols);
 
