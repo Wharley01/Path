@@ -12,7 +12,7 @@ use Path\Storage\Caches;
 use Path\Http\Response;
 use Path\Http\Watcher;
 use Path\LiveController;
-use Path\Database\Models\Test;
+use Path\Database\Models\TestM;
 use Path\Storage\Sessions;
 
 class MyController implements LiveController
