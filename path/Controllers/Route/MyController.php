@@ -12,7 +12,7 @@ namespace Path\Controller\Route;
 use Path\Controller;
 use Path\Http\Request;
 use Path\Http\Response;
-use Path\Database\Models\Test;
+use Path\Database\Models\TestM;
 use Path\Storage\Sessions;
 
 import("Path/Database/Models/Test");
