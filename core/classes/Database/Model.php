@@ -63,7 +63,8 @@ abstract class Model
     private   $total_record;
 
     private   $validator;
-
+    private   $valid_where_clause_rule = "([\w\->\[\]\\d]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)";
+    private   $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]]+$";
     public function __construct()
     {
         $this->conn = Mysql::connection();
@@ -90,7 +91,7 @@ abstract class Model
      */
     private function is_valid_col($col):bool
     {
-        return preg_match("/^[_\w\.]*$/",$col);
+        return preg_match("/$this->valid_column_rule/",$col);
     }
 
     /**
@@ -139,8 +140,17 @@ abstract class Model
             $str   = "";
 
             foreach($conditions as $condition => $value){
-                $str .= " {$condition} = ? {$logic_gate} ";
-                $this->params["WHERE"][] = $value;
+                if($this->isJsonRef($condition)){
+                    $_condition = $this->genJsonPath($condition);
+                    $sql_exp = $this->getSqlJsonExp($condition);
+                    $str .= "({$sql_exp}) = ? {$logic_gate} ";
+
+                    $this->params["WHERE"][] = $value;
+                }else{
+                    $str .= " {$condition} = ? {$logic_gate} ";
+                    $this->params["WHERE"][] = $value;
+                }
+
             }
 //            Remove trailing "AND"
             $str = preg_replace("/($logic_gate)\s*$/","",$str);
@@ -151,14 +161,26 @@ abstract class Model
 //                if there is already a WHERE clause, join with AND
                 $this->query_structure["WHERE"] .= " {$logic_gate} ". $str;
             }
-        }else if(preg_match("/\w+\s*[><=!]+\s*\w+/",$conditions)){
+        }else if(preg_match("/{$this->valid_where_clause_rule}/",$conditions)){
             $str   = "";
+//            echo "using....";
 //          if conditions are in raw string
             $split = explode(",",$conditions);
             foreach ($split as $val){
-                preg_match("/(\w+)\s*([><=!]*)\s*(\w+)/",$val,$matches);
-                $str .= "{$matches[1]} {$matches[2]} ? {$logic_gate} ";
-                $this->params["WHERE"][] = $matches[3];
+                preg_match("/{$this->valid_where_clause_rule}/",$val,$matches);
+                $column = $matches[1];
+                $exp_value = $matches[3];
+                $equality_exp = $matches[2];
+//                check if column is referencing a json column
+                if($this->isJsonRef($column)){
+                    $sql_exp = $this->getSqlJsonExp($column);
+                    $str .= "({$sql_exp}) {$equality_exp} ? {$logic_gate} ";
+                    $this->params["WHERE"][] = $exp_value;
+                }else{
+                    $str .= "{$column} {$equality_exp} ? {$logic_gate} ";
+                    $this->params["WHERE"][] = $exp_value;
+                }
+
             }
 //            Remove trailing "AND"
             $str = preg_replace("/(".$logic_gate.")\s*$/","",$str);
@@ -167,7 +189,10 @@ abstract class Model
             }else{
                 $this->query_structure["WHERE"] .= " {$logic_gate} ". $str;
             }
-        }elseif(preg_match("/^[_\w\.|\s\(\)\`\\'\",]*$/",$conditions)){
+        }elseif(preg_match("/$this->valid_column_rule/",$conditions)){
+            if($this->isJsonRef($conditions)){
+                $conditions = $this->getSqlJsonExp($conditions);
+            }
             if(!$this->query_structure["WHERE"]){
                 @$this->query_structure["WHERE"] = $conditions;
             }else{
@@ -237,7 +262,7 @@ abstract class Model
         foreach ($data as $key => $value){
             if(!$this->isWritable($key))
                 unset($data[$key]);
-            if(!in_array($key,$this->table_cols))
+            if(!in_array($key,$this->table_cols) && !$this->isJsonRef($key))
                 unset($data[$key]);
         }
         return $data;
@@ -251,25 +276,70 @@ abstract class Model
         return $data;
     }
 
+    private function generateSqlObjFromArray($array,$root = "",$type = "UPDATE",$tree = []){
+
+        foreach ($array as $key => $value){
+
+            if(!is_array($value)){
+                $tree[] = "'$key'";
+                $tree[] = "?";
+                $this->params[$type][] = $value;
+
+            }else{
+                $tree[] = "'$key'";
+                $tree[] = $this->generateSqlObjFromArray($array[$key],$key,$type,[]);
+            }
+            unset($array[$key]);
+
+        }
+        $return = "JSON_OBJECT(".join(",",$tree).")";
+//        echo "JSON_OBJECT(".join(",",$tree).")";
+        return $return;
+    }
+
     /**
      * @param array $data
      * @param string $type
+     * @param string $json_action
      */
-    private function rawKeyValueBind(Array $data, $type = "UPDATE"){
-        $string = "";
+
+    private function rawKeyValueBind(Array $data, $type = "UPDATE",$json_action = "UPDATE"){
+
+
         foreach($data as $column => $value){
-            if(@$this->query_structure[$type]){
-                $string .= ",{$column} = ?,";
-                $this->params[$type][] = $value;
+                $string = "";
+            if($this->isJsonRef($column)){
+                $_value = is_array($value) ? $this->generateSqlObjFromArray($value):"?";
+                $func = $json_action == "UPDATE" ? "JSON_SET":"JSON_INSERT";
+                $_column = $this->genJsonPath($column);
+                if(@$this->query_structure[$type]){
+                    $this->query_structure[$type] .= ",{$_column['column']} = {$func}({$_column['column']},'{$_column['path']}',$_value)";
+                    if($_value == "?"){
+                        $this->params[$type][] = $value;
+                    }
+
+                }else{
+                    $this->query_structure[$type] .= "{$_column['column']} = {$func}({$_column['column']},'{$_column['path']}',$_value) ";
+                    if($_value == "?"){
+                        $this->params[$type][] = $value;
+                    }
+                }
+                $string = preg_replace("/,\s*$/","",$string);//remove trailing comma
             }else{
-                $string .= "{$column} = ?,";
-                $this->params[$type][] = $value;
+                $value = is_array($value) ? json_encode($value):$value;
+                $string = "";
+                if(@$this->query_structure[$type]){
+                    $this->query_structure[$type] .= ",{$column} = ?";
+                    $this->params[$type][] = $value;
+                }else{
+                    $this->query_structure[$type] .= "{$column} = ?";
+                    $this->params[$type][] = $value;
+                }
+                $string = preg_replace("/,\s*$/","",$string);//remove trailing comma
             }
 
         }
-        $string = preg_replace("/,\s*$/","",$string);//remove trailing comma
 
-        @$this->query_structure[$type] .= $string;
     }
     /**
      * @param $conditions
@@ -281,6 +351,15 @@ abstract class Model
         $this->where_gen($conditions,"AND");
         return $this;
     }
+
+//    public function whereJsonIncludes($column, $needle){
+//     if($this->query_structure["WHERE"]){
+//         $this->query_structure["WHERE"] = "AND JSON_CONTAINS($needle,$column,'{$_condition['path']}') > 0 {$logic_gate}";
+//         var_dump($this->genJsonPath($condition));
+//     }
+//
+//    }
+
     public function rawWhere(
         $where,
         $params = null
@@ -308,12 +387,42 @@ abstract class Model
         $this->where_gen($conditions,"OR");
         return $this;
     }
-    private function rawColumnGen($cols){
+
+    private function genRawJsonSelect($col){
+        $column = $this->genJsonPath($col);
+
         if($this->query_structure["SELECT"]){
-            $this->query_structure["SELECT"] .= ",".join(",",$cols);
+            $this->query_structure["SELECT"] .=", ".$column['column']."->>\"".$column['path']."\"";
         }else{
-            $this->query_structure["SELECT"] = join(",",$cols);
+            $this->query_structure["SELECT"] = $column['column']."->>\"".$column['path']."\"";
         }
+    }
+
+    private function getSqlJsonExp($col){
+        $column = $this->genJsonPath($col);
+        $return = $column['column']."->>\"".$column['path']."\"";
+        return $return;
+    }
+
+    private function rawColumnGen($cols){
+            foreach ($cols as $col){
+                if($col instanceof Model){
+                    $this->generateRawSelectFromInstance($col);
+                }else{
+                    if($this->isJsonRef($col)){
+                        $this->genRawJsonSelect($col);
+                    }else{
+                        if($this->query_structure["SELECT"]){
+                            $this->query_structure["SELECT"] .= ",".$col;
+                        }else{
+                            $this->query_structure["SELECT"] = $col;
+                        }
+                    }
+
+                }
+
+            }
+
     }
     private function buildWriteRawQuery($command = "UPDATE"){
         switch ($command){
@@ -420,6 +529,38 @@ abstract class Model
 
         return $this;
     }
+
+    public function insertJson($data){
+
+        if(!$data)
+            throw new DatabaseException("Error Attempting to update Empty data set");
+
+        $data[$this->updated_col] = time();
+        if($this->validator instanceof Validator){
+            if($this->validator->hasError()){
+                return false;
+            }
+        }
+
+
+//        GET and set raw query from array
+        $this->rawKeyValueBind($data,"UPDATE","INSERT");
+//        Process and execute query
+
+        $query      = $this->buildWriteRawQuery("UPDATE");
+        $params     = array_merge($this->params["UPDATE"],$this->params["WHERE"]);
+//        var_dump($params);
+//        echo PHP_EOL.$query;
+        try{
+            $prepare    = $this->conn->prepare($query);//Prepare query\
+            $prepare    ->execute($params);
+        }catch (\PDOException $e){
+            throw new DatabaseException($e->getMessage());
+        }
+
+        return $this;
+    }
+
     public function insert(array $data = null){
         if(!$data)
             $data = $this->writing;
@@ -431,11 +572,8 @@ abstract class Model
         if(!$this->table_name)
             throw new DatabaseException("No Database table name specified, Configure Your model or  ");
 //        add miscellinouse data
-        $data[$this->created_col] = time();
         $data[$this->updated_col] = time();
-
-        $data[$this->updated_col] = time();
-        $data[$this->created_col] = time();
+        $data[$this->created_col ?? "date_added"] = time();
         if($this->validator instanceof Validator){
             if($this->validator->hasError()){
                 return false;
@@ -490,17 +628,19 @@ abstract class Model
         if(!is_array($cols) && is_string($cols))
             $cols = explode(",",$cols);
         if(is_array($cols)){
-            if(!$cols)
-                $cols = $this->filterNonReadable($this->table_cols);
+//            if(!$cols)
+//                $cols = $this->filterNonReadable($this->table_cols);
 
             $cols = $this->filterNonReadable($cols);
 
-            if(!$cols)
-                throw new DatabaseException("Error Attempting to update Empty data set");
+//            if(!$cols)
+//                throw new DatabaseException("Error Attempting to update Empty data set");
             if(!$this->table_name)
                 throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+            if(count($cols) > 0){
+                $this->rawColumnGen($cols);
+            }
 
-            $this->rawColumnGen($cols);
         }
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($this->params["SELECT"],$this->params["WHERE"],$this->params["LIMIT"]);
@@ -523,7 +663,7 @@ abstract class Model
         $cols = [],
         $sing_record = false
     ){
-            return $this->all($cols,$sing_record);
+        return $this->all($cols,$sing_record);
     }
 
 
@@ -550,7 +690,7 @@ abstract class Model
     }
 
     public function fetchPerPage(Model $main_instance){
-        $this->select(['id']);
+        $this->select('id');
         $this->query_structure['WHERE'] = $main_instance->query_structure['WHERE'];
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($main_instance->params["SELECT"],$main_instance->params["WHERE"],$main_instance->params["LIMIT"]);
@@ -562,7 +702,7 @@ abstract class Model
             $prepare                ->execute($params);
             $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
 
-                return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
+            return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
         }catch (\PDOException $e){
             throw new DatabaseException($e->getMessage());
         }
@@ -774,27 +914,53 @@ abstract class Model
         $this->query_structure["LIMIT"]    = "0,1";
         return $this;
     }
-    public function select($columns,$params = []){
-        if($columns instanceof Model){
-            $raw = $columns->raw_select_query();
-            if($this->query_structure["SELECT"]){
-                $this->query_structure["SELECT"] .= ", (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
-                $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
-                $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
-                $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
+
+    private function isJsonRef($selector){
+        return strpos($selector,"->") !== false;
+    }
+    private function genJsonPath($selector){
+//            typical selector looks this way column->jsonProp->another
+        $selector = explode("->",$selector);
+        $column = $selector[0];
+        $path = "$";
+        for($i = 1;$i < count($selector);$i++){
+            $curr_key = trim($selector[$i]);
+            if($curr_key[0] == "[" && $curr_key[strlen($curr_key) - 1] == "]"){
+                $path .= $selector[$i];
             }else{
-                $this->query_structure["SELECT"] = " (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
-                $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
-                $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
-                $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
+                $path .=".".$selector[$i];
             }
+
+        }
+        return [
+            "column" => $column,
+            "path" => $path
+        ];
+    }
+
+    private function generateRawSelectFromInstance(Model $select){
+        $raw = $select->raw_select_query();
+        if($this->query_structure["SELECT"]){
+            $this->query_structure["SELECT"] .= ", (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
+            $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
+            $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
+            $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
+        }else{
+            $this->query_structure["SELECT"] = " (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
+            $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
+            $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
+            $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
+        }
+    }
+
+    public function select(...$columns){
+        if(count($columns) == 1 && $columns[0] instanceof Model){
+            $columns = $columns[0];
+            $this->generateRawSelectFromInstance($columns);
+
         }else{
             if(is_array($columns)){
-                if(!$columns)
-                    $columns = $this->filterNonReadable($this->table_cols);
 
-                if(!$columns)
-                    throw new DatabaseException("Error Attempting to fetch Empty column set");
                 if(!$this->table_name)
                     throw new DatabaseException("No Database table name specified, Configure Your model or  ");
                 $columns = $this->filterNonReadable($columns);
@@ -803,15 +969,19 @@ abstract class Model
 
                 $this->rawColumnGen($columns);
             }else{
-                if($this->query_structure["SELECT"]){
-                    $this->query_structure["SELECT"] .=", ".$columns;
+                if($this->isJsonRef($columns)){
+                    $this->genRawJsonSelect($columns);
                 }else{
-                    $this->query_structure["SELECT"] = $columns;
+                    if($this->query_structure["SELECT"]){
+                        $this->query_structure["SELECT"] .=", ".$columns;
+                    }else{
+                        $this->query_structure["SELECT"] = $columns;
+                    }
                 }
+
             }
         }
-        if($params)
-            $this->params["SELECT"] = array_merge($this->params["SELECT"],$params);
+
         return $this;
     }
 
