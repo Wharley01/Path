@@ -12,7 +12,7 @@ use Path\Database\Model;
 
 class TestM extends Model
 {
-    protected $table_name               = "checkouts";
+    protected $table_name               = "user";
     protected $non_writable_cols        = ["id"];
     protected $readable_cols            = [];
 
