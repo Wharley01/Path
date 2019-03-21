@@ -51,6 +51,7 @@ function import(...$classes){
         if(!file_exists($_class)){
             throw new PathException("Class \"{$class}\" not found in \"{$_class}\"");
         }
+//        echo $_class;
         require_once $_class;
     }
 }
