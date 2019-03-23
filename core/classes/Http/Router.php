@@ -583,7 +583,8 @@ class Router
                 return strlen(trim($path)) > 0;
             });
         }
-
+        if(is_null($_path))
+            return;
         foreach ($_path as $each_path){
             $this->processRequest(["path" => trim($each_path),"middleware" => $_middle_ware,"fallback" => $_fallback],$callback,$method);
         }
