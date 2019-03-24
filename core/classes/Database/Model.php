@@ -523,6 +523,7 @@ abstract class Model
         try{
             $prepare    = $this->conn->prepare($query);//Prepare query\
             $prepare    ->execute($params);
+            $this->clearMemory();
         }catch (\PDOException $e){
             throw new DatabaseException($e->getMessage());
         }
@@ -593,6 +594,7 @@ abstract class Model
             $prepare    = $this->conn->prepare($query);//Prepare query\
             $prepare    ->execute($params);
             $this       ->last_insert_id = $this->conn->lastInsertId();
+            $this->clearMemory();
         }catch (\PDOException $e){
             throw new DatabaseException($e->getMessage());
         }
@@ -612,6 +614,7 @@ abstract class Model
         }catch (\PDOException $e){
             throw new DatabaseException($e->getMessage());
         }
+        $this->clearMemory();
         return $this;
     }
 
@@ -656,14 +659,46 @@ abstract class Model
             $prepare                = $this->conn->prepare($query);//Prepare query\
             $prepare                ->execute($params);
             $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
-            if($sing_record)
+            if($sing_record){
+                $this->clearMemory();
                 return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
-            else
+            } else{
+                $this->clearMemory();
                 return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
+            }
+
         }catch (\PDOException $e){
             throw new DatabaseException($e->getMessage());
         }
     }
+
+    private function clearMemory(){
+        $this->query_structure = [
+            "WITH"              => "",
+            "SELECT"            => "",
+            "AS"                => "",
+            "JOIN"              => [],//table to join
+            "ON"                => "",//associative array holding join condition
+            "INSERT"            => "",
+            "UPDATE"            => "",
+            "WHERE"             => "",
+            "GROUP_BY"          => "",
+            "HAVING"            => "",
+            "ORDER_BY"          => "",
+            "LIMIT"             => ""
+        ];
+
+        $this->params       = [
+            "SELECT"            => [],
+            "WHERE"             => [],
+            "UPDATE"            => [],
+            "INSERT"            => [],
+            "SORT"              => [],
+            "LIMIT"             => []
+        ];
+
+    }
+
     public function getAll(
         $cols = [],
         $sing_record = false
@@ -713,7 +748,7 @@ abstract class Model
         }
     }
 
-    public function paginate($page = 1){
+    public function getPage($page = 1){
 //        get total record
         $n_instance = new static();
         $n_instance->fetchPerPage($this);
@@ -1039,7 +1074,7 @@ abstract class Model
      * @param array ...$cols
      * @return $this
      */
-    public function whereCols(...$cols){
+    public function whereColumns(...$cols){
         $this->where_gen("MATCH( ".join(",",$cols)." )");
         return $this;
     }
