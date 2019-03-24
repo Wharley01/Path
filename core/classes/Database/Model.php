@@ -1030,7 +1030,7 @@ abstract class Model
         return $this;
     }
 
-    public function rawSelect($expression,$params = []){
+    public function rawSelect($expression,...$params){
         if($this->query_structure["SELECT"]){
             $this->query_structure["SELECT"] .=", ".$expression;
         }else{
