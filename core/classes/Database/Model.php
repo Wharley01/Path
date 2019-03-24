@@ -364,8 +364,12 @@ abstract class Model
         $where,
         $params = null
     ){
+        if($this->query_structure["WHERE"]){
+            $this->query_structure["WHERE"] .= " AND ". $where;
+        }else{
+            $this->query_structure["WHERE"] = $where;
+        }
         $this->params["WHERE"] = array_merge($this->params["WHERE"],$params);
-        $this->query_structure["WHERE"] .= $where;
         return $this;
     }
     public function identify(
@@ -1089,7 +1093,11 @@ abstract class Model
      * @return $this
      */
     public function whereColumns(...$cols){
-        $this->where_gen("MATCH( ".join(",",$cols)." )");
+        if($this->query_structure["WHERE"]){
+            $this->query_structure["WHERE"] .= " AND ". "MATCH( ".join(",",$cols)." )";
+        }else{
+            $this->query_structure["WHERE"] = " MATCH( ".join(",",$cols)." )";
+        }
         return $this;
     }
 
