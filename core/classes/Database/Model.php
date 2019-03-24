@@ -636,7 +636,7 @@ abstract class Model
             $cols = explode(",",$cols);
         if(is_array($cols)){
             if(!$cols){
-                if(is_array($this->readable_cols) && count($this->readable_cols) > 0){
+                if((is_array($this->readable_cols) && count($this->readable_cols) > 0) || (is_array($this->non_readable_cols) && count($this->non_readable_cols) > 0)){
                     $cols = $this->filterNonReadable($this->readable_cols);
                 }else{
                     $cols = $this->filterNonReadable($this->table_cols);
