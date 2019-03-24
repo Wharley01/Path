@@ -63,8 +63,8 @@ abstract class Model
     public    $total_record         = 0;
 
     private   $validator;
-    private   $valid_where_clause_rule = "([\w\->\[\]\\d]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)";
-    private   $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]]+$";
+    private   $valid_where_clause_rule = "^([\w\->\[\]\\d]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)$";
+    private   $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]!]+$";
     public function __construct()
     {
         $this->conn = Mysql::connection();
@@ -765,10 +765,12 @@ abstract class Model
         $total = $this->record_per_page;
 //        generate available pages
         $current_page = 0;
-        while($current_page  < ($total_records/$this->record_per_page)){
+        $total_pages = round($total_records/$this->record_per_page,0,PHP_ROUND_HALF_ODD);
+        while($current_page  < $total_pages){
             $this->pages[] = [
                 "page_number"   => $current_page+1,
-                "navigable"     => ($current_page != $page)
+                "navigable"     => ($current_page != $page),
+                "total_pages"   => $total_pages
             ];
             $current_page ++;
         }
