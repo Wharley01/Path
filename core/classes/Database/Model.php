@@ -827,26 +827,26 @@ abstract class Model
         return $this;
     }
     public function like($wild_card){
-        if(!$this->query_structure["WHERE"])
+        if(!$this->query_structure["WHERE"]["query"])
             throw new DatabaseException("WHERE Clause is empty");
 
-        $this->query_structure["WHERE"] .= " LIKE ?";
+        $this->query_structure["WHERE"]["query"] .= " LIKE ?";
         $this->params["WHERE"][] = "$wild_card";
         return $this;
     }
     public function notLike($wild_card){
-        if(!$this->query_structure["WHERE"])
+        if(!$this->query_structure["WHERE"]["query"])
             throw new DatabaseException("WHERE Clause is empty");
 
-        $this->query_structure["WHERE"] .= " NOT LIKE ?";
+        $this->query_structure["WHERE"]["query"] .= " NOT LIKE ?";
         $this->params["WHERE"][] = "$wild_card";
         return $this;
     }
     public function between($start,$stop){
-        if(!$this->query_structure["WHERE"])
+        if(!$this->query_structure["WHERE"]["query"])
             throw new DatabaseException("WHERE Clause is empty");
 
-        $this->query_structure["WHERE"] .= " BETWEEN ? AND ?";
+        $this->query_structure["WHERE"]["query"] .= " BETWEEN ? AND ?";
         $this->params[] = $start;
         $this->params[] = $stop;
         return $this;
