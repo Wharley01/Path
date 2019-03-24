@@ -325,7 +325,7 @@ use Path\Storage\Sessions;
 
 import(\"Path/Database/Models/{$model_name}\");
 
-class {$controller_name} implements Controller
+class {$controller_name} extends Controller
 {
     private \$session;
     public function __construct()
