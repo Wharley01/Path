@@ -3,7 +3,7 @@
     "host": "localhost",
     "user": "root",
     "password": "",
-    "name": "event_db"
+    "name": "test"
   },
   "FILE":{
     "max_size":  5242880

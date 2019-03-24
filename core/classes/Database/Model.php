@@ -371,6 +371,26 @@ abstract class Model
         return $this;
     }
 
+    public function whereCreatedSince($days){
+        $where = "from_unixtime({$this->table_name}.{$this->created_col}) >= date_sub(now(), interval {$days} day)";
+        if($this->query_structure["WHERE"]["query"]){
+            $this->query_structure["WHERE"]["query"] .= " AND ". $where;
+        }else{
+            $this->query_structure["WHERE"]["query"] = $where;
+        }
+        return $this;
+    }
+
+    public function whereUpdatedSince($days){
+        $where = "from_unixtime({$this->table_name}.{$this->updated_col}) >= date_sub(now(), interval {$days} day)";
+        if($this->query_structure["WHERE"]["query"]){
+            $this->query_structure["WHERE"]["query"] .= " AND ". $where;
+        }else{
+            $this->query_structure["WHERE"]["query"] = $where;
+        }
+        return $this;
+    }
+
 //    public function whereJsonIncludes($column, $needle){
 //     if($this->query_structure["WHERE"]){
 //         $this->query_structure["WHERE"] = "AND JSON_CONTAINS($needle,$column,'{$_condition['path']}') > 0 {$logic_gate}";
@@ -511,7 +531,7 @@ abstract class Model
         $total_records = $this->total_record;
         $current_page = 0;
         $page = $this->current_page;
-        $total_pages = round($total_records/$this->record_per_page,0,PHP_ROUND_HALF_ODD);
+        $total_pages = ceil($total_records/$this->record_per_page);
         while($current_page  < $total_pages){
             $this->pages[] = [
                 "page_number"   => $current_page+1,
@@ -773,41 +793,6 @@ abstract class Model
         return $this;
     }
 
-//    public function fetchPerPage(Model $main_instance){
-//        $select = array_filter(
-//            array_unique(
-//                array_merge(
-//                    $main_instance->query_structure['WHERE']['columns'],
-//                    $main_instance->query_structure["SELECT"]["columns"],
-//                    [$main_instance->query_structure['GROUP_BY']]
-//                )
-//            ),function ($col){
-//            return strlen(trim($col)) > 0;
-//        });//filter empty string
-//
-//        $this->select(...$select);
-//        $this->query_structure['WHERE']["query"] = $main_instance->query_structure['WHERE']['query'];
-//        $this->query_structure['JOIN'] = $main_instance->query_structure['JOIN'];
-//        $this->query_structure['HAVING']["query"] = $main_instance->query_structure['HAVING']["query"];
-//        $this->query_structure['GROUP_BY'] = $main_instance->query_structure['GROUP_BY'];
-//        $this->query_structure["LIMIT"]    = "0,1";
-//
-//        $query      = $this->buildWriteRawQuery("SELECT");
-//        $params     = array_merge($main_instance->params["SELECT"],$main_instance->params["WHERE"],$main_instance->params["HAVING"]);
-//
-////        var_dump($params);
-////        echo "<br>".$query."<br>";
-//        try{
-//            $prepare                = $this->conn->prepare($query);//Prepare query\
-//            $prepare                ->execute($params);
-//            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
-//
-//            return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
-//        }catch (\PDOException $e){
-//            throw new DatabaseException($e->getMessage());
-//        }
-//    }
-
     public function getPage($page = 1){
 //        get total record
         $page -= 1;
@@ -913,8 +898,9 @@ abstract class Model
      * @return $this
      */
     public function innerJoin($table, $on){
-        if($table instanceof Model)
+        if($table instanceof Model){
             $table = $table->table_name;
+        }
 
         $this->join("INNER",$table,$on);
         /** @var Model $this */
