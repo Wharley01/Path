@@ -236,7 +236,7 @@ use Path\Storage\Sessions;
 
 import(
     \"core/classes/Database/Model\",
-    \"Path/Database/Models/Admin\"
+    \"path/Database/Models/Admin\"
 );
 
 class $controller_name implements LiveController
@@ -323,7 +323,7 @@ use Path\Http\Response;
 use Path\Database\Models\\$model_name;
 use Path\Storage\Sessions;
 
-import(\"Path/Database/Models/{$model_name}\");
+import(\"path/Database/Models/{$model_name}\");
 
 class {$controller_name} extends Controller
 {
