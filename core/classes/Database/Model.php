@@ -1037,6 +1037,7 @@ abstract class Model
             $this->query_structure["SELECT"] = $expression;
         }
         $this->params["SELECT"] = array_merge($this->params["SELECT"],$params);
+        return $this;
     }
     /**
      * @param $alias
