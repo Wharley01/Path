@@ -23,17 +23,26 @@ abstract class Model
     protected $updated_col     = "last_update_date";
     protected $created_col     = "date_added";
     protected $record_per_page = 10;
-    private   $query_structure = [
+    public   $query_structure = [
         "WITH"              => "",
-        "SELECT"            => "",
+        "SELECT"            => [
+            "query" => "",
+            "columns" => []
+        ],
         "AS"                => "",
         "JOIN"              => [],//table to join
         "ON"                => "",//associative array holding join condition
         "INSERT"            => "",
         "UPDATE"            => "",
-        "WHERE"             => "",
+        "WHERE"             => [
+            "query" => "",
+            "columns" => []
+        ],
         "GROUP_BY"          => "",
-        "HAVING"            => "",
+        "HAVING"            => [
+            "query" => "",
+            "columns" => []
+        ],
         "ORDER_BY"          => "",
         "LIMIT"             => ""
     ];
@@ -41,6 +50,7 @@ abstract class Model
     public    $params       = [
         "SELECT"            => [],
         "WHERE"             => [],
+        "HAVING"            => [],
         "UPDATE"            => [],
         "INSERT"            => [],
         "SORT"              => [],
@@ -56,19 +66,22 @@ abstract class Model
     private   $writing              = [];//currently updated column and value
     private   $reading              = [];//currently updated column and value
     public    $last_insert_id;
-    private   $table_cols;
+    private   $table_columns;
+    public    $columns;
 
     protected $fetch_method         = "FETCH_ASSOC";
     private   $pages                = [];
+    private   $current_page        = 0;
     public    $total_record         = 0;
 
     private   $validator;
-    private   $valid_where_clause_rule = "^([\w\->\[\]\\d]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)$";
+    private   $valid_where_clause_rule = "^([\w\->\[\]\\d.]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)$";
     private   $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]!]+$";
     public function __construct()
     {
         $this->conn = Mysql::connection();
-        $this->table_cols = $this->getColumns($this->table_name);
+        $this->table_columns = $this->getColumns($this->table_name);
+        $this->columns = $this->filterNonReadable($this->table_columns);
         $this->model_name =  get_class($this);
     }
     private function getColumns($table){
@@ -76,7 +89,7 @@ abstract class Model
             $q = $this->conn->query("DESCRIBE {$table}");
             $cols = [];
             foreach ($q as $k){
-                $cols[] = $k["Field"];
+                $cols[] = $table.".".$k["Field"];
             }
             return $cols;
         }catch (\PDOException $e){
@@ -119,6 +132,7 @@ abstract class Model
             "params"    => [
                 "select"=> $this->params["SELECT"],
                 "where" => $this->params["WHERE"],
+                "having" => $this->params["HAVING"],
                 "limit" => $this->params["LIMIT"]
             ]
         ];
@@ -133,33 +147,35 @@ abstract class Model
     }
     private function where_gen(
         $conditions,
-        $logic_gate = "AND"
+        $logic_gate = "AND",
+        $type = "WHERE"
     ){
         if(is_array($conditions)){
-            $where = $this->query_structure["WHERE"];
-            $str   = "";
 
+            $str   = "";
             foreach($conditions as $condition => $value){
                 if($this->isJsonRef($condition)){
-                    $_condition = $this->genJsonPath($condition);
                     $sql_exp = $this->getSqlJsonExp($condition);
-                    $str .= "({$sql_exp}) = ? {$logic_gate} ";
+                    $str .= "({$sql_exp}) = ? {$logic_gate}";
+                    $this->params[$type][] = $value;
+                    array_push($this->query_structure[$type]["columns"][],$sql_exp);
 
-                    $this->params["WHERE"][] = $value;
                 }else{
                     $str .= " {$condition} = ? {$logic_gate} ";
-                    $this->params["WHERE"][] = $value;
+                    $this->params[$type][] = $value;
+                    array_push($this->query_structure[$type]["columns"],$condition);
+
                 }
 
             }
 //            Remove trailing "AND"
             $str = preg_replace("/($logic_gate)\s*$/","",$str);
-            if(!$this->query_structure["WHERE"]){
+            if(!$this->query_structure[$type]["query"]){
 //                If no WHERE Clause already specified, add new one
-                @$this->query_structure["WHERE"] = $str;
+                $this->query_structure[$type]["query"] = $str;
             }else{
 //                if there is already a WHERE clause, join with AND
-                $this->query_structure["WHERE"] .= " {$logic_gate} ". $str;
+                $this->query_structure[$type]["query"] .= " {$logic_gate} ". $str;
             }
         }else if(preg_match("/{$this->valid_where_clause_rule}/",$conditions)){
             $str   = "";
@@ -175,28 +191,31 @@ abstract class Model
                 if($this->isJsonRef($column)){
                     $sql_exp = $this->getSqlJsonExp($column);
                     $str .= "({$sql_exp}) {$equality_exp} ? {$logic_gate} ";
-                    $this->params["WHERE"][] = $exp_value;
+                    $this->params[$type][] = $exp_value;
+                    array_push($this->query_structure[$type]["columns"],"({$sql_exp})");
+
                 }else{
                     $str .= "{$column} {$equality_exp} ? {$logic_gate} ";
-                    $this->params["WHERE"][] = $exp_value;
+                    $this->params[$type][] = $exp_value;
+                    array_push($this->query_structure[$type]["columns"],$column);
                 }
 
             }
 //            Remove trailing "AND"
             $str = preg_replace("/(".$logic_gate.")\s*$/","",$str);
-            if(!$this->query_structure["WHERE"]){
-                @$this->query_structure["WHERE"] = $str;
+            if(!$this->query_structure[$type]["query"]){
+                $this->query_structure[$type]["query"] = $str;
             }else{
-                $this->query_structure["WHERE"] .= " {$logic_gate} ". $str;
+                $this->query_structure[$type]["query"] .= " {$logic_gate} ". $str;
             }
         }elseif(preg_match("/$this->valid_column_rule/",$conditions)){
             if($this->isJsonRef($conditions)){
                 $conditions = $this->getSqlJsonExp($conditions);
             }
-            if(!$this->query_structure["WHERE"]){
-                @$this->query_structure["WHERE"] = $conditions;
+            if(!$this->query_structure[$type]["query"]){
+                $this->query_structure[$type]["query"] = $conditions;
             }else{
-                $this->query_structure["WHERE"] .= " {$logic_gate} ". $conditions;
+                $this->query_structure[$type]["query"] .= " {$logic_gate} ". $conditions;
             }
         }else{
             throw new DatabaseException("Invalid WHERE condition");
@@ -262,7 +281,7 @@ abstract class Model
         foreach ($data as $key => $value){
             if(!$this->isWritable($key))
                 unset($data[$key]);
-            if(!in_array($key,$this->table_cols) && !$this->isJsonRef($key))
+            if(!in_array($key,$this->table_columns) && !$this->isJsonRef($key))
                 unset($data[$key]);
         }
         return $data;
@@ -362,12 +381,12 @@ abstract class Model
 
     public function rawWhere(
         $where,
-        $params = null
+        ...$params
     ){
-        if($this->query_structure["WHERE"]){
-            $this->query_structure["WHERE"] .= " AND ". $where;
+        if($this->query_structure["WHERE"]["query"]){
+            $this->query_structure["WHERE"]["query"] .= " AND ". $where;
         }else{
-            $this->query_structure["WHERE"] = $where;
+            $this->query_structure["WHERE"]["query"] = $where;
         }
         $this->params["WHERE"] = array_merge($this->params["WHERE"],$params);
         return $this;
@@ -395,10 +414,12 @@ abstract class Model
     private function genRawJsonSelect($col){
         $column = $this->genJsonPath($col);
 
-        if($this->query_structure["SELECT"]){
-            $this->query_structure["SELECT"] .=", ".$column['column']."->>\"".$column['path']."\"";
+        if($this->query_structure["SELECT"]["query"]){
+            $this->query_structure["SELECT"]["query"] .=", ".$column['column']."->>\"".$column['path']."\" as '{$column['column']}->{$column['path']}'";
+            $this->query_structure["SELECT"]["columns"][] = $column['column']."->>\"".$column['path']."\" as '{$column['column']}->{$column['path']}'";
         }else{
-            $this->query_structure["SELECT"] = $column['column']."->>\"".$column['path']."\"";
+            $this->query_structure["SELECT"]["query"] = $column['column']."->>\"".$column['path']."\"  as '{$column['column']}->{$column['path']}'";
+            $this->query_structure["SELECT"]["columns"][] = $column['column']."->>\"".$column['path']."\"  as '{$column['column']}->{$column['path']}'";
         }
     }
 
@@ -409,17 +430,18 @@ abstract class Model
     }
 
     private function rawColumnGen($cols){
-            foreach ($cols as $col){
+//        var_dump($cols);
+        foreach ($cols as $col){
                 if($col instanceof Model){
                     $this->generateRawSelectFromInstance($col);
                 }else{
                     if($this->isJsonRef($col)){
                         $this->genRawJsonSelect($col);
                     }else{
-                        if($this->query_structure["SELECT"]){
-                            $this->query_structure["SELECT"] .= ",".$col;
+                        if($this->query_structure["SELECT"]["query"]){
+                            $this->query_structure["SELECT"]["query"] .= ",".$col;
                         }else{
-                            $this->query_structure["SELECT"] = $col;
+                            $this->query_structure["SELECT"]["query"] = $col;
                         }
                     }
 
@@ -431,43 +453,46 @@ abstract class Model
     private function buildWriteRawQuery($command = "UPDATE"){
         switch ($command){
             case "UPDATE":
-                $params     = $this->query_structure[$command];
+                $columns     = $this->query_structure[$command];
                 $command    = "UPDATE ".$this->table_name." SET ";
-                $query      = $command.$params;
-                if($this->query_structure["WHERE"])
-                    $query .= " WHERE ".$this->query_structure["WHERE"];
+                $query      = $command.$columns;
+                if($this->query_structure["WHERE"]["query"])
+                    $query .= " WHERE ".$this->query_structure["WHERE"]["query"];
                 break;
             case "INSERT":
-                $params     = $this->query_structure[$command];
-                $command    = "INSERT INTO {$this->table_name} SET {$params}";
+                $columns     = $this->query_structure[$command];
+                $command    = "INSERT INTO {$this->table_name} SET {$columns}";
                 $query      = $command;
                 break;
             case "DELETE":
                 $query      = "DELETE FROM {$this->table_name} ";
 
-                if($this->query_structure["WHERE"])
-                    $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];
+                if($this->query_structure["WHERE"]["query"])
+                    $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"]["query"];
                 break;
             case "SELECT":
-                $params     = $this->query_structure["SELECT"];
-                $query      = "SELECT SQL_CALC_FOUND_ROWS {$params}";
+                $columns     = $this->query_structure["SELECT"]["query"];
+                $query      = "SELECT SQL_CALC_FOUND_ROWS {$columns}";
                 $query     .= PHP_EOL." FROM {$this->table_name} ";
                 if($this->query_structure["JOIN"]){
                     $query .= " ".$this->rawJoinGen($this->query_structure["JOIN"]);
                 }
-                if(@$this->query_structure["WHERE"])
-                    $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"];                       if(@$this->query_structure["GROUP_BY"])
-                $query .= PHP_EOL." GROUP BY ".$this->query_structure["GROUP_BY"];
+                if(@$this->query_structure["WHERE"]["query"])
+                    $query .= PHP_EOL." WHERE ".$this->query_structure["WHERE"]["query"];
+                if(@$this->query_structure["GROUP_BY"])
+                    $query .= PHP_EOL." GROUP BY ".$this->query_structure["GROUP_BY"];
+                if(@$this->query_structure["HAVING"]["query"])
+                    $query .= PHP_EOL." HAVING ".$this->query_structure["HAVING"]["query"];
                 if(@$this->query_structure['ORDER_BY'])
                     $query .= PHP_EOL." ORDER BY ".$this->query_structure['ORDER_BY'];
                 if(@$this->query_structure['LIMIT'])
                     $query .= PHP_EOL." LIMIT ".$this->query_structure['LIMIT'];
                 break;
             case "SORT":
-                $params     = $this->query_structure["SELECT"];
-                $query      = "SELECT {$params} FROM {$this->table_name} ";
-                if($this->query_structure["WHERE"])
-                    $query .= " WHERE ".$this->query_structure["WHERE"];
+                $columns     = $this->query_structure["SELECT"]["query"];
+                $query      = "SELECT {$columns} FROM {$this->table_name} ";
+                if($this->query_structure["WHERE"]["query"])
+                    $query .= " WHERE ".$this->query_structure["WHERE"]["query"];
                 break;
             default:
                 return false;
@@ -482,6 +507,19 @@ abstract class Model
      */
     public function getPages(): array
     {
+        //        generate available pages
+        $total_records = $this->total_record;
+        $current_page = 0;
+        $page = $this->current_page;
+        $total_pages = round($total_records/$this->record_per_page,0,PHP_ROUND_HALF_ODD);
+        while($current_page  < $total_pages){
+            $this->pages[] = [
+                "page_number"   => $current_page+1,
+                "navigable"     => ($current_page != $page),
+                "total_pages"   => $total_pages
+            ];
+            $current_page ++;
+        }
         return $this->pages;
     }
 
@@ -639,9 +677,9 @@ abstract class Model
                 if((is_array($this->readable_cols) && count($this->readable_cols) > 0)){
                     $cols = $this->filterNonReadable($this->readable_cols);
                 }elseif (is_array($this->non_readable_cols) && count($this->non_readable_cols) > 0){
-                    $cols = $this->filterNonReadable($this->table_cols);
+                    $cols = $this->filterNonReadable($this->table_columns);
                 }else{
-                    $cols = $this->filterNonReadable($this->table_cols);
+                    $cols = $this->filterNonReadable($this->table_columns);
                 }
             }
 
@@ -657,7 +695,7 @@ abstract class Model
 
         }
         $query      = $this->buildWriteRawQuery("SELECT");
-        $params     = array_merge($this->params["SELECT"],$this->params["WHERE"],$this->params["LIMIT"]);
+        $params     = array_merge($this->params["SELECT"],$this->params["WHERE"],$this->params["HAVING"],$this->params["LIMIT"]);
 
 //        var_dump($params);
 //        echo "<br>".$query."<br>";
@@ -735,45 +773,48 @@ abstract class Model
         return $this;
     }
 
-    public function fetchPerPage(Model $main_instance){
-        $this->select('id');
-        $this->query_structure['WHERE'] = $main_instance->query_structure['WHERE'];
-        $query      = $this->buildWriteRawQuery("SELECT");
-        $params     = array_merge($main_instance->params["SELECT"],$main_instance->params["WHERE"],$main_instance->params["LIMIT"]);
-
-//        var_dump($params);
-//        echo "<br>".$query."<br>";
-        try{
-            $prepare                = $this->conn->prepare($query);//Prepare query\
-            $prepare                ->execute($params);
-            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
-
-            return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
-        }catch (\PDOException $e){
-            throw new DatabaseException($e->getMessage());
-        }
-    }
+//    public function fetchPerPage(Model $main_instance){
+//        $select = array_filter(
+//            array_unique(
+//                array_merge(
+//                    $main_instance->query_structure['WHERE']['columns'],
+//                    $main_instance->query_structure["SELECT"]["columns"],
+//                    [$main_instance->query_structure['GROUP_BY']]
+//                )
+//            ),function ($col){
+//            return strlen(trim($col)) > 0;
+//        });//filter empty string
+//
+//        $this->select(...$select);
+//        $this->query_structure['WHERE']["query"] = $main_instance->query_structure['WHERE']['query'];
+//        $this->query_structure['JOIN'] = $main_instance->query_structure['JOIN'];
+//        $this->query_structure['HAVING']["query"] = $main_instance->query_structure['HAVING']["query"];
+//        $this->query_structure['GROUP_BY'] = $main_instance->query_structure['GROUP_BY'];
+//        $this->query_structure["LIMIT"]    = "0,1";
+//
+//        $query      = $this->buildWriteRawQuery("SELECT");
+//        $params     = array_merge($main_instance->params["SELECT"],$main_instance->params["WHERE"],$main_instance->params["HAVING"]);
+//
+////        var_dump($params);
+////        echo "<br>".$query."<br>";
+//        try{
+//            $prepare                = $this->conn->prepare($query);//Prepare query\
+//            $prepare                ->execute($params);
+//            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
+//
+//            return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
+//        }catch (\PDOException $e){
+//            throw new DatabaseException($e->getMessage());
+//        }
+//    }
 
     public function getPage($page = 1){
 //        get total record
-        $n_instance = new static();
-        $n_instance->fetchPerPage($this);
         $page -= 1;
-        $total_records = $n_instance->total_record;
-
+        $this->current_page = $page;
         $offset =  $this->record_per_page * $page;
         $total = $this->record_per_page;
-//        generate available pages
-        $current_page = 0;
-        $total_pages = round($total_records/$this->record_per_page,0,PHP_ROUND_HALF_ODD);
-        while($current_page  < $total_pages){
-            $this->pages[] = [
-                "page_number"   => $current_page+1,
-                "navigable"     => ($current_page != $page),
-                "total_pages"   => $total_pages
-            ];
-            $current_page ++;
-        }
+
         $this->query_structure["LIMIT"] = "?,?";
         $this->params["LIMIT"]          = [$offset,$total];
         return $this->all();
@@ -838,7 +879,7 @@ abstract class Model
         $str = "";
         foreach ($table_joins as $table => $value) {
             $type = $value["type"];
-            $on   = $value["on"];
+            $on   = $this->getOn($value["on"]);
             $str .= PHP_EOL." ".$type." ".$table." ".PHP_EOL."   "."ON"." ".$on;
         }
         return $str;
@@ -851,7 +892,7 @@ abstract class Model
      */
     private function join($type = "INNER", $table, $on){
         $this->query_structure["JOIN"][$table]["type"] =  $type." JOIN";
-        $this->query_structure["JOIN"][$table]["on"] =  $this ->getOn($on);
+        $this->query_structure["JOIN"][$table]["on"] =  $on;
         return $this;
     }
 
@@ -872,6 +913,9 @@ abstract class Model
      * @return $this
      */
     public function innerJoin($table, $on){
+        if($table instanceof Model)
+            $table = $table->table_name;
+
         $this->join("INNER",$table,$on);
         /** @var Model $this */
         return $this;
@@ -938,7 +982,7 @@ abstract class Model
      * @return mixed
      */
     public function count(){
-        $this->query_structure["SELECT"] = "COUNT({$this->primary_key}) as total";
+        $this->query_structure["SELECT"]["query"] = "COUNT({$this->primary_key}) as total";
         $this->groupBy($this->primary_key);
         return $this->all(null,true)["total"];
     }
@@ -988,15 +1032,17 @@ abstract class Model
 
     private function generateRawSelectFromInstance(Model $select){
         $raw = $select->raw_select_query();
-        if($this->query_structure["SELECT"]){
-            $this->query_structure["SELECT"] .= ", (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
+        if($this->query_structure["SELECT"]["query"]){
+            $this->query_structure["SELECT"]["query"] .= ", (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
             $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
             $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
+            $this->params["HAVING"] = array_merge($this->params["HAVING"],$raw->params["having"]);
             $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
         }else{
-            $this->query_structure["SELECT"] = " (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
+            $this->query_structure["SELECT"]["query"] = " (".str_replace("SQL_CALC_FOUND_ROWS","",$raw->query).")";
             $this->params["SELECT"] = array_merge($this->params["SELECT"],$raw->params["select"]);
             $this->params["WHERE"] = array_merge($this->params["WHERE"],$raw->params["where"]);
+            $this->params["HAVING"] = array_merge($this->params["HAVING"],$raw->params["having"]);
             $this->params["LIMIT"] = array_merge($this->params["LIMIT"],$raw->params["limit"]);
         }
     }
@@ -1025,10 +1071,10 @@ abstract class Model
                 if($this->isJsonRef($columns)){
                     $this->genRawJsonSelect($columns);
                 }else{
-                    if($this->query_structure["SELECT"]){
-                        $this->query_structure["SELECT"] .=", ".$columns;
+                    if($this->query_structure["SELECT"]["query"]){
+                        $this->query_structure["SELECT"]["query"] .=", ".$columns;
                     }else{
-                        $this->query_structure["SELECT"] = $columns;
+                        $this->query_structure["SELECT"]["query"] = $columns;
                     }
                 }
 
@@ -1039,11 +1085,12 @@ abstract class Model
     }
 
     public function rawSelect($expression,...$params){
-        if($this->query_structure["SELECT"]){
-            $this->query_structure["SELECT"] .=", ".$expression;
+        if($this->query_structure["SELECT"]["query"]){
+            $this->query_structure["SELECT"]["query"] .=", ".$expression;
         }else{
-            $this->query_structure["SELECT"] = $expression;
+            $this->query_structure["SELECT"]["query"] = $expression;
         }
+        $this->query_structure["SELECT"]["columns"][] = $expression;
         $this->params["SELECT"] = array_merge($this->params["SELECT"],$params);
         return $this;
     }
@@ -1052,8 +1099,8 @@ abstract class Model
      * @return $this
      */
     public function as($alias){
-        if($this->query_structure["SELECT"]){
-            $this->query_structure["SELECT"] .= " AS ".$alias." ";
+        if($this->query_structure["SELECT"]["query"]){
+            $this->query_structure["SELECT"]["query"] .= " AS ".$alias." ";
         }
         return $this;
     }
@@ -1073,10 +1120,10 @@ abstract class Model
      * @return bool
      */
     public function exists():bool {
-        if(strlen(trim($this->query_structure["SELECT"])) > 0){
-            $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        if(strlen(trim($this->query_structure["SELECT"]["query"])) > 0){
+            $this->query_structure["SELECT"]["query"] .= ", COUNT({$this->primary_key}) as total";
         }else{
-            $this->query_structure["SELECT"] .= " COUNT({$this->primary_key}) as total";
+            $this->query_structure["SELECT"]["query"] .= " COUNT({$this->primary_key}) as total";
         }
         return $this->all(null,true)["total"] > 0;
     }
@@ -1084,10 +1131,10 @@ abstract class Model
      * @return bool
      */
     public function doesntExists():bool {
-        if(strlen(trim($this->query_structure["SELECT"])) > 0){
-            $this->query_structure["SELECT"] .= ", COUNT({$this->primary_key}) as total";
+        if(strlen(trim($this->query_structure["SELECT"]["query"])) > 0){
+            $this->query_structure["SELECT"]["query"] .= ", COUNT({$this->primary_key}) as total";
         }else{
-            $this->query_structure["SELECT"] .= " COUNT({$this->primary_key}) as total";
+            $this->query_structure["SELECT"]["query"] .= " COUNT({$this->primary_key}) as total";
         }
         return $this->all(null,true)["total"] < 1;
     }
@@ -1097,11 +1144,12 @@ abstract class Model
      * @return $this
      */
     public function whereColumns(...$cols){
-        if($this->query_structure["WHERE"]){
-            $this->query_structure["WHERE"] .= " AND ". "MATCH( ".join(",",$cols)." )";
+        if($this->query_structure["WHERE"]["query"]){
+            $this->query_structure["WHERE"]["query"] .= " AND ". "MATCH( ".join(",",$cols)." )";
         }else{
-            $this->query_structure["WHERE"] = " MATCH( ".join(",",$cols)." )";
+            $this->query_structure["WHERE"]["query"] = " MATCH( ".join(",",$cols)." )";
         }
+        array_merge($this->query_structure["WHERE"]["columns"],$cols);
         return $this;
     }
 
@@ -1111,10 +1159,14 @@ abstract class Model
      * @return  $this
      */
     public function matches($value, $mode = "BOOLEAN"){
-        $this->query_structure["WHERE"] .= " AGAINST(? IN {$mode} MODE)";
+        $this->query_structure["WHERE"]["query"] .= " AGAINST(? IN {$mode} MODE)";
         $this->params["WHERE"][]         = $value;
         return $this;
     }
 
+    public function having($condition){
+        $this->where_gen($condition,"AND","HAVING");
+        return $this;
+    }
 
 }
