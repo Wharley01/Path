@@ -993,6 +993,11 @@ abstract class Model
         }
     }
 
+    /**
+     * @param array ...$columns
+     * @return $this
+     * @throws DatabaseException
+     */
     public function select(...$columns){
         if(count($columns) == 1 && $columns[0] instanceof Model){
             $columns = $columns[0];
@@ -1025,6 +1030,14 @@ abstract class Model
         return $this;
     }
 
+    public function rawSelect($expression,$params = []){
+        if($this->query_structure["SELECT"]){
+            $this->query_structure["SELECT"] .=", ".$expression;
+        }else{
+            $this->query_structure["SELECT"] = $expression;
+        }
+        $this->params["SELECT"] = array_merge($this->params["SELECT"],$params);
+    }
     /**
      * @param $alias
      * @return $this
