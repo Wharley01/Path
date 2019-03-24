@@ -60,7 +60,7 @@ abstract class Model
 
     protected $fetch_method         = "FETCH_ASSOC";
     private   $pages                = [];
-    private   $total_record;
+    public    $total_record         = 0;
 
     private   $validator;
     private   $valid_where_clause_rule = "([\w\->\[\]\\d]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)";
