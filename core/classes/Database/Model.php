@@ -84,6 +84,7 @@ abstract class Model
         $this->columns = $this->filterNonReadable($this->table_columns);
         $this->model_name =  get_class($this);
     }
+
     private function getColumns($table){
         try{
             $q = $this->conn->query("DESCRIBE {$table}");
@@ -279,10 +280,16 @@ abstract class Model
     }
     private function filterNonWritable(Array $data){
         foreach ($data as $key => $value){
-            if(!$this->isWritable($key))
+            $key = $this->table_name.".".$key;
+            if(!$this->isWritable($key)){
+                var_dump($data[$key]);
                 unset($data[$key]);
-            if(!in_array($key,$this->table_columns) && !$this->isJsonRef($key))
+            }
+            if(!in_array($key,$this->table_columns) || $this->isJsonRef($key)){
+                echo "<br>";
                 unset($data[$key]);
+            }
+
         }
         return $data;
     }
@@ -604,7 +611,7 @@ abstract class Model
         $query      = $this->buildWriteRawQuery("UPDATE");
         $params     = array_merge($this->params["UPDATE"],$this->params["WHERE"]);
 //        var_dump($params);
-        echo PHP_EOL.$query;
+//        echo PHP_EOL.$query;
         try{
             $prepare    = $this->conn->prepare($query);//Prepare query\
             $prepare    ->execute($params);
