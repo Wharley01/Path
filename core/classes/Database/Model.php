@@ -326,7 +326,7 @@ abstract class Model
 
 
         foreach($data as $column => $value){
-                $string = "";
+            $string = "";
             if($this->isJsonRef($column)){
                 $_value = is_array($value) ? $this->generateSqlObjFromArray($value):"?";
                 $func = $json_action == "UPDATE" ? "JSON_SET":"JSON_INSERT";
@@ -452,22 +452,22 @@ abstract class Model
     private function rawColumnGen($cols){
 //        var_dump($cols);
         foreach ($cols as $col){
-                if($col instanceof Model){
-                    $this->generateRawSelectFromInstance($col);
+            if($col instanceof Model){
+                $this->generateRawSelectFromInstance($col);
+            }else{
+                if($this->isJsonRef($col)){
+                    $this->genRawJsonSelect($col);
                 }else{
-                    if($this->isJsonRef($col)){
-                        $this->genRawJsonSelect($col);
+                    if($this->query_structure["SELECT"]["query"]){
+                        $this->query_structure["SELECT"]["query"] .= ",".$col;
                     }else{
-                        if($this->query_structure["SELECT"]["query"]){
-                            $this->query_structure["SELECT"]["query"] .= ",".$col;
-                        }else{
-                            $this->query_structure["SELECT"]["query"] = $col;
-                        }
+                        $this->query_structure["SELECT"]["query"] = $col;
                     }
-
                 }
 
             }
+
+        }
 
     }
     private function buildWriteRawQuery($command = "UPDATE"){
@@ -556,20 +556,43 @@ abstract class Model
         $this->validator = $validator;
         return $this;
     }
-    public function update(array $data = null){
+
+    private function rawUpdate(){
+
+        $data[$this->updated_col] = time();
+
+//        Process and execute query
+
+        $query      = $this->buildWriteRawQuery("UPDATE");
+        $params     = array_merge($this->params["UPDATE"],$this->params["WHERE"]);
+//        var_dump($params);
+//        echo PHP_EOL.$query;
+        try{
+            $prepare    = $this->conn->prepare($query);//Prepare query\
+            $prepare    ->execute($params);
+            $this->clearMemory();
+        }catch (\PDOException $e){
+            throw new DatabaseException($e->getMessage());
+        }
+
+        return $this;
+    }
+
+    public function update(array $data = []){
         if(!$data)
             $data = $this->filterNonWritable($this->writing);
         elseif($data AND is_array($data))
             $data = array_merge($this->filterNonWritable($data),$this->writing);
 
-        if(!$data)
-            throw new DatabaseException("Error Attempting to update Empty data set");
+//        if(!$data)
+//            throw new DatabaseException("Error Attempting to update Empty data set");
         if(!$this->table_name)
             throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+
         $data[$this->updated_col] = time();
         if($this->validator instanceof Validator){
             if($this->validator->hasError()){
-                return false;
+                throw new DatabaseException("Validation failed");
             }
         }
 
@@ -590,6 +613,24 @@ abstract class Model
             throw new DatabaseException($e->getMessage());
         }
 
+        return $this;
+    }
+
+    public function increment($column){
+        if($this->query_structure["UPDATE"]){
+            $this->query_structure["UPDATE"] = ", {$column} = {$column} + 1";
+        }else{
+            $this->query_structure["UPDATE"] = "{$column} = {$column} + 1";
+        }
+        return $this;
+    }
+
+    public function decrement($column){
+        if($this->query_structure["UPDATE"]){
+            $this->query_structure["UPDATE"] = ", {$column} = {$column} - 1";
+        }else{
+            $this->query_structure["UPDATE"] = "{$column} = {$column} - 1";
+        }
         return $this;
     }
 
@@ -1148,6 +1189,27 @@ abstract class Model
         }
         array_merge($this->query_structure["WHERE"]["columns"],$cols);
         return $this;
+    }
+
+    /**
+     * @param array ...$cols
+     * @return $this
+     */
+    public function orWhereColumns(...$cols){
+        if($this->query_structure["WHERE"]["query"]){
+            $this->query_structure["WHERE"]["query"] .= " OR ". "MATCH( ".join(",",$cols)." )";
+        }else{
+            $this->query_structure["WHERE"]["query"] = " MATCH( ".join(",",$cols)." )";
+        }
+        array_merge($this->query_structure["WHERE"]["columns"],$cols);
+        return $this;
+    }
+
+    public function in(array $list){
+        $array = join(",", array_pad(array(), count($list), "?"));
+            $this->query_structure["WHERE"]["query"] .= " IN ({$array})";
+            $this->params["SELECT"] = array_merge($this->params["SELECT"],$list);
+            return $this;
     }
 
     /**
