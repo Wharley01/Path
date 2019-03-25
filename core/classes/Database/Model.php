@@ -737,17 +737,27 @@ abstract class Model
     }
 
     private function clearMemory(){
+
         $this->query_structure = [
             "WITH"              => "",
-            "SELECT"            => "",
+            "SELECT"            => [
+                "query" => "",
+                "columns" => []
+            ],
             "AS"                => "",
             "JOIN"              => [],//table to join
             "ON"                => "",//associative array holding join condition
             "INSERT"            => "",
             "UPDATE"            => "",
-            "WHERE"             => "",
+            "WHERE"             => [
+                "query" => "",
+                "columns" => []
+            ],
             "GROUP_BY"          => "",
-            "HAVING"            => "",
+            "HAVING"            => [
+                "query" => "",
+                "columns" => []
+            ],
             "ORDER_BY"          => "",
             "LIMIT"             => ""
         ];
@@ -755,6 +765,7 @@ abstract class Model
         $this->params       = [
             "SELECT"            => [],
             "WHERE"             => [],
+            "HAVING"            => [],
             "UPDATE"            => [],
             "INSERT"            => [],
             "SORT"              => [],
