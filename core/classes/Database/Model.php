@@ -75,7 +75,7 @@ abstract class Model
     public    $total_record         = 0;
 
     private   $validator;
-    private   $valid_where_clause_rule = "^([\w\->\[\]\\d.]+)\s*([><=!]*)\\s*([\\w\->\[\]\\d]+)$";
+    private   $valid_where_clause_rule = "^([\w\->\[\]\\d.]+)\s*([><=!]+)\\s*([\\w\->\[\]\\d]+)$";
     private   $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]!]+$";
     public function __construct()
     {
@@ -179,7 +179,7 @@ abstract class Model
             }
         }else if(preg_match("/{$this->valid_where_clause_rule}/",$conditions)){
             $str   = "";
-//            echo "using....";
+            echo "using....";
 //          if conditions are in raw string
             $split = explode(",",$conditions);
             foreach ($split as $val){
@@ -604,7 +604,7 @@ abstract class Model
         $query      = $this->buildWriteRawQuery("UPDATE");
         $params     = array_merge($this->params["UPDATE"],$this->params["WHERE"]);
 //        var_dump($params);
-//        echo PHP_EOL.$query;
+        echo PHP_EOL.$query;
         try{
             $prepare    = $this->conn->prepare($query);//Prepare query\
             $prepare    ->execute($params);
@@ -1208,7 +1208,7 @@ abstract class Model
     public function in(array $list){
         $array = join(",", array_pad(array(), count($list), "?"));
             $this->query_structure["WHERE"]["query"] .= " IN ({$array})";
-            $this->params["SELECT"] = array_merge($this->params["SELECT"],$list);
+            $this->params["WHERE"] = array_merge($this->params["WHERE"],$list);
             return $this;
     }
 
