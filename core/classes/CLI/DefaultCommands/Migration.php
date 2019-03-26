@@ -107,15 +107,15 @@ class Migration extends CInterface
 
     private function install($table,$table_class_instance){
         $this->prototype->create($table,$table_class_instance);
-        $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully installed");
+        $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully installed ".PHP_EOL);
     }
     private function uninstall($table){
         $this->prototype->drop($table);
-        $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully uninstalled");
+        $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully uninstalled ".PHP_EOL);
     }
     private function update($table,$table_class_instance){
         $this->prototype->alter($table,$table_class_instance);
-        $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully Updated");
+        $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully Updated ".PHP_EOL);
     }
     private function populate($table,Table $table_class_instance){
         $table_class_instance->populate(new class($table,$table_class_instance->primary_key ?? "id") extends Model{
