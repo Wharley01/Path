@@ -97,9 +97,9 @@ abstract class Model
             return null;
 
         if (strpos($column, ".") === false) {
-            $return[] = $this->table_name . "." . $column;
+            return $this->table_name . "." . $column;
         } else {
-            $return[] = $column;
+            return $column;
         }
     }
     private function convertColumnsToFull($columns)
@@ -1305,3 +1305,4 @@ abstract class Model
         return $this;
     }
 }
+
