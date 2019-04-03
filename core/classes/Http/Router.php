@@ -67,7 +67,7 @@ class Router
         $this->root_path = $root_path;
         $this->request = new Request();
         $this->database = null;
-        $this->real_path =  preg_replace("/[^\w:\/\d\-].*$/m","",$this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL);
+        $this->real_path =  preg_replace("/[^\w:.\/\d\-].*$/m","",$this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL);
 
 //        echo $this->real_path;
 //        TODO: Initialize model for database
@@ -157,6 +157,7 @@ class Router
      * @return bool
      */
     public static function compare_path($real_path, $path){
+
         /*
          * $path holds the path template
          * $real_path holds the path from the browser
@@ -605,6 +606,7 @@ class Router
         $real_path = trim($this->real_path);
 //Check if path is the one actively visited in browser
         if((strtoupper($this->request->METHOD) == $method || $method == "ANY") && self::compare_path($real_path,self::joinPath($this->root_path,$_path))) {
+
 //            Check if $callback is a string, parse appropriate
             $this->response($method,$this->root_path, $_path, $callback,$_middle_ware,$_fallback);
         }
