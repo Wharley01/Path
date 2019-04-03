@@ -16,6 +16,7 @@ class Response
     public $status;
     public $headers = [];
     public $build_path = "";
+    public $is_binary = false;
     public function __construct($build_path = '/')
     {
         $this->build_path = $build_path;
@@ -124,6 +125,22 @@ class Response
     public function file($file_path){
 
     }
+
+    public function image($path){
+        $path = ROOT_PATH."/".$path;
+        if(!is_file($path))
+            throw new \Exception("Invalid File {$path}");
+        $this->content = $path;
+        $this->headers = array_merge(
+            $this->headers,
+            [
+                "Content-Length" => filesize($path),
+            ]
+        );
+        $this->is_binary = true;
+        return $this;
+    }
+
     private function convertToUtf8($d) {
         if (is_array($d)) {
             foreach ($d as $k => $v) {
