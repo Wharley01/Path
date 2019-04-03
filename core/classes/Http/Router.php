@@ -199,7 +199,11 @@ class Router
             throw new RouterException("Callback function expected to return an instance of Response Class");
         http_response_code($response->status);//set response code
         self::set_header($response->headers);//set header
-        print($response->content);
+        if($response->is_binary){
+            readfile($response->content);
+        }else{
+            print($response->content);
+        }
         @ob_flush();
         @flush();
         die();
