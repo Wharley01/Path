@@ -126,7 +126,7 @@ class Response
 
     }
 
-    public function image($path){
+    public function image($path,$type = "image/jpeg"){
         $path = ROOT_PATH."/".$path;
         if(!is_file($path))
             throw new \Exception("Invalid File {$path}");
@@ -135,6 +135,7 @@ class Response
             $this->headers,
             [
                 "Content-Length" => filesize($path),
+                "Content-type" => $type
             ]
         );
         $this->is_binary = true;
