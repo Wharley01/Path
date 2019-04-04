@@ -805,7 +805,6 @@ abstract class Model
                 $this->rawColumnGen($cols);
             }
         }
-        $this->batch(0,$this->record_per_page);
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($this->params["SELECT"], $this->params["WHERE"], $this->params["HAVING"], $this->params["LIMIT"]);
 
@@ -816,7 +815,7 @@ abstract class Model
             $prepare->execute($params);
             $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
             $this->total_pages = ceil($this->total_record / $this->record_per_page);
-            
+
             if ($sing_record) {
                 $this->clearMemory();
                 return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
