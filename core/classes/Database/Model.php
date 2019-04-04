@@ -77,6 +77,8 @@ abstract class Model
     private $validator;
     private $valid_where_clause_rule = "^([\w\->\[\]\\d.]+)\s*([><=!]+)\\s*([\\w\->\[\]\\d]+)$";
     private $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]!]+$";
+    public $total_pages = 0;
+
     public function __construct()
     {
         $this->conn = Mysql::connection();
@@ -573,6 +575,7 @@ abstract class Model
         $current_page = 0;
         $page = $this->current_page;
         $total_pages = ceil($total_records / $this->record_per_page);
+
         while ($current_page  < $total_pages) {
             $this->pages[] = [
                 "page_number"   => $current_page + 1,
@@ -802,6 +805,7 @@ abstract class Model
                 $this->rawColumnGen($cols);
             }
         }
+        $this->batch(0,$this->record_per_page);
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($this->params["SELECT"], $this->params["WHERE"], $this->params["HAVING"], $this->params["LIMIT"]);
 
@@ -811,6 +815,8 @@ abstract class Model
             $prepare                = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
             $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
+            $this->total_pages = ceil($this->total_record / $this->record_per_page);
+            
             if ($sing_record) {
                 $this->clearMemory();
                 return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
@@ -1305,4 +1311,3 @@ abstract class Model
         return $this;
     }
 }
-
