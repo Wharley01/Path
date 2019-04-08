@@ -25,6 +25,9 @@ $router->any([
         ]
 ],\Path\Controller\Route\Test::class);
 
+$router->get("/test.jpg",function (Request $request,Response $response){
+    return $response->image("path/test/0b314b7d6953.png");
+});
 $router->get("watcher-test",function (Request $request,Response $response){
     return $response->html("websocket.html");
 });
