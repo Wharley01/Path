@@ -17,7 +17,7 @@ import(
     "core/classes/Database/Structure",
     "core/classes/Database/Table",
     "core/classes/Database/Model",
-    "core/classes/Database/connection"
+    "core/classes/Database/Connection"
 );
 
 class Migration extends CInterface
