@@ -22,7 +22,7 @@ class Mysql implements DB
         $HOST           = config("DATABASE->host");
         $USER           = config("DATABASE->user");
         $NAME           = config("DATABASE->name");
-        $PASSWORD       = config("DATABASE->pass");
+        $PASSWORD       = config("DATABASE->password");
         if(self::$conn === null){
             try {
                 $opt = [
