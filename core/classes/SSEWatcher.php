@@ -19,7 +19,7 @@ import(
 class SSEWatcher
 {
     private $watching;
-    private $params;
+    public $params;
     private $controller_name;
     private $controller_instance;
     private $session;
@@ -49,8 +49,8 @@ class SSEWatcher
             $live_controller = $this->controller_namespace.$this->controller_name;
 
             $controller = new $live_controller(
+                $this,
                 $this->session,
-                $this->params,
                 $message
             );
             return $controller;
@@ -86,6 +86,14 @@ class SSEWatcher
 
         return (is_null($cached_value) || $cached_value != $value) || !$this->hasExecuted($method);
     }
+    private function getMethodValue($controller, $method, $message){
+        return $controller->{$method}(
+            $this->response_instance,
+            $this,
+            $this->session,
+            $message
+        );
+    }
     private function execute(array $watch_list,LiveController $controller,?String $message = null,?Bool $force_execute = false){
 
         $watchable_methods = $this->watching;
@@ -102,7 +110,7 @@ class SSEWatcher
                         $this->response[$_method][] = $this->getPrevValue($_method);
                     }else{
 
-                        $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
+                        $response = $this->getMethodValue($controller,$_method,$message);
                         $this->response[$_method][] = $response;
                         $this->response[$_method][] = $this->getPrevValue($_method);
                     }
@@ -124,14 +132,13 @@ class SSEWatcher
                             $this->response[$_method][] = $this->getPrevValue($_method);
 
                         }else{
-                            $response = is_null($message) ? $controller->{$_method}($this->response_instance,null,$this->session):$controller->{$_method}($this->response_instance,$message,$this->session);
+                            $response = $this->getMethodValue($controller,$_method,$message);
                             $this->response[$_method][] = $response;
                             $this->response[$_method][] = $this->getPrevValue($_method);
 
                         }
                     }else{
                         $this->has_changes[$_method] = false;
-
                     }
                 }
             }
@@ -247,8 +254,9 @@ class SSEWatcher
     }
 
     private static function generateParams($params):array {
-        preg_match("/\[([^\[^\]]+)\]/i",$params,$matches);
+        preg_match("/\[?([^\[^\]]+)\]?/i",$params,$matches);
         if(!isset($matches[1])){
+            echo "no match";
             return [];
         }
         $res = [];
