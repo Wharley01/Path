@@ -42,37 +42,39 @@ class Create extends CInterface
     public function entry($params)
     {
         $params = (object)$params;
-        if(isset($params->controller)){
+        if (isset($params->controller)) {
             $this->createController($params->controller);
-        }elseif (isset($params->command)){
+        } elseif (isset($params->command)) {
             $this->createCommand($params->command);
-        }elseif (isset($params->migration)){
+        } elseif (isset($params->migration)) {
             $this->createMigration($params->migration);
-        }elseif (isset($params->middleware)){
+        } elseif (isset($params->middleware)) {
             $this->createMiddleWare($params->middleware);
-        }elseif(isset($params->model)){
+        } elseif (isset($params->model)) {
             $this->createModel($params->model);
         }
-
     }
-    private function toLower($string){
+    private function toLower($string)
+    {
         return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $string));
     }
-    private function createCommand($command_file_name){
-        if(strlen($command_file_name) < 2)
+    private function createCommand($command_file_name)
+    {
+        if (strlen($command_file_name) < 2)
             $command_file_name = $this->ask('Please Specify Command Name');
         $command_file_path = "{$this->commands_path}{$command_file_name}.php";
-        if(file_exists($command_file_path)){
-            if($this->confirm("Command already exist, do you want to overwrite? ")){
-                $command_file_open = fopen($command_file_path,"w");
-                $this->writeCommandBoilerPlate($command_file_open,$command_file_name);
+        if (file_exists($command_file_path)) {
+            if ($this->confirm("Command already exist, do you want to overwrite? ")) {
+                $command_file_open = fopen($command_file_path, "w");
+                $this->writeCommandBoilerPlate($command_file_open, $command_file_name);
             }
-        }else{
-            $command_file_open = fopen($command_file_path,"w");
-            $this->writeCommandBoilerPlate($command_file_open,$command_file_name);
+        } else {
+            $command_file_open = fopen($command_file_path, "w");
+            $this->writeCommandBoilerPlate($command_file_open, $command_file_name);
         }
     }
-    private function writeCommandBoilerPlate($write_instance, $command_file_name){
+    private function writeCommandBoilerPlate($write_instance, $command_file_name)
+    {
         $command_name = $this->ask("Enter command name (if different from the file name): ") ?? strtolower($command_file_name);
         $command_desc = $this->ask("Enter a description for this command: ") ?? "";
         $command_param = $this->ask("Enter a parameter for this command: ");
@@ -98,8 +100,8 @@ class $command_file_name extends CInterface
     public \$name = \"{$command_name}\";
     public \$description = \"{$command_desc}\";
     ";
-        if(!is_null($command_param)){
-            $code .= PHP_EOL."
+        if (!is_null($command_param)) {
+            $code .= PHP_EOL . "
     public \$arguments = [
         \"{$command_param}\" => [
             \"desc\" => \"{$command_param_desc}\"
@@ -125,66 +127,66 @@ class $command_file_name extends CInterface
 
 }
         ";
-        fwrite($write_instance,$code);
-        echo PHP_EOL.PHP_EOL."[+] ----  Database model boiler plate for --{$command_file_name}-- generated in \"{$this->commands_path}\" ".PHP_EOL;
+        fwrite($write_instance, $code);
+        echo PHP_EOL . PHP_EOL . "[+] ----  Database model boiler plate for --{$command_file_name}-- generated in \"{$this->commands_path}\" " . PHP_EOL;
         fclose($write_instance);
-
-
     }
-    private function createController($controller_name){
-        if($controller_name === true){
-            $controller_name = $this->ask("Enter Controller's name",true);
+    private function createController($controller_name)
+    {
+        if ($controller_name === true) {
+            $controller_name = $this->ask("Enter Controller's name", true);
         }
-//        Create file in Database/Models
-//        Create file controllers/
+        //        Create file in Database/Models
+        //        Create file controllers/
 
-        if(!$this->confirm("Do you have existing Model for your controller? ")){
-            $_model_name = $this->ask("Enter new Model's Name:",true);
+        if (!$this->confirm("Do you have existing Model for your controller? ")) {
+            $_model_name = $this->ask("Enter new Model's Name:", true);
             $_db_model_file = "{$this->models_path}{$_model_name}.php";
-            if(file_exists($_db_model_file)){
-                if($this->confirm("{$_model_name} Database model Already exists, Override?")){
-                    $db_model_file = fopen($_db_model_file,"w");
-                    $this->writeModelBoilerPlate($db_model_file,$_model_name);
+            if (file_exists($_db_model_file)) {
+                if ($this->confirm("{$_model_name} Database model Already exists, Override?")) {
+                    $db_model_file = fopen($_db_model_file, "w");
+                    $this->writeModelBoilerPlate($db_model_file, $_model_name);
                 }
-            }else{
-                $db_model_file = fopen($_db_model_file,"w");
-                $this->writeModelBoilerPlate($db_model_file,$_model_name);
+            } else {
+                $db_model_file = fopen($_db_model_file, "w");
+                $this->writeModelBoilerPlate($db_model_file, $_model_name);
             }
             $new_model_name = $_model_name;
-        }else{
-            $new_model_name = $this->ask("Enter Existing Model's Name",true);
+        } else {
+            $new_model_name = $this->ask("Enter Existing Model's Name", true);
         }
 
-        if($controller_type = strtolower($this->confirm('Controller Type','Route','Live'))){
+        if ($controller_type = strtolower($this->confirm('Controller Type', 'Route', 'Live'))) {
             $_controller_file = "{$this->route_controllers_path}{$controller_name}.php";
-            if(file_exists($_controller_file)){
-                if($this->confirm("{$controller_name} Controller Already exists, Override?",['Yes','y'],['No','n'])){
-                    $controller_file = fopen($_controller_file,"w");
-                    $this->writeRouteControllerBoilerPlate($controller_file,$controller_name,$new_model_name);
+            if (file_exists($_controller_file)) {
+                if ($this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
+                    $controller_file = fopen($_controller_file, "w");
+                    $this->writeRouteControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
                 }
-            }else{
-                $controller_file = fopen($_controller_file,"w");
-                $this->writeRouteControllerBoilerPlate($controller_file,$controller_name,$new_model_name);
+            } else {
+                $controller_file = fopen($_controller_file, "w");
+                $this->writeRouteControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
             }
-        }else{
-//            TODO: implement Live controller generation here
+        } else {
+            //            TODO: implement Live controller generation here
             $this->write('creating live controller');
             $_controller_file = "{$this->live_controllers_path}{$controller_name}.php";
-            if(file_exists($_controller_file)){
-                if($this->confirm("{$controller_name} Controller Already exists, Override?",['Yes','y'],['No','n'])){
-                    $controller_file = fopen($_controller_file,"w");
-                    $this->writeLiveControllerBoilerPlate($controller_file,$controller_name,$new_model_name);
+            if (file_exists($_controller_file)) {
+                if ($this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
+                    $controller_file = fopen($_controller_file, "w");
+                    $this->writeLiveControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
                 }
-            }else{
-                $controller_file = fopen($_controller_file,"w");
-                $this->writeLiveControllerBoilerPlate($controller_file,$controller_name,$new_model_name);
+            } else {
+                $controller_file = fopen($_controller_file, "w");
+                $this->writeLiveControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
             }
         }
-        echo PHP_EOL.PHP_EOL."[+] ---- CLOSING -----".PHP_EOL.PHP_EOL;
+        echo PHP_EOL . PHP_EOL . "[+] ---- CLOSING -----" . PHP_EOL . PHP_EOL;
 
         echo $controller_name;
     }
-    private function writeModelBoilerPlate($db_model_file, $model_name){
+    private function writeModelBoilerPlate($db_model_file, $model_name)
+    {
         $model_boiler_plate = "<?php
 /*
 * This is automatically generated 
@@ -199,7 +201,7 @@ use Path\\Database\\Model;
 
 class {$model_name} extends Model
 {
-    protected \$table_name               = \"".strtolower($model_name)."\";
+    protected \$table_name               = \"" . strtolower($model_name) . "\";
     protected \$non_writable_cols        = [\"id\"];
     protected \$readable_cols            = [\"id\",\"name\",\"description\"];
 
@@ -209,15 +211,22 @@ class {$model_name} extends Model
     }
 }";
         //        Write model boiler plate code to file
-        fwrite($db_model_file,$model_boiler_plate);
-        echo PHP_EOL.PHP_EOL."[+] ----  Database model boiler plate for --{$model_name}-- generated".PHP_EOL;
+        fwrite($db_model_file, $model_boiler_plate);
+        echo PHP_EOL . PHP_EOL . "[+] ----  Database model boiler plate for --{$model_name}-- generated" . PHP_EOL;
         fclose($db_model_file);
     }
-    private function writeLiveControllerBoilerPlate($controller_file, $controller_name, $model_name){
-        $watchables = array_filter(explode(",",$this->ask("Enter Watchable methods, separate with comma if one than one")),function ($method){
+    private function writeLiveControllerBoilerPlate($controller_file, $controller_name, $model_name)
+    {
+        $watchables = array_filter(explode(",", $this->ask("Enter Watchable methods, separate with comma if one than one")), function ($method) {
             return strlen(trim($method)) > 0;
         });
 
+        $watcher_type = $this->confirm("SSE or WS? ", ['SSE'], ['WS']);
+        if ($watcher_type == "SSE") {
+            $watcher = "Watcher";
+        } else {
+            $watcher = "SSEWatcher";
+        }
         $boiler_plate = "<?php
 /*
 * This Live Controller File Was automatically 
@@ -242,9 +251,9 @@ import(
 class $controller_name implements LiveController
 {
     ";
-        if(count($watchables) > 0){
-            foreach ($watchables as $method){
-                $boiler_plate .=" 
+        if (count($watchables) > 0) {
+            foreach ($watchables as $method) {
+                $boiler_plate .= " 
     public \$$method;
 
      ";
@@ -254,7 +263,7 @@ class $controller_name implements LiveController
         $boiler_plate .= "    
     //every time the watcher checks this Live Controller, it passes some data to it 
     public function __construct(
-        Watcher  &\$watcher,//watcher instance
+        {$watcher}  &\$watcher,//watcher instance
         Sessions \$sessions,//the session instance that can be used for auth. with the client side
         \$message//message sent from User(client Side)
     )
@@ -268,32 +277,31 @@ class $controller_name implements LiveController
         *
          */
 ";
-        if(count($watchables) > 0){
-            foreach ($watchables as $method){
-                $boiler_plate .=" 
+        if (count($watchables) > 0) {
+            foreach ($watchables as $method) {
+                $boiler_plate .= " 
         \$this->$method =  \"dynamic value\";
         ";
             }
         }
-        $boiler_plate .="
+        $boiler_plate .= "
     }
 ";
-        if(count($watchables) > 0){
+        if (count($watchables) > 0) {
 
-            foreach ($watchables as $method){
-                $boiler_plate .=" 
+            foreach ($watchables as $method) {
+                $boiler_plate .= " 
 public function $method(
         Response \$response,
         Watcher  &\$watcher,
         Sessions \$sessions,
         ?String  \$message
     ){
-//response here will be sent to client side when \$this->watch_list[\"$method\"]'s value changes
+//response here will be sent to client side when \$this->$method's value changes
         return \$response->json([\"from $method in $controller_name Live Controller\"]);
 }
         ";
             }
-
         }
 
         $boiler_plate .= "        
@@ -301,11 +309,12 @@ public function $method(
 }
         ";
         //        Write controller boiler plate
-        fwrite($controller_file,$boiler_plate);
-        echo PHP_EOL.PHP_EOL."[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->live_controllers_path}\" ".PHP_EOL;
+        fwrite($controller_file, $boiler_plate);
+        echo PHP_EOL . PHP_EOL . "[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->live_controllers_path}\" " . PHP_EOL;
         fclose($controller_file);
     }
-    private function writeRouteControllerBoilerPlate($controller_file, $controller_name, $model_name){
+    private function writeRouteControllerBoilerPlate($controller_file, $controller_name, $model_name)
+    {
         $contr_boiler_plate = "<?php
 
 /*
@@ -341,25 +350,26 @@ class {$controller_name} extends Controller
 
 
 
-//        Write controller boiler plate
-        fwrite($controller_file,$contr_boiler_plate);
-        echo PHP_EOL.PHP_EOL."[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->route_controllers_path}\" ".PHP_EOL;
+        //        Write controller boiler plate
+        fwrite($controller_file, $contr_boiler_plate);
+        echo PHP_EOL . PHP_EOL . "[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->route_controllers_path}\" " . PHP_EOL;
         fclose($controller_file);
     }
-    private function createMigration($table_name){
-        $table_name = is_string($table_name) ? $table_name:$this->ask("Enter Table Name",true);
+    private function createMigration($table_name)
+    {
+        $table_name = is_string($table_name) ? $table_name : $this->ask("Enter Table Name", true);
         $file_path = "{$this->migration_files_path}/{$table_name}.php";
-        if(file_exists($file_path) && $this->confirm("Migration file already exists, do you want to override?")){//check if file already
-//            open file
-            $file_instance = fopen($file_path,"w");
-            $this->writeMigrationBoilerPlate($file_instance,$table_name);
-
-        }elseif (!file_exists($file_path)){
-            $file_instance = fopen($file_path,"w");
-            $this->writeMigrationBoilerPlate($file_instance,$table_name);
+        if (file_exists($file_path) && $this->confirm("Migration file already exists, do you want to override?")) { //check if file already
+            //            open file
+            $file_instance = fopen($file_path, "w");
+            $this->writeMigrationBoilerPlate($file_instance, $table_name);
+        } elseif (!file_exists($file_path)) {
+            $file_instance = fopen($file_path, "w");
+            $this->writeMigrationBoilerPlate($file_instance, $table_name);
         }
     }
-    private function writeMigrationBoilerPlate($migration_file,$table_name){
+    private function writeMigrationBoilerPlate($migration_file, $table_name)
+    {
         $codes = "<?php
 /*
 * This FIle was automatically generated By Path
@@ -382,13 +392,11 @@ import(
 
 class {$table_name} implements Table
 {
-    public \$table_name = \"".$this->toLower($table_name)."\";
+    public \$table_name = \"" . $this->toLower($table_name) . "\";
     public \$primary_key = \"id\";
     public function install(Structure &\$table)
     {
-        \$table->column(\"name\")
-            ->type(\"TEXT\")
-            ->nullable();
+
 
     }
 
@@ -398,37 +406,33 @@ class {$table_name} implements Table
 
     public function populate(Model \$table)
     {
-        \$table->insert([
-            \"name\" => \"I am testing\"
-        ]);
+
     }
 
     public function update(Structure &\$table)
     {
-        \$table->rename(\"name\")
-            ->to(\"new_col_name\")
-            ->type(\"TEXT\")
-            ->nullable();
+
     }
 }";
-        fwrite($migration_file,$codes);
+        fwrite($migration_file, $codes);
         $this->write("`green`[+]`green`  Migration Boiler Code Generated in {$this->migration_files_path} folder");
         fclose($migration_file);
     }
-    private function createMiddleWare($middleware_name){
-        $middleware_name = is_string($middleware_name) ? $middleware_name:$this->ask("Enter MiddleWare Name",true);
+    private function createMiddleWare($middleware_name)
+    {
+        $middleware_name = is_string($middleware_name) ? $middleware_name : $this->ask("Enter MiddleWare Name", true);
         $file_path = "{$this->middleware_files_path}/{$middleware_name}.php";
-        if(file_exists($file_path) && $this->confirm("MiddleWare file already exists, do you want to override?")){//check if file already
-//            open file
-            $file_instance = fopen($file_path,"w");
-            $this->writeMiddleWarePlate($file_instance,$middleware_name);
-
-        }elseif (!file_exists($file_path)){
-            $file_instance = fopen($file_path,"w");
-            $this->writeMiddleWarePlate($file_instance,$middleware_name);
+        if (file_exists($file_path) && $this->confirm("MiddleWare file already exists, do you want to override?")) { //check if file already
+            //            open file
+            $file_instance = fopen($file_path, "w");
+            $this->writeMiddleWarePlate($file_instance, $middleware_name);
+        } elseif (!file_exists($file_path)) {
+            $file_instance = fopen($file_path, "w");
+            $this->writeMiddleWarePlate($file_instance, $middleware_name);
         }
     }
-    private function writeMiddleWarePlate($middleware_file, $middleware_name){
+    private function writeMiddleWarePlate($middleware_file, $middleware_name)
+    {
         $codes = "<?php
 /*
 * This file was automatically generated by Path
@@ -457,28 +461,29 @@ class {$middleware_name} implements MiddleWare
         return false;
     }
 
-    public function fallBack(Request \$request, Response \$response)
+    public function response(Request \$request, Response \$response)
     {
             return \$response->json([\"msg\" => \"This json response is from \\\"{$middleware_name}\\\" MiddleWare, you get this response because \\\$this->validate() returns false\"]);
     }
 }
 ";
-        fwrite($middleware_file,$codes);
+        fwrite($middleware_file, $codes);
         $this->write("`green`[+]`green`  MiddleWare Boiler Code Generated in {$this->middleware_files_path} folder");
         fclose($middleware_file);
     }
-    private function createModel($model_name){
+    private function createModel($model_name)
+    {
 
         $model_file = "{$this->models_path}{$model_name}.php";
 
-        if(file_exists($model_file)){
-            if($this->confirm("{$model_name} Database model Already exists, Override?")){
-                $db_model_file = fopen($model_file,"w");
-                $this->writeModelBoilerPlate($db_model_file,$model_name);
+        if (file_exists($model_file)) {
+            if ($this->confirm("{$model_name} Database model Already exists, Override?")) {
+                $db_model_file = fopen($model_file, "w");
+                $this->writeModelBoilerPlate($db_model_file, $model_name);
             }
-        }else{
-            $db_model_file = fopen($model_file,"w");
-            $this->writeModelBoilerPlate($db_model_file,$model_name);
+        } else {
+            $db_model_file = fopen($model_file, "w");
+            $this->writeModelBoilerPlate($db_model_file, $model_name);
         }
     }
 }
