@@ -236,7 +236,7 @@ use Path\Storage\Sessions;
 
 import(
     \"core/classes/Database/Model\",
-    \"path/Database/Models/Admin\"
+    \"path/Database/Models/{$model_name}\"
 );
 
 class $controller_name implements LiveController
