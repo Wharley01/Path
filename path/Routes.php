@@ -1,12 +1,13 @@
 <?php
 
 
-use Path\Http\MiddleWare\IsLoggedUser;
-use Path\Http\MiddleWare\isProd;
-use Path\Http\Request;
-use Path\Http\Response;
-use Path\Http\Router;
-use Path\Misc\Validator;
+
+use Path\Core\Http\Request;
+use Path\Core\Http\Response;
+use Path\Core\Http\Router;
+use Path\Core\Misc\Validator;
+
+
 
 $router = new Router();
 $router->setBuildPath("/");
@@ -18,6 +19,7 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
 });
 
 
+
 /*
  * Your Routes Can be here
  * Happy coding
@@ -25,7 +27,7 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
 
 
 $router->error404(function (Request $request, Response $response) {
-    return $response->json(['error' => "Error 404", 'params' => $request->server->REQUEST_URI],404)->addHeader([
+    return $response->json(['error' => "Error 404", 'params' => $request->server->REQUEST_URI], 404)->addHeader([
         "Access-Control-Allow-Origin" => "*"
     ]);
 });
