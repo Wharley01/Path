@@ -58,6 +58,11 @@ class SSEWatcher
     public function watch($message = null)
     {
         $controller = $this->iniController($message);
+        $controller->onConnect(
+            $this,
+            $this->session,
+            $message
+        );
         $watchable_list = $this->getWatchable($controller);
         if (count(array_keys($watchable_list)) < 1) {
             $this->throwException("Specify at least 1 \"watchable\" as public properties in " . get_class($controller));
@@ -146,9 +151,14 @@ class SSEWatcher
         }
     }
 
-    public function sendMessage($message)
+    public function receiveMessage($message)
     {
         $controller = $this->iniController($message);
+        $controller->onMessage(
+            $this,
+            $this->session,
+            $message
+        );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
         $this->execute($watch_list, $controller, $message);
@@ -158,6 +168,11 @@ class SSEWatcher
     {
         $this->params = $params;
         $controller = $this->iniController($message);
+        $controller->onConnect(
+            $this,
+            $this->session,
+            $message
+        );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
         $this->execute($watch_list, $controller, $message, true);

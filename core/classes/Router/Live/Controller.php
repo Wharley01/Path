@@ -15,7 +15,7 @@ use Path\Core\Storage\Sessions;
 abstract class Controller
 {
     public function onMessage(
-        Watcher  &$watcher,
+        &$watcher,
         Sessions $sessions,
         ?String  $message
     ){
@@ -23,7 +23,7 @@ abstract class Controller
     }
 
     public function onConnect(
-        Watcher  &$watcher,
+        &$watcher,
         Sessions $sessions,
         ?String  $message
     ){

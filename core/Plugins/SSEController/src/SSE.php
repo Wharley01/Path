@@ -39,7 +39,7 @@ class SSE extends Controller
                 $this->sse_watcher->reset();
                 break;
             case "message":
-                $this->sse_watcher->sendMessage($request->fetch("message"));
+                $this->sse_watcher->receiveMessage($request->fetch("message"));
                 break;
             case "navigate":
                 $this->sse_watcher->navigate($request->fetch("Params"), $request->fetch("message"));
