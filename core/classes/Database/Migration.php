@@ -6,10 +6,8 @@
  * @Project path
  */
 
-namespace Path\Database;
+namespace Path\Core\Database;
 
 
 class Migration
-{
-
-}
+{ }

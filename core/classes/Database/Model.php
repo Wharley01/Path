@@ -1,18 +1,12 @@
 <?php
 
 
-namespace Path\Database;
+namespace Path\Core\Database;
 
-import(
-    "core/classes/Database/Connection",
-    "core/classes/Misc/Validator"
-);
 
-use Path\Database\Connection\DB;
-use Path\Database\Connection\Mysql;
-use Path\DatabaseException;
-use Path\FileSys;
-use Path\Misc\Validator;
+use Path\Core\Database\Connections\MySql;
+use Path\Core\Error\Exceptions;
+use Path\Core\Misc\Validator;
 
 abstract class Model
 {
@@ -81,7 +75,7 @@ abstract class Model
 
     public function __construct()
     {
-        $this->conn = Mysql::connection();
+        $this->conn = MySql::connection();
         $this->table_columns = $this->getColumns($this->table_name);
         $this->columns = $this->filterNonReadable($this->table_columns);
         $this->model_name =  get_class($this);
@@ -128,7 +122,7 @@ abstract class Model
             }
             return $cols;
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
     }
 
@@ -145,7 +139,7 @@ abstract class Model
      * @param $key
      * @param $value
      * @return $this
-     * @throws DatabaseException
+     * @throws Exceptions\Database
      */
     public function set($key, $value)
     {
@@ -153,7 +147,7 @@ abstract class Model
         if ($this->isWritable($key)) {
             $this->writing[$key] = $value;
         } else {
-            throw new DatabaseException("can't write {$key} in {$class_name}");
+            throw new Exceptions\Database("can't write {$key} in {$class_name}");
         }
         return $this;
     }
@@ -248,7 +242,7 @@ abstract class Model
                 $this->query_structure[$type]["query"] .= " {$logic_gate} " . $conditions;
             }
         } else {
-            throw new DatabaseException("Invalid WHERE condition");
+            throw new Exceptions\Database("Invalid WHERE condition");
         }
     }
 
@@ -457,9 +451,9 @@ abstract class Model
         $id = false
     ) {
         if (!$this->primary_key)
-            throw new DatabaseException("specify primary key in {$this->model_name}");
+            throw new Exceptions\Database("specify primary key in {$this->model_name}");
         if ($id === false)
-            throw new DatabaseException("specify id in identify method of \"{$this->model_name}\"");
+            throw new Exceptions\Database("specify id in identify method of \"{$this->model_name}\"");
 
         $this->where_gen([$this->primary_key => $id], "AND");
         return $this;
@@ -617,7 +611,7 @@ abstract class Model
             $prepare->execute($params);
             $this->clearMemory();
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
 
         return $this;
@@ -631,14 +625,14 @@ abstract class Model
             $data = array_merge($this->filterNonWritable($data), $this->writing);
 
         //        if(!$data)
-        //            throw new DatabaseException("Error Attempting to update Empty data set");
+        //            throw new Exceptions\Database("Error Attempting to update Empty data set");
         if (!$this->table_name)
-            throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+            throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
 
         $data[$this->updated_col] = time();
         if ($this->validator instanceof Validator) {
             if ($this->validator->hasError()) {
-                throw new DatabaseException("Validation failed");
+                throw new Exceptions\Database("Validation failed");
             }
         }
 
@@ -656,7 +650,7 @@ abstract class Model
             $prepare->execute($params);
             $this->clearMemory();
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
 
         return $this;
@@ -686,7 +680,7 @@ abstract class Model
     {
 
         if (!$data)
-            throw new DatabaseException("Error Attempting to update Empty data set");
+            throw new Exceptions\Database("Error Attempting to update Empty data set");
 
         $data[$this->updated_col] = time();
         if ($this->validator instanceof Validator) {
@@ -708,7 +702,7 @@ abstract class Model
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
 
         return $this;
@@ -722,9 +716,9 @@ abstract class Model
             $data = array_merge($this->filterNonWritable($data), $this->writing);
 
         if (!$data)
-            throw new DatabaseException("Error Attempting to update Empty data set");
+            throw new Exceptions\Database("Error Attempting to update Empty data set");
         if (!$this->table_name)
-            throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+            throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
         //        add miscellinouse data
         $data[$this->updated_col] = time();
         $data[$this->created_col ?? "date_added"] = time();
@@ -749,14 +743,14 @@ abstract class Model
             $this->last_insert_id = $this->conn->lastInsertId();
             $this->clearMemory();
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
         return $this;
     }
     public function delete()
     {
         if (!$this->table_name)
-            throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+            throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
 
         $query = $this->buildWriteRawQuery("DELETE");
         $params = $this->params["WHERE"];
@@ -766,7 +760,7 @@ abstract class Model
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
         $this->clearMemory();
         return $this;
@@ -776,7 +770,7 @@ abstract class Model
      * @param array $cols
      * @param bool $sing_record
      * @return array|mixed
-     * @throws DatabaseException
+     * @throws Exceptions\Database
      */
     public function all(
         $cols = [],
@@ -798,9 +792,9 @@ abstract class Model
             $cols = $this->filterNonReadable($cols);
 
             //            if(!$cols)
-            //                throw new DatabaseException("Error Attempting to update Empty data set");
+            //                throw new Exceptions\Database("Error Attempting to update Empty data set");
             if (!$this->table_name)
-                throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+                throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
             if (count($cols) > 0) {
                 $this->rawColumnGen($cols);
             }
@@ -824,7 +818,7 @@ abstract class Model
                 return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
             }
         } catch (\PDOException $e) {
-            throw new DatabaseException($e->getMessage());
+            throw new Exceptions\Database($e->getMessage());
         }
     }
 
@@ -877,7 +871,7 @@ abstract class Model
     /**
      * @param bool $sing_record
      * @return array|mixed
-     * @throws DatabaseException
+     * @throws Exceptions\Database
      * @internal param array $cols
      */
     public function get(
@@ -935,7 +929,7 @@ abstract class Model
     public function like($wild_card)
     {
         if (!$this->query_structure["WHERE"]["query"])
-            throw new DatabaseException("WHERE Clause is empty");
+            throw new Exceptions\Database("WHERE Clause is empty");
 
         $this->query_structure["WHERE"]["query"] .= " LIKE ?";
         $this->params["WHERE"][] = "$wild_card";
@@ -944,7 +938,7 @@ abstract class Model
     public function notLike($wild_card)
     {
         if (!$this->query_structure["WHERE"]["query"])
-            throw new DatabaseException("WHERE Clause is empty");
+            throw new Exceptions\Database("WHERE Clause is empty");
 
         $this->query_structure["WHERE"]["query"] .= " NOT LIKE ?";
         $this->params["WHERE"][] = "$wild_card";
@@ -953,7 +947,7 @@ abstract class Model
     public function between($start, $stop)
     {
         if (!$this->query_structure["WHERE"]["query"])
-            throw new DatabaseException("WHERE Clause is empty");
+            throw new Exceptions\Database("WHERE Clause is empty");
 
         $this->query_structure["WHERE"]["query"] .= " BETWEEN ? AND ?";
         $this->params[] = $start;
@@ -1161,7 +1155,7 @@ abstract class Model
     /**
      * @param array ...$columns
      * @return $this
-     * @throws DatabaseException
+     * @throws Exceptions\Database
      */
     public function select(...$columns)
     {
@@ -1172,10 +1166,10 @@ abstract class Model
             if (is_array($columns)) {
 
                 if (!$this->table_name)
-                    throw new DatabaseException("No Database table name specified, Configure Your model or  ");
+                    throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
                 $columns = $this->filterNonReadable($columns);
                 if (!$columns)
-                    throw new DatabaseException("Can't read empty sets of columns in \"select()\" Method ");
+                    throw new Exceptions\Database("Can't read empty sets of columns in \"select()\" Method ");
 
                 $this->rawColumnGen($columns);
             } else {
@@ -1222,7 +1216,7 @@ abstract class Model
             $this->query_structure["GROUP_BY"] = join(",", $col);
         } else {
             if (!$this->is_valid_col($col))
-                throw new DatabaseException("Invalid Column name \"{$col}\" in \"groupBy()\" method ");
+                throw new Exceptions\Database("Invalid Column name \"{$col}\" in \"groupBy()\" method ");
 
             $this->query_structure["GROUP_BY"] = $col;
         }
