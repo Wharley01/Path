@@ -6,7 +6,7 @@
  * @Project Path
  */
 
-namespace Path\Console;
+namespace Path\Core\CLI;
 
 
 abstract class CInterface
@@ -50,49 +50,68 @@ abstract class CInterface
      */
     abstract protected function entry($argument);
 
-    public function confirm($question, $yes = ['y','yes'], $no = ['n','no']){
-        $yes = !is_array($yes) ? [$yes]:$yes;
-        $no = !is_array($no) ? [$no]:$no;
+    public function confirm($question, $yes = ['y', 'yes'], $no = ['n', 'no'])
+    {
+        $yes = !is_array($yes) ? [$yes] : $yes;
+        $no = !is_array($no) ? [$no] : $no;
 
-        $handle = fopen ("php://stdin","r");
-        $this->write($question."  {$yes[0]}/$no[0]:");
+        $handle = fopen("php://stdin", "r");
+        $this->write($question . "  {$yes[0]}/$no[0]:");
 
         $input = strtolower(trim(fgets($handle)));
-        if(!in_array($input,array_map(function($op){ return strtolower($op); },$yes)) && !in_array($input,array_map(function($op){ return strtolower($op); },$no))){
-            $this->confirm($question,$yes,$no);
+        if (!in_array($input, array_map(function ($op) {
+            return strtolower($op);
+        }, $yes)) && !in_array($input, array_map(function ($op) {
+            return strtolower($op);
+        }, $no))) {
+            $this->confirm($question, $yes, $no);
         }
-        return in_array($input,array_map(function($op){ return strtolower($op); },$yes));
+        return in_array($input, array_map(function ($op) {
+            return strtolower($op);
+        }, $yes));
     }
 
-    public function ask($question,$enforce = false){
-        $handle = fopen ("php://stdin","r");
-        echo PHP_EOL.$question.":  ";
+    public function ask($question, $enforce = false)
+    {
+        $handle = fopen("php://stdin", "r");
+        echo PHP_EOL . $question . ":  ";
         $input = trim(fgets($handle));
-        if($enforce && strlen($input) < 1){
+        if ($enforce && strlen($input) < 1) {
             $this->ask($question);
         }
-        if(strlen($input) < 1){
+        if (strlen($input) < 1) {
             return null;
         }
         return $input;
     }
 
-    public function write($text,$format = null){
-        $text = $this->parseText($text);
-        if($format){
-            printf($format,$text);
+    public function write($text, $format = null)
+    {
+        if(is_array($text)){
+            $r = [];
+            foreach ($text as $txt){
+                $r[] = $this->parseText($txt);
+            }
+            if($format !== null)
+                printf($format, ...$r);
+            else
+                echo join(" ",$r);
         }else{
-            echo $text;
+            $text = $this->parseText($text);
+            if($format !== null)
+                printf($format, $text);
+            else
+                print($text);
         }
     }
 
-    private function parseText($text){
+    private function parseText($text)
+    {
         $regx = "((`(\\w+)`)([^`]+)(`(\\w+)`))";
-        $return_value = preg_replace_callback("/$regx/i",function ($match){
+        $return_value = preg_replace_callback("/$regx/i", function ($match) {
             $color = self::$foreground_colors[$match[3]];
             return "\033[{$color}m{$match[4]}\033[0m";
-        },$text);
+        }, $text);
         return $return_value;
     }
-
 }

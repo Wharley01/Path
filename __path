@@ -1,4 +1,6 @@
 <?php
+
+
 ini_set(
     'session.use_cookies',
     false
@@ -8,11 +10,9 @@ ini_set(
     false
 );
 require_once "core/kernel.php";
-import("core/classes/CLI/CInterface",
-    "core/classes/CLI/Console"
-);
 
-$console = new \Path\Console($argv);
+
+$console = new \Path\Core\CLI\Console($argv);
 
 $console->loadDefaultCLIs();
 $console->loadAllCommands();
