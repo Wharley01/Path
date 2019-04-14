@@ -1,33 +1,33 @@
 <?php
 
-use Path\PathException;
+use Path\Core\Error\Exceptions;
 
-define("ROOT_PATH",preg_replace("/Core$/i","",__DIR__));
 /**
  * get root path
  * @return mixed
  */
-function root_path(){
-    return preg_replace("/Core$/i","",__DIR__);
+function root_path()
+{
+    return preg_replace("/Core$/i", "", __DIR__);
 }
 
 /**
  * @param $key
  * @return mixed
- * @throws \Path\ConfigException
+ * @throws Exceptions\Config
  */
 function config($key)
 {
-    $root_path = root_path()."path".DIRECTORY_SEPARATOR."project.pconf.json";
-    if(!file_exists($root_path))
-        throw new \Path\ConfigException("config file \"{$root_path}\" not found");
+    $root_path = root_path() . "path" . DIRECTORY_SEPARATOR . "project.pconf.json";
+    if (!file_exists($root_path))
+        throw new Exceptions\Config("config file \"{$root_path}\" not found");
 
-    if(!$configs = json_decode(file_get_contents($root_path),true))
-        throw new \Path\ConfigException("unable to parse json in \"{$root_path}\", please check the syntax docs for json");
+    if (!$configs = json_decode(file_get_contents($root_path), true))
+        throw new Exceptions\Config("unable to parse json in \"{$root_path}\", please check the syntax docs for json");
 
-    $key = explode("->",$key);
+    $key = explode("->", $key);
     $root = $configs[$key[0]];
-    for($i = 1;$i < count($key);$i++){
+    for ($i = 1; $i < count($key); $i++) {
         $root = @$root[$key[$i]];
     }
     return $root;
@@ -36,50 +36,55 @@ function config($key)
 
 /**
  * @param mixed $classes
- * @throws PathException
+ * @throws Exceptions\Config
+ * @throws Exceptions\Path
  */
 
-function import(...$classes){
+function import(...$classes)
+{
     $path = root_path();
-    foreach ($classes as $class){
-        if(!file_exists($path))
-            throw new \Path\ConfigException("Set Project directory Appropriately in \"core/config.ini\" ->  ".getcwd());
-        $_class = preg_replace("/\.php$/","",trim($class));
+    foreach ($classes as $class) {
+        if (!file_exists($path))
+            throw new Exceptions\Config("Set Project directory Appropriately in \"core/config.ini\" ->  " . getcwd());
+        $_class = preg_replace("/\.php$/", "", trim($class));
 
-        $_class = $path.DIRECTORY_SEPARATOR.$_class.".php";
+        $_class = $path . DIRECTORY_SEPARATOR . $_class . ".php";
 
-        if(!file_exists($_class)){
-            throw new PathException("Class \"{$class}\" not found in \"{$_class}\"");
+        if (!file_exists($_class)) {
+            debug_print_backtrace();
+            throw new Exceptions\Path("Class \"{$class}\" not found in \"{$_class}\"");
         }
-//        echo $_class;
+        //        echo $_class;
         require_once $_class;
     }
 }
 
-function get_cli_args(array $listening,array $args){
-    array_shift($args);//remove the first one
+function get_cli_args(array $listening, array $args)
+{
+    array_shift($args); //remove the first one
     $res = [];
-    for($i = 0;$i < count($args); $i ++){
+    for ($i = 0; $i < count($args); $i++) {
         $arg = trim($args[$i]);
-        if(in_array($arg,$listening)){
-//            found a listening
-//            get the next arg
-            if(in_array(@$args[$i + 1],$listening)){
+        if (in_array($arg, $listening)) {
+            //            found a listening
+            //            get the next arg
+            if (in_array(@$args[$i + 1], $listening)) {
                 $res[$arg] = true;
-            }else{
+            } else {
                 $res[$arg] = @$args[$i + 1] ?? true;
             }
-
         }
     }
     return $res;
 }
 
-function get_full_path($file_path){
+function get_full_path($file_path)
+{
     $path = $_SERVER['DOCUMENT_ROOT'];
-    return $path.$file_path;
+    return $path . $file_path;
 }
 
-function treat_path($path){
-   return (strripos($path,"/") == (strlen($path) - 1))?$path:$path."/";
+function treat_path($path)
+{
+    return (strripos($path, "/") == (strlen($path) - 1)) ? $path : $path . "/";
 }
