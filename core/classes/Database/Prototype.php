@@ -6,16 +6,12 @@
  * @Project Path
  */
 
-namespace Path\Database;
+namespace Path\Core\Database;
 
-import(
-    "core/classes/Database/Structure",
-    "core/classes/Database/Connection"
-);
 
-use Path\Database\Connection\Mysql;
-use Path\Database\Structure;
-use Path\DataStructureException;
+use Path\Core\Database\Connections\MySql;
+use Path\Core\Database\Structure;
+use Path\Core\DataStructureException;
 
 class Prototype
 {
@@ -24,9 +20,10 @@ class Prototype
     protected $primary_key = null;
     public function __construct()
     {
-        $this->db_conn = Mysql::connection();
+        $this->db_conn = MySql::connection();
     }
-    public function create(string $table,Table $table_instance){
+    public function create(string $table, Table $table_instance)
+    {
         $proto = new Structure($table);
         $proto->action = "creating";
         $primary_key = $table_instance->primary_key ?? "id";
@@ -38,7 +35,7 @@ class Prototype
 
         $table_instance->install($proto);
 
-//        Add extra setup column
+        //        Add extra setup column
         $proto->column("is_deleted")
             ->type("boolean")
             ->default(0);
@@ -54,7 +51,8 @@ class Prototype
         $proto->executeQuery();
         return $proto;
     }
-    public function alter(string $table,Table $table_instance){
+    public function alter(string $table, Table $table_instance)
+    {
         $proto = new Structure($table);
         $proto->action = "altering";
         $table_instance->update($proto);
@@ -63,11 +61,12 @@ class Prototype
         return $proto;
     }
 
-    public function drop(...$tables){
-        $tables = join(",",$tables);
-        try{
+    public function drop(...$tables)
+    {
+        $tables = join(",", $tables);
+        try {
             $query = $this->db_conn->query("DROP TABLE IF EXISTS {$tables}");
-        }catch (\Exception $e){
+        } catch (\Exception $e) {
             throw new DataStructureException($e->getMessage());
         }
         return $this;
@@ -78,10 +77,11 @@ class Prototype
      * @return $this
      * @throws DataStructureException
      */
-    public function truncate($table){
-        try{
+    public function truncate($table)
+    {
+        try {
             $query = $this->db_conn->query("TRUNCATE TABLE `{$table}`");
-        }catch (\Exception $e){
+        } catch (\Exception $e) {
             throw new DataStructureException($e->getMessage());
         }
         return $this;
