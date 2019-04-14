@@ -238,7 +238,7 @@ class Server
                 $this->navigateWatcher($client_id, $data['params'], $data['data']);
             } elseif ($data['type'] == "message") {
                 $this->clientMessageWatcher($client_id, $data['data']);
-            }else{
+            } else {
                 $this->clientMessageWatcher($client_id, $data['data']);
             }
         }
@@ -295,7 +295,7 @@ class Server
         if (!$client->watching instanceof Watcher) {
             $url = $client->headers['get'];
             $key = $client->headers['sec-websocket-key'];
-            $session_id = $client->cookies["PHPSESSID"];
+            $session_id = @$client->cookies["PHPSESSID"];
             $this->logText("Session ID: " . $session_id);
 
             $client->watching = new Watcher(
@@ -312,7 +312,7 @@ class Server
         $res = [];
         foreach ($cookies as $cookie) {
             preg_match("/([^=]+)=([^=]+)/i", $cookie, $matches);
-            if ($matches[1] && $matches[2]) {
+            if (isset($matches[1]) && isset($matches[2])) {
                 $key = $matches[1];
                 $val = $matches[2];
                 $res[$key] = $val;
