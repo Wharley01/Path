@@ -1,3 +1,5 @@
 THIS FOLDER CONTAINS YOUR LIVE CONTROLLER
 
-You can generate a new file using "php \_\_path create controller"
+`namespace:` Path\App\Controllers\Live
+
+You can generate a new file using `php __path create controller`

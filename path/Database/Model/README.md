@@ -1,3 +1,5 @@
 THIS FOLDER CONTAINS YOUR DATABASE MODEL,
 
-You can generate a new model using "php \_\_path create model yourModelName" command
+`namespace:` Path\App\Database\Model
+
+You can generate a new model using `php __path create model yourModelName` command

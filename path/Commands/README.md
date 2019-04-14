@@ -1,3 +1,5 @@
 THIS FOLDER CONTAINS ALL YOUR CUSTOM COMMANDS
 
-you can generate command using "php \_\_path create command yourCommandName"
+`namespace:` Path\App\Commands
+
+you can generate command using `php __path create command yourCommandName`
