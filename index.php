@@ -7,7 +7,7 @@ require_once "core/kernel.php";
 try {
 
     $__routes = new Router();
-    $__routes->get("SSE/@controller/@action", "SSE->watch");
+    $__routes->get("SSE/@controller/@action", 'Path\Plugins\SSEController\SSE->watch');
     require_once "path/Routes.php";
 } catch (Throwable $e) {
     echo "<pre>";
