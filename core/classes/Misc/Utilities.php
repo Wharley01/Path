@@ -6,15 +6,16 @@
  * Time: 12:28 PM
  */
 
-namespace Path;
+namespace Path\Core\Misc;
+
 
 
 class Utilities
 {
     public function __construct()
+    { }
+    static function generateRandomString($length = 10)
     {
-    }
-    static function generateRandomString($length = 10) {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         $charactersLength = strlen($characters);
         $randomString = '';
@@ -27,8 +28,6 @@ class Utilities
     /**
      * @param array $array
      */
-    static function Log(array $array){
-
-    }
-
+    static function Log(array $array)
+    { }
 }

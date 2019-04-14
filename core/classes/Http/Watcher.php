@@ -6,25 +6,14 @@
  * @Project Path
  */
 
-namespace Path\Http\Live;
+namespace Path\Core\Http;
 
 
-use Path\Storage\Caches;
-use Path\Controller;
-use Path\Controller\Live\TestLive;
-use Path\LiveController;
-use Path\Storage\Sessions;
-use Path\WatcherException;
+use Path\Core\Storage\Caches;
+use Path\Core\Router\Live\Controller as LiveController;
+use Path\Core\Storage\Sessions;
+use Path\Core\Error\Exceptions;
 
-import(
-    "core/classes/Http/Response",
-    "core/classes/LiveController",
-    "core/classes/Storage/Caches",
-    "core/classes/Storage/Sessions",
-    "core/classes/Storage/Cookies",
-    "core/classes/Database/Model"
-
-);
 
 class Watcher
 {
@@ -71,25 +60,25 @@ class Watcher
         $this->response_instance = new Response();
         $this->session = new Sessions($session_id);
         $this->extractInfo();
-
     }
 
-    private function getResources($payload):array {
-        $split_load = explode("&",$payload);
+    private function getResources($payload): array
+    {
+        $split_load = explode("&", $payload);
         $all_params = [];
         $watchable_methods = [];
-        foreach ($split_load as $load){
-            if(preg_match("/Params=\[(.+)\]/i",$load,$matches)){
-                $params = explode(",",$matches[1]);
-                foreach ($params as $param){
-                    $param = explode("=",$param);
+        foreach ($split_load as $load) {
+            if (preg_match("/Params=\[(.+)\]/i", $load, $matches)) {
+                $params = explode(",", $matches[1]);
+                foreach ($params as $param) {
+                    $param = explode("=", $param);
                     $all_params[$param[0]] = $param[1];
                 }
             }
 
-            if (preg_match("/Watch=\[(.+)\]/i",$load,$matches)){
+            if (preg_match("/Watch=\[(.+)\]/i", $load, $matches)) {
                 $list = $matches[1];
-                $list = explode(",",$list);
+                $list = explode(",", $list);
                 $watchable_methods = $list;
             }
         }
@@ -99,12 +88,13 @@ class Watcher
             'watchable_methods' => $watchable_methods
         ];
     }
-    private function extractInfo(){
+    private function extractInfo()
+    {
         $path = $this->path;
-        $path = array_values(array_filter(explode("/",$path),function ($p){
+        $path = array_values(array_filter(explode("/", $path), function ($p) {
             return strlen(trim($p)) > 0;
         }));
-        $payload = array_slice($path,1);
+        $payload = array_slice($path, 1);
         $path = trim($path[0]);
         $url_resources = $this->getResources($payload[0] ?? "");
         $this->controller_data['root']                 = $path;
@@ -114,20 +104,21 @@ class Watcher
         $this->controller = $this->getController();
     }
 
-    private static function isValidClassName($class_name){
-        return preg_match("/^[\w]+$/",$class_name);
+    private static function isValidClassName($class_name)
+    {
+        return preg_match("/^[\w]+$/", $class_name);
     }
-    public function getController($message = null):?LiveController{
+    public function getController($message = null): ?LiveController
+    {
         $path = $this->controller_data['root'];
-        if(!self::isValidClassName($path)){
+        if (!self::isValidClassName($path)) {
             $this->throwException("Invalid LiveController Name \"{$path}\" ");
         }
 
 
-        if($path){
-            import($this->watchers_path.$path);
-            $path = $this->watcher_namespace.$path;
+        if ($path) {
 
+            $path = $this->watcher_namespace . $path;
             $controller = new $path(
                 $this,
                 $this->session,
@@ -139,60 +130,68 @@ class Watcher
         return null;
     }
 
-    public function watch($message = null){
+    public function watch($message = null)
+    {
         $controller = $this->getController($message);
         $watchable_list = $this->getWatchable($controller);
-        if(count(array_keys($watchable_list)) < 1){
-            $this->throwException("Specify at least 1 \"watchable\" as public properties in ". get_class($controller));
+        if (count(array_keys($watchable_list)) < 1) {
+            $this->throwException("Specify at least 1 \"watchable\" as public properties in " . get_class($controller));
         }
 
         $watch_list = self::castToString($watchable_list);
-//        cache watch_list values if not already cached
-        $this->execute($watch_list,$controller);
+        //        cache watch_list values if not already cached
+        $this->execute($watch_list, $controller);
         $this->cache($watch_list);
     }
 
-    private function getWatchable(LiveController $controller):?array {
+    private function getWatchable(LiveController $controller): ?array
+    {
         $watch_lists = array_keys(get_object_vars($controller));
         $resp = [];
-        foreach ($watch_lists as $property){
+        foreach ($watch_lists as $property) {
             $resp[$property] = $controller->$property;
         }
         return $resp;
     }
 
-    private static function castBoolToStr($value){
+    private static function castBoolToStr($value)
+    {
         return $value;
     }
-    private static function castToString($arr){
+    private static function castToString($arr)
+    {
         $ret = [];
-        foreach ($arr as $key => $value){
+        foreach ($arr as $key => $value) {
             $value = self::castBoolToStr($value);
-            $ret[$key] = is_array($value)?json_encode($value):$value;
+            $ret[$key] = is_array($value) ? json_encode($value) : $value;
         }
         return $ret;
     }
-    private static function shouldCache($method,$value){
+    private static function shouldCache($method, $value)
+    {
         $_value = Caches::get($method);
         return is_null($_value) || $_value !== $value;
     }
 
-    private function method($method){
-        return md5($this->socket_key.$method);
+    private function method($method)
+    {
+        return md5($this->socket_key . $method);
     }
 
-    private function cache($watch_list){
-        foreach ($watch_list as $method => $value){
+    private function cache($watch_list)
+    {
+        foreach ($watch_list as $method => $value) {
             $method = $this->method($method);
-            if(self::shouldCache($method,$value)){
-//                echo "caching {$method} to {$value}".PHP_EOL;
-//                var_dump($value);
-                Caches::set($method,$value);
+            if (self::shouldCache($method, $value)) {
+                //                echo "caching {$method} to {$value}".PHP_EOL;
+                //                var_dump($value);
+                Caches::set($method, $value);
             }
         }
     }
 
-    public function clearCache(){
+    public function clearCache()
+    {
         $controller = $this->controller;
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
@@ -203,18 +202,21 @@ class Watcher
         }
     }
 
-    private  function shouldExecute($method, $value){
+    private  function shouldExecute($method, $value)
+    {
         $_method = $this->method($method);
         $cached_value = Caches::get($_method);
         return (is_null($cached_value) || $cached_value != $value) || !@$this->has_executed[$method];
     }
 
-    private function getPrevValue($method){
+    private function getPrevValue($method)
+    {
         $_method = $this->method($method);
         $cached_value = Caches::get($_method);
         return $cached_value;
     }
-    private function getMethodValue($controller, $method, $message){
+    private function getMethodValue($controller, $method, $message)
+    {
         return $controller->{$method}(
             $this->response_instance,
             $this,
@@ -222,99 +224,103 @@ class Watcher
             $message
         );
     }
-    public function execute($watch_list,$controller,$message = null,$force_execute = false){
+    public function execute($watch_list, $controller, $message = null, $force_execute = false)
+    {
         $watchable_methods = $this->controller_data['watchable_methods'];
-//        var_dump($_SESSION);
-//        var_dump($watch_list);
-        if(is_null($watchable_methods)){
-//            watch all watchable
-            foreach ($watch_list as $_method => $_value){
-                if($this->shouldExecute($_method,$_value) OR $force_execute){
+        //        var_dump($_SESSION);
+        //        var_dump($watch_list);
+        if (is_null($watchable_methods)) {
+            //            watch all watchable
+            foreach ($watch_list as $_method => $_value) {
+                if ($this->shouldExecute($_method, $_value) or $force_execute) {
                     $this->has_changes[$_method] = true;
                     $this->has_executed[$_method] = true;
-                    if(!method_exists($controller,$_method)){
+                    if (!method_exists($controller, $_method)) {
                         $this->response[$_method][] = $_value;
                         $this->response[$_method][] = $this->getPrevValue($_method);
-                    }else{
+                    } else {
 
-                        $response = $this->getMethodValue($controller,$_method,$message);
+                        $response = $this->getMethodValue($controller, $_method, $message);
                         $this->response[$_method][] = $response;
                         $this->response[$_method][] = $this->getPrevValue($_method);
                     }
-                }else{
+                } else {
                     $this->has_changes[$_method] = false;
                 }
             }
-        }else{
-//            validate the watchlist
-            foreach ($watchable_methods as $method){
+        } else {
+            //            validate the watchlist
+            foreach ($watchable_methods as $method) {
                 $_method = $method;
-                if(isset($watch_list[$_method])){
+                if (isset($watch_list[$_method])) {
                     $_value = @$watch_list[$_method];
-                    if($this->shouldExecute($_method,$_value) OR $force_execute){
+                    if ($this->shouldExecute($_method, $_value) or $force_execute) {
                         $this->has_changes[$_method] = true;
                         $this->has_executed[$_method] = true;
-                        if(!method_exists($controller,$_method)){
+                        if (!method_exists($controller, $_method)) {
                             $this->response[$_method][] = $_value;
                             $this->response[$_method][] = $this->getPrevValue($_method);
-
-                        }else{
-                            $response = $this->getMethodValue($controller,$_method,$message);
+                        } else {
+                            $response = $this->getMethodValue($controller, $_method, $message);
                             $this->response[$_method][] = $response;
                             $this->response[$_method][] = $this->getPrevValue($_method);
                         }
-                    }else{
+                    } else {
                         $this->has_changes[$_method] = false;
-
                     }
                 }
             }
         }
     }
-    public function receiveMessage($message){
+    public function receiveMessage($message)
+    {
         $controller = $this->getController($message);
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
-        $this->execute($watch_list,$controller,$message);
+        $this->execute($watch_list, $controller, $message);
         $this->cache($watch_list);
     }
 
-    public function sendMessage($message,$to = null){
+    public function sendMessage($message, $to = null)
+    {
         $this->pending_message[] = [
             'message' => $message,
             'to'      => $to
         ];
     }
-    public function navigate($params,$message = null){
+    public function navigate($params, $message = null)
+    {
         $this->controller_data['params'] = $params;
         $controller = $this->getController($message);
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
-        $this->execute($watch_list,$controller,$message,true);
+        $this->execute($watch_list, $controller, $message, true);
         $this->cache($watch_list);
     }
 
-    private function throwException($error_text){
-        if($this->throw_exception){
-            throw new WatcherException($error_text);
-        }else{
+    private function throwException($error_text)
+    {
+        if ($this->throw_exception) {
+            throw new Exceptions\Watcher($error_text);
+        } else {
             $this->error = $error_text;
         }
     }
-    public function getResponse(){
+    public function getResponse()
+    {
         $response = [];
-        foreach ($this->response as $key => $values){
-//              check if value is an instance of response, then set to appropriate data type
-            if($this->hasChanges($key)){
+        foreach ($this->response as $key => $values) {
+            //              check if value is an instance of response, then set to appropriate data type
+            if ($this->hasChanges($key)) {
 
-                foreach ($values as $value){
-                    if($value instanceof Response){
+                foreach ($values as $value) {
+                    if ($value instanceof Response) {
                         $response[$key][] = [
                             "data"           => $value->content,
                             "status"         => $value->status,
                             "headers"        => $value->headers,
                         ];
-                    }else{
+                    } else {
                         $response[$key][] = [
                             "data"           => $value,
                             "status"         => 200,
@@ -323,42 +329,45 @@ class Watcher
                     }
                 }
             }
-
         }
         $this->response = [];
         return $response;
     }
-    public static function log($text){
-        echo PHP_EOL.$text.PHP_EOL;
-//        flush();
-//        ob_flush();
+    public static function log($text)
+    {
+        echo PHP_EOL . $text . PHP_EOL;
+        //        flush();
+        //        ob_flush();
     }
 
     /**
      * @return bool
      */
-    public function changesOccurred(){
-        foreach ($this->has_changes as $method => $status){
-            if($status === true){
+    public function changesOccurred()
+    {
+        foreach ($this->has_changes as $method => $status) {
+            if ($status === true) {
                 return true;
             }
         }
         return false;
     }
 
-    public function hasPendingMessage():bool{
+    public function hasPendingMessage(): bool
+    {
         return count($this->pending_message) > 0;
     }
 
-    public function getPendingMessage(){
+    public function getPendingMessage()
+    {
         $message = array_shift($this->pending_message);
         $msg = $message['message'];
         $to = $message['to'];
         $response = [];
 
         var_dump($message);
-        if($msg instanceof Response){
-            if(!is_null($to)){
+        if ($msg instanceof Response) {
+            if (!is_null($to)) {
                 $response[$to][] = [
                     "data"           => $msg->content,
                     "status"         => $msg->status,
@@ -369,16 +378,15 @@ class Watcher
                     "status"         => $msg->status,
                     "headers"        => $msg->headers,
                 ];
-            }else{
+            } else {
                 $response = [
                     "data"           => $msg->content,
                     "status"         => $msg->status,
                     "headers"        => $msg->headers,
                 ];
             }
-
-        }else{
-            if(!is_null($to)){
+        } else {
+            if (!is_null($to)) {
                 $response[$to][] = [
                     "data"           => $msg,
                     "status"         => 200,
@@ -389,7 +397,7 @@ class Watcher
                     "status"         => 200,
                     "headers"        => [],
                 ];
-            }else{
+            } else {
                 $response = [
                     "data"           => $msg,
                     "status"         => 200,

@@ -6,13 +6,11 @@
  * @Project Path
  */
 
-namespace Path\Http;
+namespace Path\Core\Http;
 
 
 use Path\Plugins\PathSocket\Server;
-import(
-    "core/Plugins/PathSocket/src/Server"
-);
+
 
 class WatcherServer extends Server
 {
@@ -25,5 +23,4 @@ class WatcherServer extends Server
         $this->port = config("WEBSOCKET->port");
         parent::__construct();
     }
-
 }

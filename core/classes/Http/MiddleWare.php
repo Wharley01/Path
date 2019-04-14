@@ -1,6 +1,6 @@
 <?php
 
-namespace Path\Http;
+namespace Path\Core\Http;
 
 
 interface MiddleWare
@@ -12,7 +12,6 @@ interface MiddleWare
      * @return mixed
      * @internal param $params
      */
-    public function validate(Request $request, Response $response):bool;
+    public function validate(Request $request, Response $response): bool;
     public function fallBack(Request $request, Response $response);
-
 }
