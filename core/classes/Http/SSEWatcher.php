@@ -6,7 +6,7 @@
  * @Project macroware-vue
  */
 
-namespace Path;
+namespace Path\Http\Live;
 
 
 use Path\Http\Response;

@@ -6,7 +6,7 @@
  * @Project Path
  */
 
-namespace Path;
+namespace Path\Http;
 
 
 use Path\Plugins\PathSocket\Server;

@@ -6,7 +6,7 @@
  * @Project Path
  */
 
-namespace Path\Http;
+namespace Path\Http\Live;
 
 
 use Path\Storage\Caches;

@@ -6,10 +6,10 @@
  * @Project Path
  */
 
-namespace Path;
+namespace Path\Live;
 
 
-interface LiveController
+class Controller
 {
 
 }

@@ -6,11 +6,11 @@
  * Time: 5:10 AM
  */
 
-namespace Path;
+namespace Path\Route;
 
 use Path\Http\Request;
 use Path\Http\Response;
-use Path\RouterException;
+use Path\Error\Exceptions;
 
 abstract class Controller{
 
@@ -19,7 +19,7 @@ abstract class Controller{
      * @param Request $request
      * @param Response $response
      * @return mixed|null
-     * @throws RouterException
+     * @throws Exceptions\Router
      */
     final public function response(Request $request, Response $response){
         $this->request = $request;
@@ -31,12 +31,12 @@ abstract class Controller{
         $_call = ('on'.$_method_name);
 
         if (!method_exists($this, $_call))
-            throw new RouterException("Request Method does not exist");
+            throw new Exceptions\Router("Request Method does not exist");
 
         $_response = $this->$_call($request, $response);
 
         if($_response === false)
-            throw new RouterException("Override \"$_call(){}\" method in  {$controller_name} to handle {$request->METHOD} Request");
+            throw new Exceptions\Router("Override \"$_call(){}\" method in  {$controller_name} to handle {$request->METHOD} Request");
 
         return $_response;
 
