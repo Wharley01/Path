@@ -6,10 +6,28 @@
  * @Project Path
  */
 
-namespace Path\Live;
+namespace Path\Core\Router\Live;
 
 
-class Controller
+use Path\Core\Http\Watcher;
+use Path\Core\Storage\Sessions;
+
+abstract class Controller
 {
+    public function onMessage(
+        Watcher  &$watcher,
+        Sessions $sessions,
+        ?String  $message
+    ){
+
+    }
+
+    public function onConnect(
+        Watcher  &$watcher,
+        Sessions $sessions,
+        ?String  $message
+    ){
+
+    }
 
 }
