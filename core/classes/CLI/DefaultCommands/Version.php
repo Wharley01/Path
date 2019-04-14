@@ -6,10 +6,9 @@
  * @Project Path
  */
 
-namespace Path\Console;
+namespace Path\Core\CLI\DefaultCommands;
 
-
-use Path\Console;
+use Path\Core\CLI\CInterface;
 
 class Version  extends CInterface
 {
@@ -29,12 +28,12 @@ class Version  extends CInterface
      * */
     public $name = "version";
     public $arguments = [
-//        "dev"  => [
-//            "desc" => "Show Development's Current version",
-//        ],
-//        "prod" => [
-//            "desc" => "Show Production's Current version"
-//        ],
+        //        "dev"  => [
+        //            "desc" => "Show Development's Current version",
+        //        ],
+        //        "prod" => [
+        //            "desc" => "Show Production's Current version"
+        //        ],
         "version" => [
             "desc" => "Show current version"
         ]
@@ -45,9 +44,7 @@ class Version  extends CInterface
 
 
     public function __construct()
-    {
-
-    }
+    { }
 
     /**
      * @param $argument
@@ -55,8 +52,6 @@ class Version  extends CInterface
      */
     public function entry($argument)
     {
-        echo "Path '{$argument->version}' version is ".config("PROJECT->version");
+        echo "Path '{$argument->version}' version is " . config("PROJECT->version");
     }
-
-
 }

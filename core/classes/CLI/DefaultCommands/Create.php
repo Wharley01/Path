@@ -6,10 +6,11 @@
  * @Project Path
  */
 
-namespace Path\Console;
+namespace Path\Core\CLI\DefaultCommands;
 
 
-//use Path\Console;
+
+use Path\Core\CLI\CInterface;
 
 class Create extends CInterface
 {
@@ -33,7 +34,7 @@ class Create extends CInterface
         ]
     ];
 
-    private $models_path = "path/Database/Models/";
+    private $models_path = "path/Database/Model/";
     private $commands_path = "path/Commands/";
     private $route_controllers_path = "path/Controllers/Route/";
     private $live_controllers_path = "path/Controllers/Live/";
@@ -83,10 +84,10 @@ class Create extends CInterface
         $code = "<?php
 
 
-namespace Path\Console;
+namespace Path\App\Commands;
 
 
-use Path\Console;
+use Path\Core\CLI\CInterface;
 
 class $command_file_name extends CInterface
 {
@@ -194,10 +195,10 @@ class $command_file_name extends CInterface
 * Powered By: Path
 */
 
-namespace Path\\Database\Models;
+namespace Path\\App\\Database\Model;
 
 
-use Path\\Database\\Model;
+use Path\Core\\Database\\Model;
 
 class {$model_name} extends Model
 {
@@ -234,21 +235,17 @@ class {$model_name} extends Model
 * Modify to Suite your needs,
 * */
 
-namespace Path\\Controller\\Live;
+namespace Path\\App\\Controllers\\Live;
 
-use Path\\Storage\\Caches;
-use Path\\Http\\Response;
-use Path\\Http\\Watcher;
-use Path\\LiveController;
-use Path\Database\Models\\$model_name;
-use Path\Storage\Sessions;
+use Path\Core\\Storage\\Caches;
+use Path\Core\\Http\\Response;
+use Path\Core\\Http\\Watcher;
+use Path\Core\\Router\\Live\\Controller;
+use Path\App\\Database\\Model\\$model_name;
+use Path\Core\\Storage\\Sessions;
 
-import(
-    \"core/classes/Database/Model\",
-    \"path/Database/Models/{$model_name}\"
-);
 
-class $controller_name implements LiveController
+class $controller_name extends Controller
 {
     ";
         if (count($watchables) > 0) {
@@ -304,8 +301,23 @@ public function $method(
             }
         }
 
-        $boiler_plate .= "        
+        $boiler_plate .= " 
+    public function onMessage(
+        Watcher  &\$watcher,
+        Sessions \$sessions,
+        ?String  \$message
+    ){
 
+    }
+
+    public function onConnect(
+        Watcher  &\$watcher,
+        Sessions \$sessions,
+        ?String  \$message
+    ){
+
+    }
+               
 }
         ";
         //        Write controller boiler plate
@@ -323,16 +335,17 @@ public function $method(
 * Powered By: Path
 */
 
-namespace Path\Controller\Route;
+namespace Path\App\\Controllers\\Route;
 
 
-use Path\Controller;
-use Path\Http\Request;
-use Path\Http\Response;
-use Path\Database\Models\\$model_name;
-use Path\Storage\Sessions;
+use Path\Core\\Router\\Route\\Controller;
+use Path\Core\\Http\\Request;
+use Path\Core\\Http\\Response;
+use Path\Core\\Storage\\Sessions;
 
-import(\"path/Database/Models/{$model_name}\");
+use Path\App\Database\Model\\$model_name;
+
+
 
 class {$controller_name} extends Controller
 {
@@ -376,19 +389,15 @@ class {$controller_name} extends Controller
 * Modify to your advantage
 */
 
-namespace Path\Database\Migration;
+namespace Path\App\\Database\\Migration;
 
 
-use Path\Database\Model;
-use Path\Database\Prototype;
-use Path\Database\Structure;
-use Path\Database\Table;
+use Path\Core\Database\Model;
+use Path\Core\Database\Prototype;
+use Path\Core\Database\Structure;
+use Path\Core\Database\Table;
 
-import(
-    \"core/classes/Database/Prototype\",
-    \"core/classes/Database/Table\",
-    \"core/classes/Database/Structure\"
-);
+
 
 class {$table_name} implements Table
 {
@@ -439,12 +448,12 @@ class {$table_name} implements Table
 * Modify to suit your usage
 * 
 */
-namespace Path\Http\\MiddleWare;
+namespace Path\App\Http\\MiddleWare;
 
 
-use Path\Http\\MiddleWare;
-use Path\Http\\Request;
-use Path\Http\\Response;
+use Path\Core\Http\\MiddleWare;
+use Path\Core\Http\\Request;
+use Path\Core\Http\\Response;
 
 class {$middleware_name} implements MiddleWare
 {

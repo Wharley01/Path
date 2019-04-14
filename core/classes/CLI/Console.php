@@ -6,12 +6,16 @@
  * @Project Path
  */
 
-namespace Path;
+namespace Path\Core\CLI;
 
-class Console
+class Console extends CInterface
 {
     protected   $args;
-    protected $default_cmd_path = "core/classes/CLI/DefaultCommands";
+    protected $default_cmd_path = "core/classes/CLI/DefaultCommands/";
+    protected $user_cmd_namespace = "Path\\App\\Commands\\";
+    protected $default_cmd_namespace = "Path\\Core\\CLI\\DefaultCommands\\";
+    protected $user_cmd_path = "path/Commands/";
+
     protected   $accepted_cmds;
     protected   $commands = [];
     private     $cmd_entry = "entry";
@@ -45,84 +49,70 @@ class Console
         $this->args = $args;
     }
 
-    public static function build(
-        $text       = '',
-        $color      = 'normal',
-        $newline    = true,
-        $bg         = null
-    ){
-        $write = $text;
-        $write = "\033[".Console::$foreground_colors[$color]. "m".$write;
-        if($newline)
-            $write = $write.PHP_EOL;
-        if(!is_null($bg))
-            $write = "\033[".Console::$background_colors[$bg]. "m".$write;
-
-        return $write. "\033[0m";
-    }
-
     /**
      *
      */
-    public function loadAllCommands(){
+    public function loadAllCommands()
+    {
         /*
          * Load default commands
          * */
-        if ($handle = opendir("core/classes/CLI/DefaultCommands")) {
+        if ($handle = opendir($this->default_cmd_path)) {
             while (false !== ($entry = readdir($handle))) {
 
                 if ($entry != "." && $entry != "..") {
-                    $cli_class_name = basename($entry,".php");
-//                    load_class("CLI/Commands/".$cli_class_name);
+                    $cli_class_name = basename($entry, ".php");
+                    //                    load_class("CLI/Commands/".$cli_class_name);
                     require "{$this->default_cmd_path}/{$cli_class_name}.php";
-                    $class = "path\Console\\".$cli_class_name;
-                    try{
+                    $class = $this->default_cmd_namespace.$cli_class_name;
+                    try {
                         $class = new $class();
                         $this->commands[$class->name]['class'] = $class;
-                        $this->commands[$class->name]['class_name'] = "Path\Console\\".$cli_class_name;
+                        $this->commands[$class->name]['class_name'] = "Path\Console\\" . $cli_class_name;
                         $this->commands[$class->name]['entry'] = $this->cmd_entry;
-                        if(isset($class->arguments)){
+                        if (isset($class->arguments)) {
                             $this->commands[$class->name]['arguments'] = $class->arguments;
                         }
                         $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
-                    }catch (\Throwable $e){
-                        echo PHP_EOL.self::build("There is an error in:","light_red").PHP_EOL;
-                        echo self::build($e->getMessage(),"red");
-                        echo self::build($e->getTraceAsString(),"red");
+                    } catch (\Throwable $e) {
+                        $this->write("`light_red` There is an error in: `light_red`".PHP_EOL);
+                        $this->write('`red`'.$e->getMessage().'`red` '.PHP_EOL);
+                        $this->write('`red`'.$e->getTraceAsString().'`red`'.PHP_EOL);
                         continue;
                     }
                 }
             }
             closedir($handle);
-            }
+        }
 
-
-
-            if ($handle = opendir("path/Commands")) {
+        if ($handle = opendir($this->user_cmd_path)) {
 
             while (false !== ($entry = readdir($handle))) {
 
                 if ($entry != "." && $entry != "..") {
-                    $cli_class_name = basename($entry,".php");
-//                    load_class("CLI/Commands/".$cli_class_name);
-                    require_once "path/Commands/{$cli_class_name}.php";
-                    $class = "path\Console\\".$cli_class_name;
-                    try{
-                        $class = new $class();
-                        $this->commands[$class->name]['class'] = $class;
-                        $this->commands[$class->name]['class_name'] = "Path\Console\\".$cli_class_name;
-                        $this->commands[$class->name]['entry'] = $this->cmd_entry;
-                        if(isset($class->arguments)){
-                            $this->commands[$class->name]['arguments'] = $class->arguments;
-                        }
-                        $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
-                    }catch (\Throwable $e){
-                        echo PHP_EOL.self::build("There is an error in:","light_red").PHP_EOL;
-                        echo self::build($e->getMessage(),"red");
-                        echo self::build($e->getTraceAsString(),"red");
-                        continue;
-                    }
+                    $cli_class_name = basename($entry, ".php");
+                    if (is_readable(ROOT_PATH . '/' . $this->user_cmd_path . $cli_class_name . '.php')) {
 
+                        $class = $this->user_cmd_namespace.$cli_class_name;
+
+                        try {
+                            $class = new $class();
+                            $this->commands[$class->name]['class'] = $class;
+                            $this->commands[$class->name]['class_name'] = "Path\Console\\" . $cli_class_name;
+                            $this->commands[$class->name]['entry'] = $this->cmd_entry;
+                            if (isset($class->arguments)) {
+                                $this->commands[$class->name]['arguments'] = $class->arguments;
+                            }
+                            $this->commands[$class->name]["description"] = @$class->description ?? "Description not Available";
+                        } catch (\Throwable $e) {
+
+
+                            $this->write("`light_red` There is an error in: `light_red` \n ");
+                            $this->write('`red`'.$e->getMessage().'`red` '.PHP_EOL);
+                            $this->write('`red`'.$e->getTraceAsString().'`red` '.PHP_EOL);
+                            continue;
+                        }
+                    }
                 }
             }
 
@@ -130,98 +120,110 @@ class Console
         }
     }
 
-    public static function validateArgs($arguments){
-
-    }
+    public static function validateArgs($arguments)
+    { }
 
     /**
      * @param String $command
      * @param array $args
      * @return bool
      */
-    public static function shouldRun(String $command, Array $args):bool {
-        return count(get_cli_args([$command],$args)) > 0;
+    public static function shouldRun(String $command, array $args): bool
+    {
+        return count(get_cli_args([$command], $args)) > 0;
     }
 
-    private function getAllCommands(){
+    private function getAllCommands()
+    {
         return array_values(array_keys($this->commands));
     }
 
-    public function executeCLI(){
-        $commands = array_values(array_filter(array_keys($this->commands),function ($cmd){
-            return self::shouldRun($cmd,$this->args);
-        }));//filter those commands not entered by user to console
-        $commands_unfitered = array_values(array_filter(array_values($this->args),function ($cmd){
-            return self::shouldRun($cmd,$this->args);
-        }));//filter those commands not entered by user to console
-        if(count($commands) > 0){
+    public function executeCLI()
+    {
+        $commands = array_values(array_filter(array_keys($this->commands), function ($cmd) {
+            return self::shouldRun($cmd, $this->args);
+        })); //filter those commands not entered by user to console
+        $commands_unfitered = array_values(array_filter(array_values($this->args), function ($cmd) {
+            return self::shouldRun($cmd, $this->args);
+        })); //filter those commands not entered by user to console
+        if (count($commands) > 0) {
             $commands = [@$commands[0]];
-//            get all commands
-            foreach ($commands as $command){
+            //            get all commands
+            foreach ($commands as $command) {
 
-//            The initiated class of the command
+                //            The initiated class of the command
                 $method = $this->commands[$command]['class'];
                 $args = [];
-                if(isset($this->commands[$command]['arguments'])){
+                if (isset($this->commands[$command]['arguments'])) {
                     $args = array_keys($this->commands[$command]['arguments']);
-//               TODO: Validate argument
+                    //               TODO: Validate argument
                 }
-                array_push($args,$command);
-                try{
-                    $method->{$this->commands[$command]['entry']}(get_cli_args($args,$this->args));
-                }catch (\Throwable $e){
-                    echo PHP_EOL.self::build("There was error in {$this->commands[$command]['class_name']}->{$this->commands[$command]['entry']}()","light_red").PHP_EOL;
-                    echo PHP_EOL.self::build($e->getMessage(),"red").PHP_EOL.PHP_EOL;
-                    echo self::build($e->getTraceAsString(),"red");
+                array_push($args, $command);
+                try {
+                    $method->{$this->commands[$command]['entry']}(get_cli_args($args, $this->args));
+                } catch (\Throwable $e) {
+                     $this->write(PHP_EOL."`light_red` There was error in {$this->commands[$command]['class_name']}->{$this->commands[$command]['entry']} `light_red` \n");
+                    $this->write('`red`'.$e->getMessage().'`red` '.PHP_EOL);
+                    $this->write('`red`'.$e->getTraceAsString().'`red` '.PHP_EOL);
                 }
                 echo PHP_EOL;
             }
-        }else{
+        } else {
 
-            echo PHP_EOL.self::build("Invalid Commands: ".self::build(join(" , ",$commands_unfitered),"red",false).", write \"php path explain\" to seee list of available commands ","light_red",true);
+            $this->write(PHP_EOL." Invalid Commands: `red`" . join(" , ", $commands_unfitered)."`red` , write `light_green`\"php __path explain\"`light_green` to see list of available commands or create a new command with `light_green`\"php __path create command yourCommandName\"`light_green` ");
         }
-
     }
-    public function loadDefaultCLIs(){
+    public function loadDefaultCLIs()
+    {
         //        add some default commands
         $this->commands["explain"]['class']               = $this;
         $this->commands["explain"]['entry']               = "getCommandsDetails";
         $this->commands["explain"]["description"]         = "This command shows all details about a CLI";
-
     }
-    public function getCommandsDetails($argument){
+    public function getCommandsDetails($argument)
+    {
         echo PHP_EOL;
-        if($argument['explain'] === true){
-            foreach ($this->commands as $cmd => $desc){
-                $mask1 = "%30.30s      %30s \n";
-                printf($mask1,$this::build("".$cmd."    ",'light_green',false),$desc["description"]);
-                if(isset($desc["arguments"])){
-                $mask2 = "%32.30s    %30s \n";
+        if ($argument['explain'] === true) {
+            foreach ($this->commands as $cmd => $desc) {
+                $mask1 = "%30.30s      %30s ".PHP_EOL;
+                $this->write(["`light_green`{$cmd}`light_green`",$desc["description"]],$mask1);
+//
+                if (isset($desc["arguments"])) {
+                    $mask2 = "%32.30s    %30s ".PHP_EOL;
                     //                Out put all supported arguments
-                    foreach ($desc["arguments"] as $arg => $value){
-                        printf($mask2,self::build($arg,'green',false),$value['desc']."                                                        ");
+                    foreach ($desc["arguments"] as $arg => $value) {
+                        $this->write(["`light_green`{$arg}`light_green`",$value['desc']],$mask2);
                     }
                 }
 
-                echo PHP_EOL.PHP_EOL;
-
-
+                echo PHP_EOL . PHP_EOL;
             }
-        }else{
-            if(!isset($this->commands[$argument['explain']])){
-                echo self::build("!{$argument['explain']} not a recognized Command ","red")."".self::build("You can create a custom CLI Command in Path/core/classes/CLI/Commands Folder","light_green");
-            }else{
+        } else {
+            if (!isset($this->commands[$argument['explain']])) {
+                $this->write("`light_red`!{$argument['explain']} not a recognized Command `light_red` You can create a custom CLI Command in Path/core/classes/CLI/Commands Folder");
+
+            } else {
                 $mask = "%-5s          %30.30s\n";
-                printf($mask,$this::build($argument['explain'],'light_green',false),$this->commands[$argument['explain']]["description"]);
+                $this->write(["`light_green`{$argument['explain']}`light_green`",$this->commands[$argument['explain']]["description"]],$mask);
+
 
                 $mask = "--- %-5s   %18s\n";
-                foreach ($this->commands[$argument['explain']]["arguments"] as $arg => $value){
-                    printf($mask,self::build($arg,'green',false),$value['desc']);
+                foreach ($this->commands[$argument['explain']]["arguments"] as $arg => $value) {
+                    $this->write(["`light_green`{$arg}`light_green`",$value['desc']],$mask);
                 }
-                echo PHP_EOL.PHP_EOL;
+                echo PHP_EOL . PHP_EOL;
             }
         }
-//        var_dump();
-//        var_dump($argument);
+        //        var_dump();
+        //        var_dump($argument);
+    }
+
+    /**
+     * @param $argument
+     * @return mixed
+     */
+    protected function entry($argument)
+    {
+        // TODO: Implement entry() method.
     }
 }

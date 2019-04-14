@@ -6,10 +6,12 @@
  * @Project Path
  */
 
-namespace Path\Console;
+namespace Path\Core\CLI\DefaultCommands;
 
 
-use Path\Console;
+
+use Path\Core\CLI\CInterface;
+use Path\Core\CLI\Console;
 
 class Server extends CInterface
 {
@@ -27,44 +29,21 @@ class Server extends CInterface
         ]
     ];
 
-    private function getPort($port){
+    private function getPort($port)
+    {
         return $port ?? self::DEFAULT_PORT;
     }
 
     public function entry($argument)
     {
-        $argument = (object) $argument;
+        $argument = (object)$argument;
         $port = $this->getPort(@$argument->port);
         $cmd = "php -S localhost:{$port} index.php";
         echo PHP_EOL;
-        echo Console::build("---","green",false)." Server starts at: ".Console::build("localhost:{$port}",'light_green').PHP_EOL;
-        echo Console::build("---","green",false)." You can use this as your proxy server in webpack".PHP_EOL.PHP_EOL;
-        echo Console::build("---","green",false)." Press ^C to terminate";
-
-        while (@ ob_end_flush()); // end all output buffers if any
+        $this->write("`green`[+] Server started at: `green` localhost:{$port}".PHP_EOL);
+        $this->write(PHP_EOL.'`blue`Press ^C to terminate`blue`'.PHP_EOL);
 
         $proc = popen("$cmd 2>&1 ; echo Exit status : $?", 'r');
 
-        $live_output     = "";
-        $complete_output = "";
-
-        while (!feof($proc))
-        {
-            $live_output     = fread($proc, 4096);
-            $complete_output = $complete_output . $live_output;
-            echo "$live_output";
-            @ flush();
-        }
-
-        pclose($proc);
-
-        // get exit status
-        preg_match('/[0-9]+$/', $complete_output, $matches);
-
-        // return exit status and intended output
-        return array (
-            'exit_status'  => intval(@$matches[0]),
-            'output'       => str_replace("Exit status : " . @$matches[0], '', $complete_output)
-        );
     }
 }
