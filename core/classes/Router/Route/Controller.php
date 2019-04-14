@@ -6,13 +6,14 @@
  * Time: 5:10 AM
  */
 
-namespace Path\Route;
+namespace Path\Core\Router\Route;
 
-use Path\Http\Request;
-use Path\Http\Response;
-use Path\Error\Exceptions;
+use Path\Core\Http\Request;
+use Path\Core\Http\Response;
+use Path\Core\Error\Exceptions;
 
-abstract class Controller{
+abstract class Controller
+{
 
     protected  $request, $response;
     /**
@@ -21,53 +22,59 @@ abstract class Controller{
      * @return mixed|null
      * @throws Exceptions\Router
      */
-    final public function response(Request $request, Response $response){
+    final public function response(Request $request, Response $response)
+    {
         $this->request = $request;
         $this->response = $response;
         $controller_name = get_class($this);
         $_method_name = strtolower($request->METHOD);
         $_method_name[0] = strtoupper($_method_name[0]);
 
-        $_call = ('on'.$_method_name);
+        $_call = ('on' . $_method_name);
 
         if (!method_exists($this, $_call))
             throw new Exceptions\Router("Request Method does not exist");
 
         $_response = $this->$_call($request, $response);
 
-        if($_response === false)
+        if ($_response === false)
             throw new Exceptions\Router("Override \"$_call(){}\" method in  {$controller_name} to handle {$request->METHOD} Request");
 
         return $_response;
-
     }
 
-    public function onDelete(Request $request, Response $response){
+    public function onDelete(Request $request, Response $response)
+    {
         return false;
     }
 
-    public function onPost(Request $request, Response $response){
+    public function onPost(Request $request, Response $response)
+    {
         return false;
     }
 
-    public function onGet(Request $request, Response $response){
+    public function onGet(Request $request, Response $response)
+    {
         return false;
     }
 
-    public function onPatch(Request $request, Response $response){
+    public function onPatch(Request $request, Response $response)
+    {
         return false;
     }
 
-    public function onRequest(Request $request, Response $response){
+    public function onRequest(Request $request, Response $response)
+    {
         return false;
     }
 
-    public function onPut(Request $request, Response $response){
+    public function onPut(Request $request, Response $response)
+    {
         return false;
     }
 
-    public function onOptions(Request $request, Response $response){
+    public function onOptions(Request $request, Response $response)
+    {
         return false;
     }
-
 }
