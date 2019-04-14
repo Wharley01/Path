@@ -238,6 +238,8 @@ class Server
                 $this->navigateWatcher($client_id, $data['params'], $data['data']);
             } elseif ($data['type'] == "message") {
                 $this->clientMessageWatcher($client_id, $data['data']);
+            }else{
+                $this->clientMessageWatcher($client_id, $data['data']);
             }
         }
     }
@@ -539,7 +541,7 @@ class Server
         //        }
 
         $client->headers = $headers;
-        $client->cookies = $this->fetchCookies($headers['cookie']);
+        $client->cookies = $this->fetchCookies(@$headers['cookie']);
     }
 
 
