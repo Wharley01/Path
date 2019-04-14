@@ -12,7 +12,7 @@ namespace Path\Core\Http;
 use Path\Core\Http\Response;
 use Path\Core\Storage\Sessions;
 use Path\Core\Router\Live\Controller;
-
+use Path\Core\Error\Exceptions;
 
 class SSEWatcher
 {
@@ -311,7 +311,7 @@ class SSEWatcher
     private function throwException($error_text)
     {
         if ($this->throw_exception) {
-            throw new WatcherException($error_text);
+            throw new Exceptions\Watcher($error_text);
         } else {
             $this->error = $error_text;
         }
