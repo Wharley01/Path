@@ -6,7 +6,7 @@
  * @Project path
  */
 
-namespace Path\Database;
+namespace Path\Core\Database;
 
 
 interface Table

@@ -1,15 +1,13 @@
 <?php
-namespace Path\Database\Connection;
+namespace Path\Core\Database\Connections;
+
 
 /**
  *
  */
-interface DB{
-  public function __construct();
-  public static function close();
-}
 
-class Mysql implements DB
+
+class MySql implements DB
 {
     public $connection = null;
     private static $conn = null;
@@ -53,4 +51,3 @@ class Mysql implements DB
 
 
 }
-?>

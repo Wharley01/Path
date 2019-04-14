@@ -6,13 +6,12 @@
  * @Project path
  */
 
-namespace Path\Database;
+namespace Path\Core\Database\Connections;
 
 
-interface Database
+interface DB
 {
 
     public function __construct();
     public static function close();
-
 }
