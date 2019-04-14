@@ -133,6 +133,11 @@ class Watcher
     public function watch($message = null)
     {
         $controller = $this->getController($message);
+        $controller->onConnect(
+            $this,
+            $this->session,
+            $message
+        );
         $watchable_list = $this->getWatchable($controller);
         if (count(array_keys($watchable_list)) < 1) {
             $this->throwException("Specify at least 1 \"watchable\" as public properties in " . get_class($controller));
@@ -275,6 +280,11 @@ class Watcher
     public function receiveMessage($message)
     {
         $controller = $this->getController($message);
+        $controller->onMessage(
+            $this,
+            $this->session,
+            $message
+        );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
         $this->execute($watch_list, $controller, $message);
@@ -292,6 +302,11 @@ class Watcher
     {
         $this->controller_data['params'] = $params;
         $controller = $this->getController($message);
+        $controller->onConnect(
+          $this,
+          $this->session,
+          $message
+        );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
         $this->execute($watch_list, $controller, $message, true);
