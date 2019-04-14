@@ -6,7 +6,7 @@
  * @Project Path
  */
 
-namespace Path\Storage;
+namespace Path\Core\Storage;
 
 
 class Sessions
@@ -16,43 +16,46 @@ class Sessions
     public function __construct($session_id = null)
     {
 
-        if(!is_null($session_id)){
-            if(!preg_match("/^[-,a-zA-Z0-9]{1,128}$/",$session_id) OR strlen($session_id) < 5 OR !preg_match('/[0-9]/',$session_id)){
+        if (!is_null($session_id)) {
+            if (!preg_match("/^[-,a-zA-Z0-9]{1,128}$/", $session_id) or strlen($session_id) < 5 or !preg_match('/[0-9]/', $session_id)) {
                 $this->session_id = bin2hex(openssl_random_pseudo_bytes(32));
-            }else{
+            } else {
                 $this->session_id = $session_id;
             }
         }
-
     }
 
-    private function close(){
-        if(!is_null($this->session_id)) {
+    private function close()
+    {
+        if (!is_null($this->session_id)) {
             session_write_close();
         }
     }
 
-    private function start(){
-        if(!is_null($this->session_id)){
+    private function start()
+    {
+        if (!is_null($this->session_id)) {
             session_write_close();
             session_id($this->session_id);
             session_start();
-//            echo "using ID";
+            //            echo "using ID";
         }
-
     }
-    public function store($key,$value){
+    public function store($key, $value)
+    {
         $this->start();
         $_SESSION[$key] = $value;
         $this->close();
     }
-    public function get($key){
+    public function get($key)
+    {
         $this->start();
         $value = @$_SESSION[$key];
         $this->close();
         return $value ?? null;
     }
-    public function delete($key){
+    public function delete($key)
+    {
         $this->start();
         unset($_SESSION[$key]);
         $this->close();
