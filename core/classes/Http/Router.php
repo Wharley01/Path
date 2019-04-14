@@ -22,7 +22,7 @@ class Router
     private $response_instance;
     private $build_path = "";
     private $controllers_path = "path/Controllers/Route/";
-    private $controllers_namespace = "path\\App\\Controller\\Route\\";
+    private $controllers_namespace = "Path\\App\\Controller\\Route\\";
     private $middleware_path = "path/Http/MiddleWares/";
     private $middleware_namespace = "Path\\App\\Http\\MiddleWare\\";
     private $assigned_paths = [ //to hold all paths assigned
@@ -527,6 +527,9 @@ class Router
             return strlen(trim($m)) > 0;
         })); //filter empty array
         $class_ini = $contr_breakdown[0];
+
+        if(strpos($class_ini,"\\") < 0)
+            $class_ini = $this->controllers_namespace.$class_ini;
 
         //        load_class($class_ini,"controllers");
 
