@@ -22,7 +22,7 @@ class SSEWatcher
     private $controller_instance;
     private $session;
     private $controller_path = "Path/Controllers/Live/";
-    private $controller_namespace = "Path\\Controller\\Live\\";
+    private $controller_namespace = "Path\App\\Controllers\\Live\\";
     private $throw_exception = false;
     private $error;
     private $has_executed = [];
@@ -43,7 +43,10 @@ class SSEWatcher
     private function iniController($message = null): ?Controller
     {
         if ($this->controller_name) {
-            $live_controller = $this->controller_namespace . $this->controller_name;
+            if (strpos($this->controller_name, "\\") === false)
+                $live_controller = $this->controller_namespace . $this->controller_name;
+            else
+                $live_controller = $this->controller_name;
 
             $controller = new $live_controller(
                 $this,

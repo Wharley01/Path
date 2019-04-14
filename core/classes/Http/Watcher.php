@@ -18,7 +18,7 @@ use Path\Core\Error\Exceptions;
 class Watcher
 {
     private $path;
-    private $watcher_namespace = "Path\Controller\Live\\";
+    private $watcher_namespace = "Path\App\\Controllers\\Live\\";
     private $watchers_path = "Path/Controllers/Live/";
     private $cache = [];
     public  $socket_key = "";
@@ -117,8 +117,10 @@ class Watcher
 
 
         if ($path) {
+            if (strpos($path, "\\") === false)
+                $path = $this->watcher_namespace . $path;
 
-            $path = $this->watcher_namespace . $path;
+
             $controller = new $path(
                 $this,
                 $this->session,
@@ -303,9 +305,9 @@ class Watcher
         $this->controller_data['params'] = $params;
         $controller = $this->getController($message);
         $controller->onConnect(
-          $this,
-          $this->session,
-          $message
+            $this,
+            $this->session,
+            $message
         );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
