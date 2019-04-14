@@ -6,7 +6,7 @@
 * Powered By: Path
 */
 
-namespace Path\App\Controllers\Route;
+namespace Path\Plugins\SSEController;
 
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
