@@ -1,19 +1,15 @@
 <?php
-namespace Path\Http;
-session_start();
-
+namespace Path\Core\Http;
 use Throwable;
 
 require_once "core/kernel.php";
-require_once "core/bootstrap.php";
 
 try {
 
     $__routes = new Router();
-    $__routes->get("SSE/@controller/@action","SSE->watch");
+    $__routes->get("SSE/@controller/@action", "SSE->watch");
     require_once "path/Routes.php";
-
-}catch (Throwable $e) {
+} catch (Throwable $e) {
     echo "<pre>";
     echo "Path error: " . $e->getMessage() . " trace: <pre>" . $e->getTraceAsString() . "</pre>";
 }
