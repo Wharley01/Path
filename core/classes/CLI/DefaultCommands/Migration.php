@@ -48,7 +48,7 @@ class Migration extends CInterface
     ];
 
     private $migration_files_path = "path/Database/Migration";
-    private $migration_class_namespace = "Path\\Database\\Migration";
+    private $migration_class_namespace = "Path\App\\Database\\Migration\\";
     private $tables = [];
     private $prototype;
     public function __construct()
