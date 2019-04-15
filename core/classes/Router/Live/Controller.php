@@ -30,4 +30,12 @@ abstract class Controller
 
     }
 
+    public function onClose(
+        &$watcher,
+        Sessions $sessions,
+        ?String  $message
+    ){
+
+    }
+
 }

@@ -315,6 +315,16 @@ class Watcher
         $this->cache($watch_list);
     }
 
+    public function close($message = null){
+        $controller = $this->getController($message);
+        $controller->onClose(
+            $this,
+            $this->session,
+            $message
+        );
+        $this->clearCache();
+    }
+
     private function throwException($error_text)
     {
         if ($this->throw_exception) {

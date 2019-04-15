@@ -38,6 +38,9 @@ class SSE extends Controller
             case "reset":
                 $this->sse_watcher->reset();
                 break;
+            case "close":
+                $this->sse_watcher->close();
+                break;
             case "message":
                 $this->sse_watcher->receiveMessage($request->fetch("message"));
                 break;

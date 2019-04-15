@@ -167,6 +167,17 @@ class SSEWatcher
         $this->execute($watch_list, $controller, $message);
         $this->cache($watch_list);
     }
+
+    public function close($message = null){
+        $controller = $this->iniController($message);
+        $controller->onClose(
+            $this,
+            $this->session,
+            $message
+        );
+        $this->reset();
+    }
+
     public function navigate($params, $message = null)
     {
         $this->params = $params;
