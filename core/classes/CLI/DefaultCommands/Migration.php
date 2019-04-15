@@ -48,7 +48,7 @@ class Migration extends CInterface
     ];
 
     private $migration_files_path = "path/Database/Migration";
-    private $migration_class_namespace = "Path\App\\Database\\Migration\\";
+    private $migration_class_namespace = "Path\App\\Database\\Migration";
     private $tables = [];
     private $prototype;
     public function __construct()
@@ -174,12 +174,16 @@ class Migration extends CInterface
                 if ($entry != "." && $entry != "..") {
                     $class_name = basename($entry, ".php");
                     $file_info = pathinfo($entry);
-                    $file_path = "{$this->migration_files_path}/{$class_name}";
+                    $file_path = "{$this->migration_files_path}/{$entry}";
+
                     if (
-                        is_readable(ROOT_PATH . $file_path) &&
+                        is_readable($file_path) &&
                         $file_info["extension"] == "php"
                     ) {
-                        $class_instance = $this->migration_class_namespace . "\\" . $class_name;
+                        if (strpos($class_name, "\\") === false)
+                            $class_instance = $this->migration_class_namespace . "\\" . $class_name;
+                        else
+                            $class_instance = $class_name;
                         $class_instance = new $class_instance();
                         if (property_exists($class_instance, "table_name")) {
                             $classes[$class_instance->table_name] = $class_instance;
