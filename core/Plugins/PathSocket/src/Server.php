@@ -676,13 +676,16 @@ class Server
     private function removeClient($client_id)
     {
         $this->logText("{$this->clients[$client_id]->socket} Removed");
-        if ($this->clients[$client_id]->watching) {
-            $this->clients[$client_id]->watching->clearCache();
-            $this->logText("...Cleared Caches");
+
+        $client = &$this->clients[$client_id];
+        $watcher = $client->watching;
+        if ($watcher instanceof Watcher) {
+            $watcher->close();
+            $this->logText("[+] Client removed, Caches Cleared");
+            unset($this->clients[$client_id]);
+            unset($this->watching[$client_id]);
         }
 
-        unset($this->clients[$client_id]);
-        unset($this->watching[$client_id]);
     }
 
     /**
