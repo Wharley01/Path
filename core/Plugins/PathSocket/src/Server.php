@@ -233,13 +233,13 @@ class Server
         if (!$data = json_decode($message, true)) {
             $this->clientMessageWatcher($client_id, $message);
         } else {
-            if ($data['type'] == "navigate") {
+            if (@$data['type'] == "navigate") {
                 //                navigate instead
                 $this->navigateWatcher($client_id, $data['params'], $data['data']);
-            } elseif ($data['type'] == "message") {
+            } elseif (@$data['type'] == "message") {
                 $this->clientMessageWatcher($client_id, $data['data']);
             } else {
-                $this->clientMessageWatcher($client_id, $data['data']);
+                $this->clientMessageWatcher($client_id, $message);
             }
         }
     }
@@ -685,7 +685,6 @@ class Server
             unset($this->clients[$client_id]);
             unset($this->watching[$client_id]);
         }
-
     }
 
     /**
