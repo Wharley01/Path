@@ -9,7 +9,13 @@
 namespace Path\Core\Mail;
 
 
-interface Mailable
+use Path\Core\Database\Model;
+
+abstract class Mailable
 {
+
+    abstract public function title(State $state):String;
+
+    abstract public function template(State $state):String;
 
 }
