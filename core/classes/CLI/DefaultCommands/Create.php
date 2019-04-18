@@ -31,6 +31,9 @@ class Create extends CInterface
         ],
         "model" => [
             "desc" => "create database model, e.g: __path create model yourModelName"
+        ],
+        "email" => [
+            "desc" => "create email Mailable, e.g: __path create email yourTemplateName"
         ]
     ];
 
@@ -40,6 +43,7 @@ class Create extends CInterface
     private $live_controllers_path = "path/Controllers/Live/";
     private $migration_files_path = "path/Database/Migration";
     private $middleware_files_path = "path/Http/MiddleWares";
+    private $email_templ_files_path = "path/Mail/Mailables";
     public function entry($params)
     {
         $params = (object)$params;
@@ -53,8 +57,11 @@ class Create extends CInterface
             $this->createMiddleWare($params->middleware);
         } elseif (isset($params->model)) {
             $this->createModel($params->model);
+        }elseif (isset($params->email)){
+            $this->createMailable($params->email);
         }
     }
+
     private function toLower($string)
     {
         return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $string));
@@ -121,7 +128,7 @@ class $command_file_name extends CInterface
     /**
      * @param \$params
      */
-    public function entry(object \$params)
+    public function entry(\$params)
     {
         var_dump(\$params);
     }
@@ -129,7 +136,7 @@ class $command_file_name extends CInterface
 }
         ";
         fwrite($write_instance, $code);
-        echo PHP_EOL . PHP_EOL . "[+] ----  Database model boiler plate for --{$command_file_name}-- generated in \"{$this->commands_path}\" " . PHP_EOL;
+        $this->write("[+] ----  Database model boiler plate for --`blue`{$command_file_name}`blue`-- generated in `green`\"{$this->commands_path}\"`green` " . PHP_EOL);
         fclose($write_instance);
     }
     private function createController($controller_name)
@@ -202,10 +209,8 @@ use Path\Core\\Database\\Model;
 
 class {$model_name} extends Model
 {
-    protected \$table_name               = \"" . strtolower($model_name) . "\";
-    protected \$non_writable_cols        = [\"id\"];
-    protected \$readable_cols            = [\"id\",\"name\",\"description\"];
-
+    protected \$table_name               = \"" . $this->toLower($model_name) . "\";
+    protected \$primary_key              = \"id\";
     public function __construct()
     {
         parent::__construct();
@@ -213,7 +218,7 @@ class {$model_name} extends Model
 }";
         //        Write model boiler plate code to file
         fwrite($db_model_file, $model_boiler_plate);
-        echo PHP_EOL . PHP_EOL . "[+] ----  Database model boiler plate for --{$model_name}-- generated" . PHP_EOL;
+        echo PHP_EOL . PHP_EOL . "[+] ----  Database model boiler plate for --{$this->toLower($model_name)}-- generated" . PHP_EOL;
         fclose($db_model_file);
     }
     private function writeLiveControllerBoilerPlate($controller_file, $controller_name, $model_name)
@@ -494,5 +499,73 @@ class {$middleware_name} implements MiddleWare
             $db_model_file = fopen($model_file, "w");
             $this->writeModelBoilerPlate($db_model_file, $model_name);
         }
+    }
+    private function createMailable($email_name){
+        $email_name = trim($email_name);
+
+        $email_name = $email_name ?? $this->ask("Enter your email template name", true);
+
+        $templ_file = $this->email_templ_files_path.'/'.$email_name.'.php';
+        if (file_exists($templ_file)) {
+            if ($this->confirm("{$email_name} Email template Already exists, Override?")) {
+                $email_templ_file = fopen($templ_file, "w");
+                $this->writeEmailBoilerCode($email_templ_file, $email_name);
+            }
+        } else {
+            $email_templ_file = fopen($templ_file, "w");
+            $this->writeEmailBoilerCode($email_templ_file, $email_name);
+        }
+    }
+
+    /**
+     * @param $email_templ_file
+     * @param $email_name
+     */
+    private function writeEmailBoilerCode($email_templ_file, $email_name){
+
+        $boiler_plate = "<?php
+
+namespace Path\App\\Mail\\Mailables;
+
+use Path\Core\\Database\\Model;
+use Path\Core\\Mail\\Mailable;
+use Path\Core\\Mail\\State;
+
+
+class {$email_name} extends Mailable
+{
+
+    /*
+    * Change this recipient details or set dynamically
+    */
+    public \$to = [
+        \"email\" => \"recipient@provider.com\",
+        \"name\"  => \"Recipient name\"
+    ];
+
+    /**
+     * TestMail constructor.
+     * @param State \$state
+     */
+    public function __construct(State \$state)
+    {
+    }
+
+    public function title(State \$state):String
+    {
+        return \"this is the title\";
+    }
+
+    public function template(State \$state):String
+    {
+        return \"Hello {\$state->name}\";
+    }
+
+}";
+
+        fwrite($email_templ_file, $boiler_plate);
+        $this->write(PHP_EOL."`green`[+]`green` --  Email Template boiler plate for --`blue`{$email_name}`blue`-- generated in `green`\"{$this->email_templ_files_path}\"`green` " . PHP_EOL);
+        fclose($email_templ_file);
+
     }
 }
