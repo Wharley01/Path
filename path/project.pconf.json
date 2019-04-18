@@ -23,6 +23,21 @@
   "WATCHER":{
 
   },
+  "MAILER":{
+    "USE_SMTP": false,
+    "SMTP":{
+      "host":"",
+      "username":"",
+      "password":"",
+      "port": 0,
+      "protocol":"",
+      "charset":"UTF-8"
+    },
+    "ADMIN_INFO":{
+      "email":"admin@__path.com",
+      "name": "Path Admin"
+    }
+  },
   "WEBSOCKET":{
     "host": "macroware-vue.loc",
     "port": 443,
