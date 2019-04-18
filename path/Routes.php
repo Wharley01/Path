@@ -1,12 +1,12 @@
 <?php
 
 
-
+use Path\App\Mail\Mailables;
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
 use Path\Core\Http\Router;
 use Path\Core\Misc\Validator;
-
+use Path\Core\Mail;
 
 
 $router = new Router();
@@ -18,7 +18,18 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
     return $response->json(["error" => $error['msg']]);
 });
 
+$router->get("test", function (){
 
+   $mailer = new Mail\Sender(Mailables\TestMail::class);
+
+   $mailer->bindState([
+       "name" => "Testing Testing",
+       "test" => "Testing",
+       "new_email" => "Another@email.com"
+   ]);
+   $mailer->send();
+
+});
 
 /*
  * Your Routes Can be here
