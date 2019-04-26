@@ -58,7 +58,7 @@ class Router
         $this->request = new Request();
         $this->database = null;
         $this->real_path =  preg_replace(
-            "/[^\w:.\/\d\-].*$/m",
+            "/[^\w:.\/\d\-\@].*$/m",
             "",
             $this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL
         );
