@@ -8,7 +8,7 @@
 
 namespace Path\Core\Http;
 
-use Path\Core\PathException;
+use Path\Core\Error\Exceptions;
 
 
 class Response
@@ -52,7 +52,7 @@ class Response
         $file = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . $this->build_path . "/" . $file_path;
         $public_path = treat_path($this->build_path);
         if (!file_exists($file))
-            throw new PathException(" \"{$file_path}\" does not exist");
+            throw new Exceptions\Path(" \"{$file_path}\" does not exist");
 
         //      get the content
         $file_content = file_get_contents($file);
