@@ -80,7 +80,7 @@ class Response
         return $this;
     }
 
-    public function SSEStream($raw_data, $id = null, $status = 200)
+    public function SSEStream($raw_data, $delay = 300, $id = null, $status = 200)
     {
         if (!$id)
             $id = time();
@@ -113,7 +113,7 @@ class Response
                 $data .= PHP_EOL;
             }
         }
-        $this->content = $data;
+        $this->content = 'delay: '.$delay.PHP_EOL. $data;
         $this->status = $status;
         $this->headers = [
             "Content-Type" =>  "text/event-stream; charset=UTF-8",
