@@ -18,6 +18,7 @@ class Response
     public $headers = [];
     public $build_path = "";
     public $is_binary = false;
+    private $response_state;
     public function __construct($build_path = '/')
     {
         $this->build_path = $build_path;
@@ -45,26 +46,64 @@ class Response
         $this->headers = ["Content-Type" => "text/html; charset=UTF-8"];
         return $this;
     }
+    public function bindState(array $state){
+        $this->response_state = $state;
+        return $this;
+    }
     public function html($file_path, $status = 200)
     {
-        //        echo "build_path: ". $this->build_path.PHP_EOL;
-        //        echo "file_path: ". $file_path.PHP_EOL;
-        $file = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . $this->build_path . "/" . $file_path;
+        $state = $this->response_state;
         $public_path = treat_path($this->build_path);
-        if (!file_exists($file))
-            throw new Exceptions\Path(" \"{$file_path}\" does not exist");
 
+        $load_file = function ($file_path){
+            $file = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . $this->build_path . "/" . $file_path;
+            if (!file_exists($file))
+                throw new Exceptions\Path(" \"{$file_path}\" does not exist");
+            $file_content = file_get_contents($file);
+            return $file_content;
+        };
+
+        $link_resources = function ($raw_data) use ($public_path){
+            return preg_replace_callback('/(href|src)=\"?([^">\s]+)\"?[^\s>]*/m', function ($matches) use ($public_path) {
+                //            var_dump($matches);
+                $resources_path = explode("/", $matches[2]);
+                array_shift($resources_path);
+                $resources_path = join("/", $resources_path);
+
+                return "$matches[1]='{$public_path}{$resources_path}'";
+            }, $raw_data);
+        };
+
+        $replace_variables = function($raw_data) use ($state){
+            return preg_replace_callback('/{{(.+)}}/m', function ($matches) use ($state) {
+                $split = explode("->",$matches[1]);
+                $value = $state[$split[0]];
+                for ($i = 1; $i < count($split); $i++) {
+                    $value = @$value[$split[$i]];
+                }
+                return $value;
+            },$raw_data);
+        };
+
+        $load_includes = function ($raw_data) use ($state,$replace_variables,$load_file){
+          return preg_replace_callback('/{{(@include\s*=\s*"(.*)"\s*)}}/m', function ($matches) use ($state,$replace_variables,$load_file) {
+              $file_path = $matches[2];
+              $load = $load_file($file_path);
+              return $load;
+          },$raw_data);
+        };
+
+
+        $file_content = $load_file($file_path);
         //      get the content
-        $file_content = file_get_contents($file);
 
-        $match_resources = preg_replace_callback('/(href|src)=\"?([^">\s]+)\"?[^\s>]*/m', function ($matches) use ($public_path) {
-            //            var_dump($matches);
-            $resources_path = explode("/", $matches[2]);
-            array_shift($resources_path);
-            $resources_path = join("/", $resources_path);
+        $match_resources = $link_resources($file_content);
 
-            return "$matches[1]='{$public_path}{$resources_path}'";
-        }, $file_content);
+//{{(@include="(.*)")}}
+        $match_resources = $load_includes($match_resources);
+
+//replace variables
+        $match_resources = $replace_variables($match_resources);
 
         $this->content = $match_resources;
         $this->status = $status;
