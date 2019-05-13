@@ -252,7 +252,7 @@ abstract class Model
      */
     private function isWritable($key)
     {
-        if (in_array(trim($key), $this->writable_cols) || !in_array(trim($key), $this->non_writable_cols)) {
+        if ((in_array(trim($key), $this->writable_cols) || !in_array(trim($key), $this->non_writable_cols)) && in_array(trim($key), $this->table_columns)) {
             return true;
         }
         return false;
@@ -310,13 +310,10 @@ abstract class Model
     private function filterNonWritable(array $data)
     {
         foreach ($data as $key => $value) {
-            $key = $this->table_name . "." . $key;
-            if (!$this->isWritable($key)) {
-                var_dump($data[$key]);
+            if (!$this->isWritable($this->table_name . '.' . $key)) {
                 unset($data[$key]);
             }
-            if (!in_array($key, $this->table_columns) || $this->isJsonRef($key)) {
-                echo "<br>";
+            if ($this->isJsonRef($key)) {
                 unset($data[$key]);
             }
         }
