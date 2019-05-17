@@ -13,7 +13,7 @@ use Path\Core\Database\Model;
 use Path\Core\Http\Request;
 use Path\Core\ValidatorException;
 
-class Validator
+class OldValidator
 {
     public $model;
     private $errors;
