@@ -20,6 +20,7 @@ class Request
     private $sending_post_feilds = [];
     private $sending_query_feilds = [];
     private $IP;
+    private $post;
     //    CONST
     public function __construct()
     {
@@ -27,11 +28,13 @@ class Request
         $input = file_get_contents("php://input");
         if (strlen(trim($input)) > 1) {
             $input = file_get_contents("php://input");
+
         } else {
             $input = "[]";
         }
         if (@$_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST)) {
             $_REQUEST = array_merge($_REQUEST, json_decode($input, true));
+            $this->post = json_decode($input, true);
         }
 
 
@@ -46,6 +49,25 @@ class Request
     public function fetch($key)
     {
         return @$_REQUEST[$key] ?? null;
+    }
+
+    /**
+     * @param null $key
+     * @return mixed
+     */
+    public function getPost($key = null){
+        if(!is_null($key))
+            return $_POST[$key] ?? $this->post[$key];
+
+        return $this->post ?? $_POST;
+    }
+
+
+    public function getQuery($key = null){
+        if(!is_null($key))
+            return $_GET[$key];
+
+        return $_GET;
     }
 
     /**
