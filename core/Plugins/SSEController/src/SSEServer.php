@@ -10,7 +10,7 @@ namespace Path\Plugins\SSEController;
 
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
-use Path\Core\Http\SSEWatcher;
+use Path\Core\Http\Watcher\SSE;
 use Path\Core\Storage\Sessions;
 use Path\Core\Router\Route\Controller;
 
@@ -21,7 +21,7 @@ class SSE extends Controller
     public function __construct(Request $request, Response $response)
     {
         $this->session = new Sessions();
-        $this->sse_watcher = new SSEWatcher(
+        $this->sse_watcher = new SSE(
             $request->params->controller,
             $request->fetch("Methods"),
             $request->fetch("Params")
