@@ -816,14 +816,14 @@ watcher.onReady(watcher => {
         if(is_logged_in !== 'yes'){
             location.href = '/logout'
         }
-    }
-}
+    })
+})
 watcher.start();//tell path to begin watching
 
 
 ```
 
-The code above is well commented, if you need more information on this quickly head to [its documentation](https://www.npmjs.com/package/@__path/watcher) on npm website, it contains the installation guide and usage.
+The code above is well commented, if you need more information on this, quickly head to [its documentation](https://www.npmjs.com/package/@__path/watcher) on npm website, it contains the installation guide and usage.
 
 
 
@@ -1346,9 +1346,9 @@ Array(
         )
 )
 ```
-
+___
 The getErrors() returns an array of errors, where params/form fields are the keys and values are their array of errors.
-
+___
 
 ## Path Email System
 
@@ -1454,11 +1454,11 @@ What helps Path decide which method to use in sending emails are configured in `
   },
 ```
 
-```text
+___
 If `USE_SMTP` is set to `true`, Path uses the SMTP configuration beneath it, this config also has the default admin info, this will be used when `from` email details are not specified(sort of fallback details). 
-```
+___
 
-## Temporary Storages
+## Temporary Storage
 
 There several ways to hold data temporarily in Path, this section explains each of them.
 
@@ -1594,7 +1594,7 @@ class TestCommand extends CInterface
 4. `public function entry($params)` executes when you run `php __path yourCommandName` with $params being an associative array where the key is the parameter and value is the text immediately next to the key in the terminal, for example, if you run:
 
 ```bash
-php __path Test something -key= "another value with space"
+php __path Test something key "another value with space"
 ```
 
 The dumped value in entry() will look like this:
