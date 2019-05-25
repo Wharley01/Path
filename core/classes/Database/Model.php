@@ -606,7 +606,7 @@ abstract class Model
         try {
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
-            $this->clearMemory();
+            //$this->clearMemory();
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -645,7 +645,7 @@ abstract class Model
         try {
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
-            $this->clearMemory();
+            //$this->clearMemory();
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -738,7 +738,7 @@ abstract class Model
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
             $this->last_insert_id = $this->conn->lastInsertId();
-            $this->clearMemory();
+            //$this->clearMemory();
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -759,7 +759,7 @@ abstract class Model
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
-        $this->clearMemory();
+        //$this->clearMemory();
         return $this;
     }
 
@@ -808,10 +808,10 @@ abstract class Model
             $this->total_pages = ceil($this->total_record / $this->record_per_page);
 
             if ($sing_record) {
-                $this->clearMemory();
+                //$this->clearMemory();
                 return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
             } else {
-                $this->clearMemory();
+                //$this->clearMemory();
                 return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
             }
         } catch (\PDOException $e) {
