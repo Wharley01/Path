@@ -39,6 +39,7 @@ class Sender
         foreach ($array as $property => $value){
             $this->mail_state->{$property} = $value;
         }
+        return $this;
     }
 
     private function phpMailer():PHPMailer{
@@ -54,8 +55,8 @@ class Sender
         $mail->Port = config("MAILER->SMTP->port");                // TCP port to connect to
         $mail->CharSet = config("MAILER->SMTP->charset");
 
-        $from = $this->getMailFrom();
-        $recipient = $this->getMailTo();
+        $from = $this->getFrom();
+        $recipient = $this->getTo();
         //Recipients
         $mail->setFrom($from["email"], $from["name"] ?? "");
         $mail->addAddress($recipient["email"]);     // Add a recipient
@@ -67,7 +68,7 @@ class Sender
 
     private function getNativeMailHeader():String{
 
-        $from = $this->getMailFrom();
+        $from = $this->getFrom();
         $headers = "";
         $headers .= "From: {$from['name']} <{$from['email']}>" . PHP_EOL;
         $headers .= "MIME-Version: 1.0" . PHP_EOL;
@@ -112,7 +113,7 @@ class Sender
      * @return array
      * @throws Exceptions\Mailer
      */
-    public function getMailFrom()
+    public function getFrom()
     {
         $temp_from = $this->mailable->from ?? $this->mail_from ?? config("MAILER->ADMIN_INFO");
 
@@ -133,7 +134,7 @@ class Sender
      * @return array
      * @throws Exceptions\Mailer
      */
-    public function getMailTo()
+    public function getTo()
     {
         $temp_to = $this->mailable->to ?? $this->mail_to;
 
@@ -167,8 +168,8 @@ class Sender
 
     private function sendMail($template,$title){
 
-        $to = $this->getMailTo();
-        $from = $this->getMailFrom();
+        $to = $this->getTo();
+        $from = $this->getFrom();
         $should_use_smtp = config("MAILER->USE_SMTP");
         if($should_use_smtp){
             $mail = $this->phpMailer();
