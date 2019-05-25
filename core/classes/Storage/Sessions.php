@@ -47,6 +47,14 @@ class Sessions
         $_SESSION[$key] = $value;
         $this->close();
     }
+
+    public function overwrite($key, $value)
+    {
+        $this->start();
+        $_SESSION[$key] = $value;
+        $this->close();
+    }
+
     public function get($key)
     {
         $this->start();
@@ -59,5 +67,13 @@ class Sessions
         $this->start();
         unset($_SESSION[$key]);
         $this->close();
+    }
+
+    public function exists($key){
+        return isset($_SESSION[$key]);
+    }
+
+    public function getAll(){
+        return $_SESSION ?? [];
     }
 }
