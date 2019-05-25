@@ -9,31 +9,31 @@
 namespace Path\Core\Router\Live;
 
 
-use Path\Core\Http\Watcher;
+use Path\Core\Http\Watcher\WatcherInterface;
 use Path\Core\Storage\Sessions;
 
 abstract class Controller
 {
+
+
+
     public function onMessage(
-        &$watcher,
-        Sessions $sessions,
-        ?String  $message
+        WatcherInterface &$watcher,
+        Sessions $sessions
     ){
 
     }
 
     public function onConnect(
-        &$watcher,
-        Sessions $sessions,
-        ?String  $message
+        WatcherInterface &$watcher,
+        Sessions $sessions
     ){
 
     }
 
     public function onClose(
-        &$watcher,
-        Sessions $sessions,
-        ?String  $message
+        WatcherInterface &$watcher,
+        Sessions $sessions
     ){
 
     }
