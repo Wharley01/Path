@@ -17,18 +17,23 @@ $router->exceptionCatch(function (Request $request, Response $response, array $e
     // $error array contains error message and path where the error occurred
     return $response->json(["error" => $error['msg']]);
 });
+$router->any("/", function (Request $request,Response $response){
+    return $response->bindState([
+        "name" => "Adewale"
+    ])->html("/test.html");
+});
 
-$router->get("test", function (){
+$router->get("test/@command", function () {
 
-   $mailer = new Mail\Sender(Mailables\TestMail::class);
 
-   $mailer->bindState([
-       "name" => "Testing Testing",
-       "test" => "Testing",
-       "new_email" => "Another@email.com"
-   ]);
-   $mailer->send();
-
+    $mailer = new Mail\Sender(Mailables\TestMail::class);
+    $mailer->bindState([
+        "name" => "Testing Testing",
+        "test" => "Testing",
+        "new_email" => "Another@email.com"
+    ]);
+    // echo "hello world";
+    $mailer->send();
 });
 
 /*
