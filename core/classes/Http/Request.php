@@ -57,7 +57,7 @@ class Request
      */
     public function getPost($key = null){
         if(!is_null($key))
-            return $_POST[$key] ?? $this->post[$key];
+            return $this->post[$key] ??  $_POST[$key] ?? null;
 
         return $this->post ?? $_POST;
     }
@@ -65,7 +65,7 @@ class Request
 
     public function getQuery($key = null){
         if(!is_null($key))
-            return $_GET[$key];
+            return $_GET[$key] ?? null;
 
         return $_GET;
     }
