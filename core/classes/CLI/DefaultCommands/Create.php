@@ -227,12 +227,7 @@ class {$model_name} extends Model
             return strlen(trim($method)) > 0;
         });
 
-        $watcher_type = $this->confirm("SSE or WS? ", ['SSE'], ['WS']);
-        if ($watcher_type == "SSE") {
-            $watcher = "Watcher";
-        } else {
-            $watcher = "SSEWatcher";
-        }
+
         $boiler_plate = "<?php
 /*
 * This Live Controller File Was automatically 
@@ -244,7 +239,7 @@ namespace Path\\App\\Controllers\\Live;
 
 use Path\Core\\Storage\\Caches;
 use Path\Core\\Http\\Response;
-use Path\Core\\Http\\Watcher;
+use Path\Core\\Http\\Watcher\\WatcherInterface;
 use Path\Core\\Router\\Live\\Controller;
 use Path\App\\Database\\Model\\$model_name;
 use Path\Core\\Storage\\Sessions;
@@ -265,7 +260,7 @@ class $controller_name extends Controller
         $boiler_plate .= "    
     //every time the watcher checks this Live Controller, it passes some data to it 
     public function __construct(
-        {$watcher}  &\$watcher,//watcher instance
+        WatcherInterface  &\$watcher,//watcher instance
         Sessions \$sessions,//the session instance that can be used for auth. with the client side
         \$message//message sent from User(client Side)
     )
@@ -295,7 +290,7 @@ class $controller_name extends Controller
                 $boiler_plate .= " 
 public function $method(
         Response \$response,
-        Watcher  &\$watcher,
+        WatcherInterface  &\$watcher,
         Sessions \$sessions,
         ?String  \$message
     ){
@@ -308,7 +303,7 @@ public function $method(
 
         $boiler_plate .= " 
     public function onMessage(
-        Watcher  &\$watcher,
+        WatcherInterface  &\$watcher,
         Sessions \$sessions,
         ?String  \$message
     ){
@@ -316,7 +311,7 @@ public function $method(
     }
 
     public function onConnect(
-        Watcher  &\$watcher,
+        WatcherInterface  &\$watcher,
         Sessions \$sessions,
         ?String  \$message
     ){
@@ -327,7 +322,7 @@ public function $method(
         ";
         //        Write controller boiler plate
         fwrite($controller_file, $boiler_plate);
-        echo PHP_EOL . PHP_EOL . "[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->live_controllers_path}\" " . PHP_EOL;
+        $this->write(PHP_EOL."`light_green`Live Controller Boiler plate code generated in: `light_green` `light_blue`{$this->live_controllers_path}`light_blue`");
         fclose($controller_file);
     }
     private function writeRouteControllerBoilerPlate($controller_file, $controller_name, $model_name)

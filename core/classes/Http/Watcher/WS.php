@@ -6,16 +6,17 @@
  * @Project Path
  */
 
-namespace Path\Core\Http;
+namespace Path\Core\Http\Watcher;
 
 
+use Path\Core\Http\Response;
 use Path\Core\Storage\Caches;
 use Path\Core\Router\Live\Controller as LiveController;
 use Path\Core\Storage\Sessions;
 use Path\Core\Error\Exceptions;
 
 
-class Watcher
+class WS implements WatcherInterface
 {
     private $path;
     private $watcher_namespace = "Path\App\\Controllers\\Live\\";
@@ -30,6 +31,7 @@ class Watcher
     public  $server;
     public  $params = null;
     public  $client;
+    private $message;
     private $controller_data = [
         "root"                 => null,
         "watchable_methods"    => null,
@@ -101,44 +103,48 @@ class Watcher
         $this->controller_data['watchable_methods']    = $url_resources['watchable_methods'];
         $this->controller_data['params']               = $url_resources['params'];
         $this->params                                  = $url_resources['params'];
-        $this->controller = $this->getController();
+        $this->controller = $this->getController(null,true);
     }
 
     private static function isValidClassName($class_name)
     {
         return preg_match("/^[\w]+$/", $class_name);
     }
-    public function getController($message = null): ?LiveController
+    public function getController($message = null,$new_instance = false): ?LiveController
     {
-        $path = $this->controller_data['root'];
-        if (!self::isValidClassName($path)) {
-            $this->throwException("Invalid LiveController Name \"{$path}\" ");
+
+        if($new_instance){
+            $path = $this->controller_data['root'];
+            if (!self::isValidClassName($path)) {
+                $this->throwException("Invalid LiveController Name \"{$path}\" ");
+            }
+            if ($path) {
+                if (strpos($path, "\\") === false)
+                    $path = $this->watcher_namespace . $path;
+
+                $this->message  = $message;
+                $controller = new $path(
+                    $this,
+                    $this->session
+                );
+
+                return $controller;
+            }
         }
+        return $this->controller;
+    }
 
-
-        if ($path) {
-            if (strpos($path, "\\") === false)
-                $path = $this->watcher_namespace . $path;
-
-
-            $controller = new $path(
-                $this,
-                $this->session,
-                $message
-            );
-
-            return $controller;
-        }
-        return null;
+    public function getMessage():?String{
+        return $this->message ?? null;
     }
 
     public function watch($message = null)
     {
         $controller = $this->getController($message);
+        $this->message = $message;
         $controller->onConnect(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $watchable_list = $this->getWatchable($controller);
         if (count(array_keys($watchable_list)) < 1) {
@@ -224,11 +230,11 @@ class Watcher
     }
     private function getMethodValue($controller, $method, $message)
     {
+        $this->message = $message;
         return $controller->{$method}(
             $this->response_instance,
             $this,
-            $this->session,
-            $message
+            $this->session
         );
     }
     public function execute($watch_list, $controller, $message = null, $force_execute = false)
@@ -282,10 +288,10 @@ class Watcher
     public function receiveMessage($message)
     {
         $controller = $this->getController($message);
+        $this->message = $message;
         $controller->onMessage(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
@@ -304,10 +310,10 @@ class Watcher
     {
         $this->controller_data['params'] = $params;
         $controller = $this->getController($message);
+        $this->message = $message;
         $controller->onConnect(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
@@ -317,10 +323,10 @@ class Watcher
 
     public function close($message = null){
         $controller = $this->getController($message);
+        $this->message = $message;
         $controller->onClose(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $this->clearCache();
     }
@@ -363,14 +369,12 @@ class Watcher
     public static function log($text)
     {
         echo PHP_EOL . $text . PHP_EOL;
-        //        flush();
-        //        ob_flush();
     }
 
     /**
      * @return bool
      */
-    public function changesOccurred()
+    public function changesOccurred():bool
     {
         foreach ($this->has_changes as $method => $status) {
             if ($status === true) {
@@ -392,7 +396,6 @@ class Watcher
         $to = $message['to'];
         $response = [];
 
-        var_dump($message);
         if ($msg instanceof Response) {
             if (!is_null($to)) {
                 $response[$to][] = [
@@ -443,5 +446,9 @@ class Watcher
     private function hasChanges($method)
     {
         return (@$this->has_changes[$method] === true);
+    }
+
+    public function getParams($key = null){
+        return $this->params[$key] ?? $this->params;
     }
 }

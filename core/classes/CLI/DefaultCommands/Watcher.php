@@ -5,7 +5,7 @@ namespace Path\Core\CLI\DefaultCommands;
 
 
 use Path\Core\CLI\CInterface;
-use Path\Core\Http\WatcherServer;
+use Path\Core\Http\Watcher\Server;
 
 class Watcher extends CInterface
 {
@@ -37,6 +37,6 @@ class Watcher extends CInterface
      */
     public function entry($params)
     {
-        $server = new WatcherServer();
+        $server = new Server();
     }
 }

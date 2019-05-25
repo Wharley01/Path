@@ -6,10 +6,14 @@
  * @Project path
  */
 
-namespace Path\Core\Http;
+namespace Path\Core\Http\Watcher;
 
 
-class WaatcherInterface
+interface WatcherInterface
 {
 
+    public function close($message = null);
+    public function changesOccurred():bool;
+    public function getMessage():?String;
+    public function getParams($key = null);
 }

@@ -14,7 +14,7 @@ use Path\Core\Http\Watcher\SSE;
 use Path\Core\Storage\Sessions;
 use Path\Core\Router\Route\Controller;
 
-class SSE extends Controller
+class SSEServer extends Controller
 {
     private $session;
     private $sse_watcher;

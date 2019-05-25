@@ -6,13 +6,10 @@
  * @Project Path
  */
 
-namespace Path\Core\Http;
+namespace Path\Core\Http\Watcher;
+use Path\Plugins\PathSocket;
 
-
-use Path\Plugins\PathSocket\Server;
-
-
-class WatcherServer extends Server
+class Server extends PathSocket\Server
 {
 
     protected $host;

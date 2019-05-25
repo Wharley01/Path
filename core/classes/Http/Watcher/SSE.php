@@ -6,7 +6,7 @@
  * @Project macroware-vue
  */
 
-namespace Path\Core\Http;
+namespace Path\Core\Http\Watcher;
 
 
 use Path\Core\Http\Response;
@@ -14,7 +14,7 @@ use Path\Core\Storage\Sessions;
 use Path\Core\Router\Live\Controller;
 use Path\Core\Error\Exceptions;
 
-class SSEWatcher
+class SSE
 {
     private $watching;
     public $params;

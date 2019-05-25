@@ -8,7 +8,7 @@
 
 namespace Path\Plugins\PathSocket;
 
-use Path\Core\Http\Watcher;
+use Path\Core\Http\Watcher\WS;
 use Path\Plugins\PathSocket\Client;
 
 
@@ -276,7 +276,7 @@ class Server
         foreach ($this->watching as $client_id => $is_watching) {
             $client = @$this->clients[$client_id];
             $watcher = $client->watching;
-            if ($watcher instanceof Watcher) {
+            if ($watcher instanceof WS) {
                 $watcher->watch();
                 if ($watcher->changesOccurred() and is_null($watcher->error)) {
                     //                       check if returned data from watcher is an instance of Response
@@ -292,13 +292,13 @@ class Server
     private function initiateLiveWatcher($client_id)
     {
         $client = $this->clients[$client_id];
-        if (!$client->watching instanceof Watcher) {
-            $url = $client->headers['get'];
-            $key = $client->headers['sec-websocket-key'];
+        if (!$client->watching instanceof WS) {
+            $url = @$client->headers['get'];
+            $key = @$client->headers['sec-websocket-key'];
             $session_id = @$client->cookies["PHPSESSID"];
             $this->logText("Session ID: " . $session_id);
 
-            $client->watching = new Watcher(
+            $client->watching = new WS(
                 $url,
                 $session_id
             );
@@ -327,7 +327,7 @@ class Server
 
         if ($client->watching) {
             $watching = &$client->watching;
-            if ($watching instanceof Watcher) {
+            if ($watching instanceof WS) {
                 $watching->watch();
                 if (!$watching->error) {
                     $this->logText("Watching for Action");
@@ -348,7 +348,7 @@ class Server
         if (isset($this->clients[$client_id])) {
             $client = &$this->clients[$client_id];
             $watching = &$client->watching;
-            if ($watching instanceof Watcher) {
+            if ($watching instanceof WS) {
                 $watching->receiveMessage($message);
 
                 if (!$watching->error) {
@@ -373,7 +373,7 @@ class Server
         if (isset($this->clients[$client_id])) {
             $client = &$this->clients[$client_id];
             $watching = &$client->watching;
-            if ($watching instanceof Watcher) {
+            if ($watching instanceof WS) {
                 $watching->navigate($params, $message);
                 if (!$watching->error) {
                     if ($watching->changesOccurred()) {
@@ -679,7 +679,7 @@ class Server
 
         $client = &$this->clients[$client_id];
         $watcher = $client->watching;
-        if ($watcher instanceof Watcher) {
+        if ($watcher instanceof WS) {
             $watcher->close();
             $this->logText("[+] Client removed, Caches Cleared");
             unset($this->clients[$client_id]);
