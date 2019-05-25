@@ -13,47 +13,59 @@ class Cookies
 {
     public const ONE_DAY = 86400;
     public const ONE_WEEK = 604800;
-
-    public static function store(
-        $key,
-        $value,
+    public  $expire = null;
+    public  $path = "/";
+    public  $domain = "";
+    public  $secure = false;
+    public  $httponly = false;
+    public function __construct(
         $expire = null,
         $path = "/",
         $domain = "",
         $secure = false,
         $httponly = false
-    ) {
-        if (is_null($expire))
-            $expire = time() + self::ONE_DAY;
-
-        setcookie($key, $value, $expire, $path, $domain, $secure, $httponly);
+    )
+    {
+        $this->expire = null;
+        $this->path = "/";
+        $this->domain = "";
+        $this->secure = false;
+        $this->httponly = false;
     }
-    public static function change(
+    public function store(
         $key,
-        $new_value,
-        $expire = null,
-        $path = "/",
-        $domain = "",
-        $secure = false,
-        $httponly = false
+        $value
     ) {
-        if (isset($_COOKIE[$key])) {
-            self::store($key, $new_value, $expire, $path, $domain, $secure, $httponly);
+        if (is_null($this->expire))
+            $expire = time() + self::ONE_DAY;
+        else
+            $expire = time() + $this->expire;
+
+                setcookie($key, $value, $expire, $this->path, $this->domain, $this->secure, $this->httponly);
+    }
+    public function overwrite(
+        $key,
+        $new_value
+    ) {
+        if ($this->exists($key)) {
+            $this->store($key,$new_value);
         }
     }
-    public static function delete($key)
+    public function delete($key)
     {
-        self::change($key, "", time() - 3600);
+        $cookie = new static(time() - 3600);
+        $cookie->overwrite($key,null);
+        return $this;
     }
 
-    public static function all(): array
+    public function getAll(): array
     {
         return $_COOKIE;
     }
 
-    public static function get($key)
+    public function get($key)
     {
-        return $_COOKIE[$key];
+        return $_COOKIE[$key] ?? null;
     }
     public function isEnabled(): bool
     {
@@ -65,19 +77,19 @@ class Cookies
             return false;
         }
     }
-    public static function exists($key)
+    public function exists($key)
     {
         return isset($_COOKIE[$key]);
     }
-    public static function days(int $days): int
+    public static function DAYS(int $days): int
     {
         return ($days * 86400);
     }
-    public static function weeks(int $weeks): int
+    public static function WEEKS(int $weeks): int
     {
         return ($weeks * 604800);
     }
-    public static function months(int $months): int
+    public static function MONTHS(int $months): int
     {
         return ($months * 2.628e+6);
     }
