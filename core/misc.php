@@ -69,9 +69,9 @@ function get_cli_args(array $listening, array $args)
             //            found a listening
             //            get the next arg
             if (in_array(@$args[$i + 1], $listening)) {
-                $res[$arg] = true;
+                $res[$arg] = null;
             } else {
-                $res[$arg] = @$args[$i + 1] ?? true;
+                $res[$arg] = @$args[$i + 1] ?? null;
             }
         }
     }

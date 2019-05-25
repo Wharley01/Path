@@ -58,7 +58,7 @@ abstract class CInterface
         $handle = fopen("php://stdin", "r");
         $this->write($question . "  {$yes[0]}/$no[0]:");
 
-        $input = strtolower(trim(fgets($handle)));
+        $input = trim(strtolower(fgets($handle)));
         if (!in_array($input, array_map(function ($op) {
             return strtolower($op);
         }, $yes)) && !in_array($input, array_map(function ($op) {

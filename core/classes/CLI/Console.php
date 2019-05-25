@@ -140,12 +140,20 @@ class Console extends CInterface
 
     public function executeCLI()
     {
-        $commands = array_values(array_filter(array_keys($this->commands), function ($cmd) {
-            return self::shouldRun($cmd, $this->args);
-        })); //filter those commands not entered by user to console
-        $commands_unfitered = array_values(array_filter(array_values($this->args), function ($cmd) {
-            return self::shouldRun($cmd, $this->args);
-        })); //filter those commands not entered by user to console
+        $commands = array_values(
+            array_filter(
+                array_keys($this->commands),function ($cmd) {
+                    return self::shouldRun($cmd, $this->args);
+                }
+            )
+        ); //filter those commands not entered by user to console
+        $commands_unfitered = array_values(
+            array_filter(
+                array_values($this->args), function ($cmd) {
+                    return self::shouldRun($cmd, $this->args);
+                }
+            )
+        ); //filter those commands not entered by user to console
         if (count($commands) > 0) {
             $commands = [@$commands[0]];
             //            get all commands
@@ -183,7 +191,7 @@ class Console extends CInterface
     public function getCommandsDetails($argument)
     {
         echo PHP_EOL;
-        if ($argument['explain'] === true) {
+        if ($argument['explain'] === null) {//no command specified, show all commands and their explanations
             foreach ($this->commands as $cmd => $desc) {
                 $mask1 = "%30.30s      %30s ".PHP_EOL;
                 $this->write(["`light_green`{$cmd}`light_green`",$desc["description"]],$mask1);
@@ -192,7 +200,7 @@ class Console extends CInterface
                     $mask2 = "%32.30s    %30s ".PHP_EOL;
                     //                Out put all supported arguments
                     foreach ($desc["arguments"] as $arg => $value) {
-                        $this->write(["`light_green`{$arg}`light_green`",$value['desc']],$mask2);
+                        $this->write(["`light_blue`{$arg}`light_blue`",$value['desc']],$mask2);
                     }
                 }
 
@@ -200,7 +208,7 @@ class Console extends CInterface
             }
         } else {
             if (!isset($this->commands[$argument['explain']])) {
-                $this->write("`light_red`!{$argument['explain']} not a recognized Command `light_red` You can create a custom CLI Command in Path/core/classes/CLI/Commands Folder");
+                $this->write("`light_red`!{$argument['explain']} not a recognized Command `light_red` You can create a custom CLI Command in path/Commands Folder");
 
             } else {
                 $mask = "%-5s          %30.30s\n";
@@ -209,7 +217,7 @@ class Console extends CInterface
 
                 $mask = "--- %-5s   %18s\n";
                 foreach ($this->commands[$argument['explain']]["arguments"] as $arg => $value) {
-                    $this->write(["`light_green`{$arg}`light_green`",$value['desc']],$mask);
+                    $this->write(["`light_blue`{$arg}`light_blue`",$value['desc']],$mask);
                 }
                 echo PHP_EOL . PHP_EOL;
             }
