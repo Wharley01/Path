@@ -6,8 +6,7 @@ Path framework is an MVC framework that uses your preferred javascript framework
 
 Path simplifies development by avoiding over-engineering and excessive abstraction.
 
-
-## List Contents
+## List of Contents
 
 [Installation](#Installation) \
 -----[Installation Method one](#Installation-Method-one)\
