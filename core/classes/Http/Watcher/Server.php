@@ -16,8 +16,8 @@ class Server extends PathSocket\Server
     protected $port;
     public function __construct()
     {
-        $this->host = config("WEBSOCKET->host");
-        $this->port = config("WEBSOCKET->port");
+        $this->host = config("WATCHER->WEBSOCKET->host");
+        $this->port = config("WATCHER->WEBSOCKET->port");
         parent::__construct();
     }
 }
