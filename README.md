@@ -17,7 +17,7 @@ Path simplifies development by avoiding over-engineering and excessive abstracti
 --------[Request](#request)\
 --------[Response](#response)\
 --------[Middle Ware](#middle-ware)\
---------[Route Controller](#middle-ware)\
+--------[Route Controller](#Route-Controller)\
 -----------[Request Hooks](#Using-Request-Hooks)\
 -----------[Referencing methods in controller](#Using-String-literal)\
 [Live Controller(RealTime Client-Server Communication)](#Live-Controller)\
@@ -797,6 +797,29 @@ You probably saw `WatcherInterface &$watcher` in the example above and wondered 
 | getParams($key = null) | get parameter set to [@__path/watcher](#Client-Side-integration)|
 | close():void | Close Connection |
 
+### Watcher Server
+
+There are two methods to use Path Watcher, the first and recommended is using the Websocket interface, the second one is using SSE, if your server supports websocket, you can start Watcher server as shown below:
+
+```bash
+php __path start watcher
+```
+
+### Switching watcher interface
+
+If for some reason you can't have access to websocket in your server, you can let Path know by changing the WATCHER.method either SSE or WS in your `./path/project.pconf.json` as shown below:
+
+```json
+  "WATCHER": {
+    "method": "WS",//change this to SSE
+    "WEBSOCKET": {
+      "host": "macroware-vue.loc",
+      "port": 443,
+      "scheme": "SSL"
+    }
+  }
+```
+
 ### Client Side integration
 
 After Setting up your Live Controller class on the server side, the next thing would be communication with it from the client side, this can be done using the [@__path/watcher](https://www.npmjs.com/package/@__path/watcher) javascript library, below is an example showing steps to communicate with or listen to the Live Controller class we created earlier:
@@ -835,7 +858,22 @@ The code above is well commented, if you need more information on this, quickly 
 
 ## Database Model
 
-What's the essence of an App without a Database? Useless? Well, maybe not all the time 😄, but either way, Path has a very flexible mechanism designed for you to interact with your Web App's database, The essence of Database Model it to give you the ability to configure how you want each table to be interacted with, like restricting column from being updated, setting columns that can be fetched and so on.
+Path has a very flexible mechanism designed for you to interact with your Web App's database, The essence of Database Model is to give you the ability to configure how you want each table to be interacted with, like restricting column from being updated, setting columns that can be fetched and so on.
+
+### Setting database connection details
+
+Before you proceed, you probably would need to update your database details in `./path/project.pconf.json` as shown below:
+
+```json
+ "DATABASE": {
+    "host": "localhost",
+    "user": "root",
+    "password": "",
+    "name": "test"
+  }
+```
+
+### Database Model Class
 
 In Path Every Table in your database must be represented with a  `Class (Called Model)` which extends the `abstract Class Path\Core\Database\Model` which you will have to override its properties to suit your use case, a single database table can have multiple Database Model(if you want different set of rules for the same table). All database model must be created in `path/Database/Models` folder or its sub-folder.
 
@@ -1028,13 +1066,11 @@ The support for JSON column started with Mysql 5.7, there is support for JSON in
 
 If you are using the appropriate version of mysql go on and make use of Path's query builder. Below example shows some possibilities.
 
-##### selecting a json object's key value
+##### Selecting a json object's key value
+Examples in this sub category uses:
 
-```php
-use Path\Core\Database\Models;
-//this example assumes the value of `profile` column  to be:
-/*
-* {
+```json
+{
    "name":"...",
    "age":"102",
    "school":"..."
@@ -1042,6 +1078,13 @@ use Path\Core\Database\Models;
       "cover":"...",
       "avatar":"..."
    }
+```
+
+```php
+use Path\Core\Database\Models;
+//this example assumes the value of `profile` column  to be:
+/*
+* 
    ...
 }
 */
@@ -1152,7 +1195,7 @@ You probably wouldn't have a need to create these files yourself as there are av
 
 To let Path know the columns to add when you `php __path app install`, you have to specify them in the `install(Structure &$table)` method of your migration file as done in the example above
 
-### updating database columns configuration
+### updating database columns
 
 When adding a column or updating it's property do so in the `update(Structure &$table)` method without changing anything in the `install(Structure &$table)`(if you've already run the `php __path app install`), Path handles every update.
 
@@ -1241,6 +1284,12 @@ This is a very fragile operation, this will remove all data and table depending 
 
 2. `php __path app update yourMigrationName` updates a particular migration file (based on what's inside the `update()` method for each file)
 
+### Printing/Viewing Database Schema
+
+1. `php __path app describe` prints all database migrations' Schema into the console.
+
+2. `php __path app describe yourMigrationName` prints `yourMigrationName`'s database Schema into the console
+
 ___
 
 Note that you can combine all this command as you want, for example, to install and update all migration files on-the-go, you can run `php __path app install update`, or even `php __path app install yourMigrationName update anotherMigrationName`
@@ -1271,7 +1320,7 @@ use Path\Core\Http\Response;
 use Path\Core\Misc\Validator;
 use Path\Core\Router\Route\Controller;
 
-class User 
+class User
 {
    public function response(
       Request $request, 
@@ -1295,7 +1344,7 @@ class User
                         'Username must nor be less than 5 character'
                      )
                    );
-         
+
          $validator->key('email')
                    ->rules(
                       Validator::REQUIRED(),//will generate error message for you
