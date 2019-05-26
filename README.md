@@ -31,6 +31,13 @@ Path simplifies development by avoiding over-engineering and excessive abstracti
 -----[Inserting into the database](#Inserting-to-the-database)\
 -----[Working with JSON Column](#Path-DB-model-and-json)\
 [Database Migration](#database-migration)\
+-----[Configuring database columns](#configuring-database-columns)\
+-----[Updating database columns configuration](#updating-database-columns-configuration)\
+-----[updating column's properties](#updating-column's-properties)\
+-----[Deleting column](#Deleting-column)\
+-----[Installing database migration](#Installing-database-migration)\
+-----[UnInstalling database migration](#UnInstalling-database-migration)\
+-----[Updating database migration](#Updating-database-migration)\
 [Form Validation](#Form-Validation)\
 [Path Email System](#Path-Email-System)\
 -----[The mailable Class](#The-mailable-Class)\
@@ -1173,7 +1180,7 @@ use Path\Core\Database\Table;
        //this runs when you run php __path app update
        $table->rename('column')->to('new_column_name')
              ->update();
-             
+
        $table->column('a_text_column')
              ->type('int')//this will change a previously text column to integer.
              ->update();//tells Path to update, else Path will ignore.
