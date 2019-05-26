@@ -7,6 +7,8 @@ In Path Every Table in your database must be represented with a  `Class (Called 
 A typical Database table model looks like this:
 
 ```php
+<?php
+
 
 /*
 * This is automatically generated
@@ -68,6 +70,8 @@ After configuring your database Model, you can go on using your Model by instant
 Below is an example of fetching data from the database.
 
 ```php
+<?php
+
 ...
 use Path\Core\Database\Models;
 
@@ -114,6 +118,8 @@ Because you probably won't want to fetch/update/delete all data in your database
 Below is an example of using a constraint clause while fetching data
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 
 $fetch_data = (new Models/Test)
@@ -157,6 +163,8 @@ Are you probably thinking why can't I just write a raw query? yes, you can, but 
 It's pretty straight forward to update data with Path, an example below shows how that can be done
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 //updating all data in database table associated to Test model
 $update = (new Models/Test)->update([
@@ -176,6 +184,8 @@ $update = (new Models/Test)
 Below example shows how adding new data to your database is done
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 
 $update = (new Models/Test)->insert([
@@ -196,6 +206,8 @@ If you are using the appropriate version of mysql go on and make use of Path's q
 ##### selecting a json object's key value
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 //this example assumes the value of `profile` column  to be:
 /*
@@ -222,6 +234,8 @@ $select = (new Models/Test)
 ##### Updating JSON content of a JSON column
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 
 //this will update json content of the profile column
@@ -235,6 +249,8 @@ $update = (new Models/Test)
 ##### Referencing JSON object key's value in WHERE clause
 
 ```php
+<?php
+
 
 use Path\Core\Database\Models;
 //using json key's valuein Where clause

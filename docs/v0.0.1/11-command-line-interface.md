@@ -3,6 +3,8 @@
 The support for command line interface in Path is very straight-forward and super simple, as usual, it only takes creating a class in `path/Commands` with an interface of `Path\App\Commands` extending `Path\Core\CLI\CInterface` or let Path create it for you using the `php __path create command yourCommandFileName`. it's that simple, a typical Command Line File looks like this:
 
 ```php
+<?php
+
 
 
 namespace Path\App\Commands;
@@ -60,6 +62,8 @@ php __path Test something key "another value with space"
 The dumped value in entry() will look like this:
 
 ```php
+<?php
+
 array(2) {
   ["Test"]=> string(9) "something"
   ["key"]=> string(24) "another value with space"
@@ -84,6 +88,8 @@ There are some inherited methods that can be handy, the table below shows them a
 To apply a custom colour to your text, you have to wrap it with \`color_name\`, below example shows writing a red and blue text to the console.
 
 ```php
+<?php
+
 ...
     public function entry($params)
     {

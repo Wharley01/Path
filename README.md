@@ -135,6 +135,8 @@ you can listen to your preferred URL(Route) with Path's Router, for example:
 You initiate the use of the router
 
 ```php
+<?php
+
 use Path\Core\Http\Router;
 
 $router = new Router();
@@ -143,6 +145,8 @@ $router = new Router();
 proceed to listen to a request
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -157,6 +161,8 @@ The code above does two things; the first is to listen for `GET` request to `/yo
 Path can also match dynamic URL as seen below
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -169,6 +175,8 @@ Path can also match dynamic URL as seen below
 Regular expressions are also a valid parameter in URL using the format shown below
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -184,6 +192,8 @@ There can be multiple routers listening to different routes with one `Router` ob
 The `Router` object is instantiated once as `$router` and used to listen to more than one request.
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
  use Path\App\Controllers\Route\MyController;
  $router = new Router(); //A router object is instantiated
@@ -203,6 +213,8 @@ The `Router` object is instantiated once as `$router` and used to listen to more
 Routes may also be grouped depending on your use case, as shown below.
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -247,6 +259,8 @@ An instance of this class is instantiated on every request and passed as an argu
 Hence, our previous definitions may be redefined as follows to enable access to the `Path\Core\Http\Request` instance created.
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
  use Path\Core\Http\Router;
 
@@ -265,6 +279,8 @@ The `Request` object is particularly useful when we want to use the URL path par
 We get the parameter defined in the URL path from the \$request object passed to our function.
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
 
   ...
@@ -278,6 +294,8 @@ We get the parameter defined in the URL path from the \$request object passed to
 Value of the `@id` parameter can be gotten using
 
 ```php
+<?php
+
   ...
   $request->params->id//this depends on what you name your parameter
   ...
@@ -288,6 +306,8 @@ when `http://yourproject.dev/user/2323/profile` is requested, the value of `$req
 header properties can also be fetched using the `$request->fetch()` method. Example is
 
 ```php
+<?php
+
   ...
 
   $request->fetch('REQUEST_METHOD'); // returns the request method
@@ -301,6 +321,8 @@ header properties can also be fetched using the `$request->fetch()` method. Exam
 ...Or a data sent via the HTML form
 
 ```php
+<?php
+
   ...
   //equivalent to $_REQUEST['input_name']
    $request->fetch("input_name");
@@ -317,6 +339,8 @@ header properties can also be fetched using the `$request->fetch()` method. Exam
 Files sent via form can be retrieved using the `$request->file()` method.
 
 ```php
+<?php
+
   ...
 
     $request->file('picture'); //can be used with Path file System
@@ -332,6 +356,8 @@ You may also use `Path\Core\Http\Request class` to request an external link usin
 The example below sends a post request to Google with two pairs of parameter
 
 ```php
+<?php
+
 use Path\Core\Http\Request;
 
 try{
@@ -350,6 +376,8 @@ try{
 The variable dump above returns
 
 ```php
+<?php
+
 
 object(Path\Core\Http\Response)#5 (5) {
   ["content"]=> String(1555) "Webpage content"
@@ -371,6 +399,8 @@ object(Path\Core\Http\Response)#5 (5) {
 The example below sends a 'get' request to Google with two pairs of parameter
 
 ```php
+<?php
+
 use Path\Core\Http\Request;
 
 try{
@@ -403,6 +433,8 @@ Like the `Request class`, An instance of this class is also instantiated on ever
 Hence, our previous definitions may be redefined as follows to enable access us the `Response` instance created for us.
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
  use Path\Core\Http\Response;
 
@@ -425,6 +457,8 @@ You may choose not to return anything if you preferred to handle the request's r
 Modifying and returning a response is easy. All you have to do is as follows
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
  use Path\Core\Http\Response;
 
@@ -482,6 +516,8 @@ A middleware, when specified is first executed and its conditions checked before
 In Path, MiddleWares must me created as a class in `path/Http/MiddleWares/` folder and your class must implement `Path\Http\MiddleWare`, a typical middleware class Looks like this:
 
 ```php
+<?php
+
 namespace Path\App\Http\MiddleWares;
 
 
@@ -525,12 +561,16 @@ TIPS: you may let path create the middleware code for you using the command "php
 The code above describes two things for the router,
 
 ```php
+<?php
+
 public function validate(Request $request, Response $response):bool
 ```
 
 1. The `validate()` method returns a `Boolean` which will be checked by the router(When a user tries to request it) if the returned `Boolean` is `True` the router proceeds with the request.
 
 ```php
+<?php
+
  public function fallBack(Request $request, Response $response):?Response
 
 ```
@@ -542,6 +582,8 @@ public function validate(Request $request, Response $response):bool
 After creating your middleWare class, the next thing to do is use the middleware with any of your preferred route as described below
 
 ```php
+<?php
+
 ...
 use Path\App\Http\MiddleWares\isProd;
 
@@ -558,6 +600,8 @@ $router->get([
 You can use multiple middleWares this way:
 
 ```php
+<?php
+
 ...
 use Path\Core\Http\MiddleWare\IsValidPost;
 use Path\Core\Http\MiddleWare\IsLoggedUser;
@@ -595,6 +639,8 @@ serves as an entry point to your class after it has been instantiated.
 For example:
 
 ```php
+<?php
+
 use Path\Core\Http\Router;
 
 $router = new Router();
@@ -605,6 +651,8 @@ $router->get("/your/custom/route", RouteAction::class);
 . . . And the Route Controller `class` may look like this
 
 ```php
+<?php
+
  namespace Path\App\Controllers\Route;
 
  use Path\Core\Http\Request;
@@ -626,6 +674,8 @@ We can also listen for any type of request (i.e: GET/POST/PUT e.t.c) using the `
 This can be achieved by extending the `abstract Path\Core\Router\Route\Controller class`. An example is shown below
 
 ```php
+<?php
+
 use Path\Core\Router\Route\Controller;
 
 class RequestHandler extends Controller{
@@ -666,6 +716,8 @@ class RequestHandler extends Controller{
 The Controller Class Above can be used with any request as shown below:
 
 ```php
+<?php
+
 $router->any('/route/my/route', RequestHandler::class)
 ```
 
@@ -684,6 +736,8 @@ However, It is a valid use case to use a class that's not extending `Controller 
 It's possible to manually reference a particular method in your Controller class to serve as the response, the example below shows how it's done.
 
 ```php
+<?php
+
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
 use Path\Core\Http\Router;
@@ -703,6 +757,8 @@ The Router goes to `path/Controllers/Route` and locate `UserController` controll
 Path introduces a new approach to making a two-way real-time communication between the client-side and the server-side, wait, breath in, now out, lol, this is actually a very straightforward concept, it's basically you creating a class Called `Live Controller` that must extend an abstract class `Path\Core\Router\Live\Controller` in `path/Controllers/Live` folder with namespace `Path\App\Controllers\Live` and adding properties or methods then listen/watch for changes in your Live Controller Class's property's value or method's returned value from the client side, an example below shows how a super simple `Live Controller` Class looks like.
 
 ```php
+<?php
+
 /*
 * This Live Controller File Was automatically 
 * Generated by Path
@@ -880,6 +936,8 @@ In Path Every Table in your database must be represented with a  `Class (Called 
 A typical Database table model looks like this:
 
 ```php
+<?php
+
 
 /*
 * This is automatically generated
@@ -941,6 +999,8 @@ After configuring your database Model, you can go on using your Model by instant
 Below is an example of fetching data from the database.
 
 ```php
+<?php
+
 ...
 use Path\Core\Database\Models;
 
@@ -987,6 +1047,8 @@ Because you probably won't want to fetch/update/delete all data in your database
 Below is an example of using a constraint clause while fetching data
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 
 $fetch_data = (new Models/Test)
@@ -1030,6 +1092,8 @@ Are you probably thinking why can't I just write a raw query? yes, you can, but 
 It's pretty straight forward to update data with Path, an example below shows how that can be done
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 //updating all data in database table associated to Test model
 $update = (new Models/Test)->update([
@@ -1049,6 +1113,8 @@ $update = (new Models/Test)
 Below example shows how adding new data to your database is done
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 
 $update = (new Models/Test)->insert([
@@ -1081,6 +1147,8 @@ Examples in this sub category uses:
 ```
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 //this example assumes the value of `profile` column  to be:
 /*
@@ -1100,6 +1168,8 @@ $select = (new Models/Test)
 ##### Updating JSON content of a JSON column
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 
 //this will update json content of the profile column
@@ -1113,6 +1183,8 @@ $update = (new Models/Test)
 ##### Referencing JSON object key's value in WHERE clause
 
 ```php
+<?php
+
 use Path\Core\Database\Models;
 //using json key's valuein Where clause
 
@@ -1130,6 +1202,8 @@ $select = (new Models/Test)
 Managing database tables is stressful, having to import sql files on every installation is tiring and needs automation, for this reasons Path comes with a mechanism to automate your database installation called `Database Migration`, a Database migration file represents each of the tables in your applications database `(Note: this is different from Database Model)` and are saved in `path/Database/Migration`, in it are where table columns are described, a typical database migration file looks like this:
 
 ```php
+<?php
+
 
 namespace Path\App\Database\Migration;
 
@@ -1208,6 +1282,8 @@ If you add a column that isn't already among the DB columns to update(), Path wi
 By combining `rename()`, `to()` and `update()` method you can rename a column, an example is shown below
 
 ```php
+<?php
+
 namespace Path\App\Database\Migration;
 
 
@@ -1238,6 +1314,8 @@ use Path\Core\Database\Table;
 By Appending the dropColumn() to a column you tell Path to delete the column. An example is shown below:
 
 ```php
+<?php
+
 namespace Path\App\Database\Migration;
 
 
@@ -1313,6 +1391,8 @@ re_password
 
 
 ```php
+<?php
+
 namespace Path\App\Controllers\Route;
 
 use Path\Core\Http\Request;
@@ -1382,6 +1462,8 @@ class User
 Assuming there was an invalid input in the example below, this is what the print_r() above would look like this:
 
 ```php
+<?php
+
 
 Array(
     [username] => Array(
@@ -1414,6 +1496,8 @@ Path also made it possible to send emails with ease, either using the native mai
 The first thing is creating your mail template/Mailable to let you reuse them, you can do so by running `php __path create email yourMailableName`, a code will be generated for you in `path/Mail/Mailables` folder, the file looks like this:
 
 ```php
+<?php
+
 
 namespace Path\App\Mail\Mailables;
 
@@ -1458,6 +1542,8 @@ class TestMail extends Mailable
 Using the initially created Mailable file combined with `Path\Core\Mail\Sender` Class, you can send several emails with different states(data), the example below shows its usage:
 
 ```php
+<?php
+
 use Path\Core\Mail;
 use Path\App\Mail\Mailables;
 
@@ -1522,6 +1608,8 @@ There several ways to hold data temporarily in Path, this section explains each 
 Sessions are temporary and local to each user, which means one user can't read another's Session, to access session you need to instantiate the `Path\Core\Storage\Sessions`, see usage example below:
 
 ```php
+<?php
+
 use Path\Core\Storage\Sessions;
 
 $session = new Sessions();
@@ -1545,6 +1633,8 @@ $session->getAll('key','value');
 A Cookie is temporary storage but lasts longer than a session, unlike sessions, Cookies does not clear when the users close their browsers, Cookies clear only when the expiration time you set passes or the user manually clears their cookie. the example below shows how cookies can be interacted with in Path.
 
 ```php
+<?php
+
 use Path\Core\Storage\Cookies;
 
 $cookie = new Cookies(Cookies::ONE_DAY);//there are more static helpers, will be listed below this example
@@ -1578,6 +1668,8 @@ There are more Durations helper static methods or constants, few of them are lis
 Caches are permanent unless cleared, it's not meant to be used for sensitive data as can be leaked, caches are stored in `path/.Storage/.Caches/` folder, examples below shows usage of Path's caches.
 
 ```php
+<?php
+
 use Path\Core\Storage\Caches;
 
 // Caches does not need instantiation, every method is static
@@ -1598,6 +1690,8 @@ Caches::deleteAll();
 The support for command line interface in Path is very straight-forward and super simple, as usual, it only takes creating a class in `path/Commands` with an interface of `Path\App\Commands` extending `Path\Core\CLI\CInterface` or let Path create it for you using the `php __path create command yourCommandFileName`. it's that simple, a typical Command Line File looks like this:
 
 ```php
+<?php
+
 
 
 namespace Path\App\Commands;
@@ -1655,6 +1749,8 @@ php __path Test something key "another value with space"
 The dumped value in entry() will look like this:
 
 ```php
+<?php
+
 array(2) {
   ["Test"]=> string(9) "something"
   ["key"]=> string(24) "another value with space"
@@ -1679,6 +1775,8 @@ There are some inherited methods that can be handy, the table below shows them a
 To apply a custom colour to your text, you have to wrap it with \`color_name\`, below example shows writing a red and blue text to the console.
 
 ```php
+<?php
+
 ...
     public function entry($params)
     {

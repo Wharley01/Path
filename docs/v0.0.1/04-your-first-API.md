@@ -11,6 +11,8 @@ you can listen to your preferred URL(Route) with Path's Router, for example:
 You initiate the use of the router
 
 ```php
+<?php
+
 use Path\Core\Http\Router;
 
 $router = new Router();
@@ -19,6 +21,8 @@ $router = new Router();
 proceed to listen to a request
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -33,6 +37,8 @@ The code above does two things; the first is to listen for `GET` request to `/yo
 Path can also match dynamic URL as seen below
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -45,6 +51,8 @@ Path can also match dynamic URL as seen below
 Regular expressions are also a valid parameter in URL using the format shown below
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -60,6 +68,8 @@ There can be multiple routers listening to different routes with one `Router` ob
 The `Router` object is instantiated once as `$router` and used to listen to more than one request.
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
  use Path\App\Controllers\Route\MyController;
  $router = new Router(); //A router object is instantiated
@@ -79,6 +89,8 @@ The `Router` object is instantiated once as `$router` and used to listen to more
 Routes may also be grouped depending on your use case, as shown below.
 
 ```php
+<?php
+
  use Path\Core\Http\Router;
 
  $router = new Router();
@@ -123,6 +135,8 @@ An instance of this class is instantiated on every request and passed as an argu
 Hence, our previous definitions may be redefined as follows to enable access to the `Path\Core\Http\Request` instance created.
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
  use Path\Core\Http\Router;
 
@@ -141,6 +155,8 @@ The `Request` object is particularly useful when we want to use the URL path par
 We get the parameter defined in the URL path from the \$request object passed to our function.
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
 
   ...
@@ -154,6 +170,8 @@ We get the parameter defined in the URL path from the \$request object passed to
 Value of the `@id` parameter can be gotten using
 
 ```php
+<?php
+
   ...
   $request->params->id//this depends on what you name your parameter
   ...
@@ -164,6 +182,8 @@ when `http://yourproject.dev/user/2323/profile` is requested, the value of `$req
 header properties can also be fetched using the `$request->fetch()` method. Example is
 
 ```php
+<?php
+
   ...
 
   $request->fetch('REQUEST_METHOD'); // returns the request method
@@ -177,6 +197,8 @@ header properties can also be fetched using the `$request->fetch()` method. Exam
 ...Or a data sent via the HTML form
 
 ```php
+<?php
+
   ...
   //equivalent to $_REQUEST['input_name']
    $request->fetch("input_name");
@@ -193,6 +215,8 @@ header properties can also be fetched using the `$request->fetch()` method. Exam
 Files sent via form can be retrieved using the `$request->file()` method.
 
 ```php
+<?php
+
   ...
 
     $request->file('picture'); //can be used with Path file System
@@ -208,6 +232,8 @@ You may also use `Path\Core\Http\Request class` to request an external link usin
 The example below sends a post request to Google with two pairs of parameter
 
 ```php
+<?php
+
 use Path\Core\Http\Request;
 
 try{
@@ -226,6 +252,8 @@ try{
 The variable dump above returns
 
 ```php
+<?php
+
 
 object(Path\Core\Http\Response)#5 (5) {
   ["content"]=> String(1555) "Webpage content"
@@ -247,6 +275,8 @@ object(Path\Core\Http\Response)#5 (5) {
 The example below sends a 'get' request to Google with two pairs of parameter
 
 ```php
+<?php
+
 use Path\Core\Http\Request;
 
 try{
@@ -279,6 +309,8 @@ Like the `Request class`, An instance of this class is also instantiated on ever
 Hence, our previous definitions may be redefined as follows to enable access us the `Response` instance created for us.
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
  use Path\Core\Http\Response;
 
@@ -301,6 +333,8 @@ You may choose not to return anything if you preferred to handle the request's r
 Modifying and returning a response is easy. All you have to do is as follows
 
 ```php
+<?php
+
  use Path\Core\Http\Request;
  use Path\Core\Http\Response;
 
@@ -358,6 +392,8 @@ A middleware, when specified is first executed and its conditions checked before
 In Path, MiddleWares must me created as a class in `path/Http/MiddleWares/` folder and your class must implement `Path\Http\MiddleWare`, a typical middleware class Looks like this:
 
 ```php
+<?php
+
 namespace Path\App\Http\MiddleWares;
 
 
@@ -401,12 +437,16 @@ TIPS: you may let path create the middleware code for you using the command "php
 The code above describes two things for the router,
 
 ```php
+<?php
+
 public function validate(Request $request, Response $response):bool
 ```
 
 1. The `validate()` method returns a `Boolean` which will be checked by the router(When a user tries to request it) if the returned `Boolean` is `True` the router proceeds with the request.
 
 ```php
+<?php
+
  public function fallBack(Request $request, Response $response):?Response
 
 ```
@@ -418,6 +458,8 @@ public function validate(Request $request, Response $response):bool
 After creating your middleWare class, the next thing to do is use the middleware with any of your preferred route as described below
 
 ```php
+<?php
+
 ...
 use Path\App\Http\MiddleWares\isProd;
 
@@ -434,6 +476,8 @@ $router->get([
 You can use multiple middleWares this way:
 
 ```php
+<?php
+
 ...
 use Path\Core\Http\MiddleWare\IsValidPost;
 use Path\Core\Http\MiddleWare\IsLoggedUser;
@@ -471,6 +515,8 @@ serves as an entry point to your class after it has been instantiated.
 For example:
 
 ```php
+<?php
+
 use Path\Core\Http\Router;
 
 $router = new Router();
@@ -481,6 +527,8 @@ $router->get("/your/custom/route", RouteAction::class);
 . . . And the Route Controller `class` may look like this
 
 ```php
+<?php
+
  namespace Path\App\Controllers\Route;
 
  use Path\Core\Http\Request;
@@ -502,6 +550,8 @@ We can also listen for any type of request (i.e: GET/POST/PUT e.t.c) using the `
 This can be achieved by extending the `abstract Path\Core\Router\Route\Controller class`. An example is shown below
 
 ```php
+<?php
+
 use Path\Core\Router\Route\Controller;
 
 class RequestHandler extends Controller{
@@ -542,6 +592,8 @@ class RequestHandler extends Controller{
 The Controller Class Above can be used with any request as shown below:
 
 ```php
+<?php
+
 $router->any('/route/my/route', RequestHandler::class)
 ```
 
@@ -560,6 +612,8 @@ However, It is a valid use case to use a class that's not extending `Controller 
 It's possible to manually reference a particular method in your Controller class to serve as the response, the example below shows how it's done.
 
 ```php
+<?php
+
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
 use Path\Core\Http\Router;

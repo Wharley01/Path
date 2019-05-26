@@ -13,6 +13,8 @@ re_password
 
 
 ```php
+<?php
+
 namespace Path\App\Controllers\Route;
 
 use Path\Core\Http\Request;
@@ -82,6 +84,8 @@ class User
 Assuming there was an invalid input in the example below, this is what the print_r() above would look like this:
 
 ```php
+<?php
+
 
 Array(
     [username] => Array(

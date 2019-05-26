@@ -7,6 +7,8 @@ Path also made it possible to send emails with ease, either using the native mai
 The first thing is creating your mail template/Mailable to let you reuse them, you can do so by running `php __path create email yourMailableName`, a code will be generated for you in `path/Mail/Mailables` folder, the file looks like this:
 
 ```php
+<?php
+
 
 namespace Path\App\Mail\Mailables;
 
@@ -51,6 +53,8 @@ class TestMail extends Mailable
 Using the initially created Mailable file combined with `Path\Core\Mail\Sender` Class, you can send several emails with different states(data), the example below shows its usage:
 
 ```php
+<?php
+
 use Path\Core\Mail;
 use Path\App\Mail\Mailables;
 

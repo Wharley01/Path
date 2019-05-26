@@ -3,6 +3,8 @@
 Managing database tables is stressful, having to import sql files on every installation is tiring and needs automation, for this reasons Path comes with a mechanism to automate your database installation called `Database Migration`, a Database migration file represents each of the tables in your applications database `(Note: this is different from Database Model)` and are saved in `path/Database/Migration`, in it are where table columns are described, a typical database migration file looks like this:
 
 ```php
+<?php
+
 
 namespace Path\App\Database\Migration;
 
@@ -81,6 +83,8 @@ If you add a column that isn't already among the DB columns to update(), Path wi
 By combining `rename()`, `to()` and `update()` method you can rename a column, an example is shown below
 
 ```php
+<?php
+
 namespace Path\App\Database\Migration;
 
 
@@ -111,6 +115,8 @@ use Path\Core\Database\Table;
 By Appending the dropColumn() to a column you tell Path to delete the column. An example is shown below:
 
 ```php
+<?php
+
 namespace Path\App\Database\Migration;
 
 

@@ -7,6 +7,8 @@ There several ways to hold data temporarily in Path, this section explains each 
 Sessions are temporary and local to each user, which means one user can't read another's Session, to access session you need to instantiate the `Path\Core\Storage\Sessions`, see usage example below:
 
 ```php
+<?php
+
 use Path\Core\Storage\Sessions;
 
 $session = new Sessions();
@@ -30,6 +32,8 @@ $session->getAll('key','value');
 A Cookie is temporary storage but lasts longer than a session, unlike sessions, Cookies does not clear when the users close their browsers, Cookies clear only when the expiration time you set passes or the user manually clears their cookie. the example below shows how cookies can be interacted with in Path.
 
 ```php
+<?php
+
 use Path\Core\Storage\Cookies;
 
 $cookie = new Cookies(Cookies::ONE_DAY);//there are more static helpers, will be listed below this example
@@ -63,6 +67,8 @@ There are more Durations helper static methods or constants, few of them are lis
 Caches are permanent unless cleared, it's not meant to be used for sensitive data as can be leaked, caches are stored in `path/.Storage/.Caches/` folder, examples below shows usage of Path's caches.
 
 ```php
+<?php
+
 use Path\Core\Storage\Caches;
 
 // Caches does not need instantiation, every method is static
