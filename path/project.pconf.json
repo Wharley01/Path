@@ -1,46 +1,46 @@
 {
-  "DATABASE":{
+  "DATABASE": {
     "host": "localhost",
     "user": "root",
     "password": "",
     "name": "test"
   },
-  "FILE":{
-    "max_size":  5242880
+  "FILE": {
+    "max_size": 5242880
   },
-  "PROJECT":{
+  "PROJECT": {
     "name": "Path",
     "status": "production",
     "version": "1.0",
     "directory": "",
     "host": "localhost",
     "port": 3000,
-    "server": "http://macroware-vue.loc",
     "protocol": "http",
-    "_comment":"SSE/WS can be value of watch_method",
-    "watch_method":"WS"
+    "server": "http://macroware-vue.loc",
+    "_comment": "SSE/WS can be value of watch_method",
+    "watch_method": "WS"
   },
-  "WATCHER":{
-
-  },
-  "MAILER":{
-    "USE_SMTP": false,
-    "SMTP":{
-      "host":"",
-      "username":"",
-      "password":"",
-      "port": 0,
-      "protocol":"",
-      "charset":"UTF-8"
-    },
-    "ADMIN_INFO":{
-      "email":"admin@__path.com",
-      "name": "Path Admin"
+  "WATCHER": {
+    "method": "WS",
+    "WEBSOCKET": {
+      "host": "macroware-vue.loc",
+      "port": 443,
+      "scheme": "SSL"
     }
   },
-  "WEBSOCKET":{
-    "host": "macroware-vue.loc",
-    "port": 443,
-    "scheme": "SSL"
+  "MAILER": {
+    "USE_SMTP": false,
+    "SMTP": {
+      "host": "",
+      "username": "",
+      "password": "",
+      "port": 0,
+      "protocol": "",
+      "charset": "UTF-8"
+    },
+    "ADMIN_INFO": {
+      "email": "admin@__path.com",
+      "name": "Path Admin"
+    }
   }
 }
