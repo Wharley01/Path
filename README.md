@@ -4,9 +4,8 @@ Path framework is an API-first PHP framework crafted for javascript.
 
 Path framework is an MVC framework that uses your preferred javascript framework as the View while It handles the modelling and Controlling. Path framework is more Suitable for PWA and MVC modern web apps, Path can also be used to build just API for your existing App.
 
-The focus of development Path is to avoid over-engineering and excessive abstraction
+Path simplifies development by avoiding over-engineering and excessive abstraction.
 
-If you are someone that gets bored of a single language for both client and server sides just like me, Path is for you.
 
 ## List Contents
 
@@ -32,7 +31,8 @@ If you are someone that gets bored of a single language for both client and serv
 -----[Updating table](#Updating-the-database)\
 -----[Inserting into the database](#Inserting-to-the-database)\
 -----[Working with JSON Column](#Path-DB-model-and-json)\
------[Form Validation](#Form-Validation)\
+[Database Migration](#database-migration)\
+[Form Validation](#Form-Validation)\
 [Path Email System](#Path-Email-System)\
 -----[The mailable Class](#The-mailable-Class)\
 -----[Sending email](#Sending-mail)\
