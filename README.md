@@ -550,7 +550,8 @@ class isProd implements MiddleWare
 ```
 
 ```
-NOTE: In Path, Anywhere you are required to create a class, your `File` name must be the same as your `Class`'s name and each `Class` must be in a separate file.
+NOTE: In Path, Anywhere you are required to create a class,
+ your `File` name must be the same as your `Class`'s name and each `Class` must be in a separate file.
 ```
 
 ```
