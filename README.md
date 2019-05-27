@@ -1,6 +1,6 @@
 # PHP Path
 
-Path framework is an API-first PHP framework crafted for javascript.
+Path framework is an API-first PHP framework crafted for javascript developers.
 
 Path framework is an MVC framework that uses your preferred javascript framework as the View while It handles the modelling and Controlling. Path framework is more Suitable for PWA and MVC modern web apps, Path can also be used to build just API for your existing App.
 
