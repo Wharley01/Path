@@ -11,7 +11,9 @@ namespace Path\Core\Misc;
 
 use Path\Core\Database\Model;
 use Path\Core\Error\Exceptions;
-class Validator{
+
+class Validator
+{
     public $model;
     private  $errors;
     private $values;
@@ -39,30 +41,31 @@ class Validator{
         return $this;
     }
 
-    public function key($name){
+    public function key($name)
+    {
         $this->keys[] = $name;
         $this->rules[$name] = [];
         return $this;
     }
 
-    public function rules(...$rules){
+    public function rules(...$rules)
+    {
         $key = $this->keys[count($this->keys) - 1];
-        $this->rules[$key] = array_merge($this->rules[$key],$rules);
+        $this->rules[$key] = array_merge($this->rules[$key], $rules);
         return $this;
     }
 
-    public function validate(?Model $model = null){
-        foreach ($this->rules as $key => $rules){
+    public function validate(?Model $model = null)
+    {
+        foreach ($this->rules as $key => $rules) {
 
-            foreach ($rules as $rule){
-                if(is_string($rule)){
-                    $this->validateKey($key,$rule,null);
-
-                }else{
+            foreach ($rules as $rule) {
+                if (is_string($rule)) {
+                    $this->validateKey($key, $rule, null);
+                } else {
                     $rule_value = $rule['rule'];
                     $error_message = $rule['error_msg'];
-                    $this->validateKey($key,$rule_value,$error_message);
-
+                    $this->validateKey($key, $rule_value, $error_message);
                 }
             }
         }
@@ -70,42 +73,43 @@ class Validator{
     }
 
 
-    private function validateKey($key,$rule,$error_message){
+    private function validateKey($key, $rule, $error_message)
+    {
         $value = &$this->values[$key];
-        if(is_int($rule)){
+        if (is_int($rule)) {
             if (!filter_var($value, $rule)) {
                 $this->addError($key, $error_message ?? "{$key}'s value does not pass FILTER rule");
             }
             return;
         }
-        if($rule == 'required'){
-            if(strlen($value) < 1) {
+        if ($rule == 'required') {
+            if (strlen($value) < 1) {
                 $this->addError($key, $error_message ?? "{$key} is required");
             }
             return;
         }
-        if($rule == 'exists') {
-                if ($this->model instanceof Model) {
-                    $count = $this->model->where([$key => $value])
-                        ->count();
-                    if ($count < 1) {
-                        $this->addError($key, $error_message ?? "{$key} does not exist");
-                    }
+        if ($rule == 'exists') {
+            if ($this->model instanceof Model) {
+                $count = $this->model->where([$key => $value])
+                    ->count();
+                if ($count < 1) {
+                    $this->addError($key, $error_message ?? "{$key} does not exist");
                 }
+            }
             return;
         }
-        if($rule == 'unique'){
-                if ($this->model instanceof Model) {
-                    $count = $this->model->where([$key => $value])
-                        ->count();
-                    if ($count > 0) {
-                        $this->addError($key, $error_message ?? "{$key} must be unique");
-                    }
+        if ($rule == 'unique') {
+            if ($this->model instanceof Model) {
+                $count = $this->model->where([$key => $value])
+                    ->count();
+                if ($count > 0) {
+                    $this->addError($key, $error_message ?? "{$key} must be unique");
                 }
+            }
             return;
         }
-//            check max value
-        if(preg_match("/{$this->max_value_rule}/i", $rule, $max_val_match)){
+        //            check max value
+        if (@preg_match("/{$this->max_value_rule}/", $rule, $max_val_match)) {
             $max_value = @$max_val_match[1];
             if (!$max_value || !is_numeric($max_value)) {
                 throw new Exceptions\Validator("max value for \"max length\" expects Integer got String");
@@ -115,7 +119,7 @@ class Validator{
             }
             return;
         }
-//          check min value
+        //          check min value
         if (preg_match("/$this->min_value_rule/i", $rule, $min_val_match)) {
             $min_value = @$min_val_match[1];
             if (!$min_value || !is_numeric($min_value)) {
@@ -131,28 +135,26 @@ class Validator{
                 }
             }
             return;
-
         }
-//          validate default validator
+        //          validate default validator
         if (preg_match("/$this->php_filter_validate/i", $rule)) {
             if (!filter_var($value, constant($rule))) {
                 $this->addError($key, $error_message ?? "{$key}'s value does not pass {$rule} ");
             }
             return;
-
         }
 
-//        match regex
+        //        match regex
 
         if (preg_match("/{$this->regex_rule}/i", $rule, $regex_matches)) {
             $regex = $regex_matches[1];
-            if (!preg_match("{$regex}", $value)) {
+            if (!preg_match("/{$regex}/", $value)) {
                 $this->addError($key, $error_message ?? "{$key}'s value does not match regex: {$regex} ");
             }
             return;
         }
 
-//        match equality
+        //        match equality
 
         if (preg_match("/{$this->equals_rule}/i", $rule, $regex_matches)) {
             $_key = $regex_matches[1];
@@ -161,8 +163,6 @@ class Validator{
             }
             return;
         }
-
-
     }
 
 
@@ -203,7 +203,7 @@ class Validator{
      */
     public static function UNIQUE(
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "unique",
             "error_msg" => $error_message
@@ -216,7 +216,7 @@ class Validator{
      */
     public static function EXISTS(
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "exists",
             "error_msg" => $error_message
@@ -225,7 +225,7 @@ class Validator{
 
     public static function REQUIRED(
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "required",
             "error_msg" => $error_message
@@ -240,7 +240,7 @@ class Validator{
     public static function MAX(
         int $length,
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "max:{$length}",
             "error_msg" => $error_message
@@ -255,7 +255,7 @@ class Validator{
     public static function MIN(
         int $length,
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "min:{$length}",
             "error_msg" => $error_message
@@ -270,7 +270,7 @@ class Validator{
     public static function FILTER(
         int $rule,
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => $rule,
             "error_msg" => $error_message
@@ -285,7 +285,7 @@ class Validator{
     public static function REGEX(
         $regex_rule,
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "regex:$regex_rule",
             "error_msg" => $error_message
@@ -300,7 +300,7 @@ class Validator{
     public static function EQUALS(
         $key,
         $error_message = null
-    ){
+    ) {
         return [
             "rule" => "equals:@{$key}",
             "error_msg" => $error_message
