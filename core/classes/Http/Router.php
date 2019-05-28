@@ -104,9 +104,9 @@ class Router
             $c_real_path_value = trim(@$b_real_path[$i]);
             if ($c_path_value == $c_real_path_value) { //if current templ path == browser path, count as matched
                 $matches++;
-            } elseif ($c_path_value != $c_real_path_value && $c_path_value[0] == "@" && self::regexMatches($c_real_path_value, substr($c_path_value,1))) { //if current path templ not equal to current raw path, and current path templ is is param, and the param obeys the restriction add to match count
+            } elseif ($c_path_value != $c_real_path_value && $c_path_value[0] == "@" && self::regexMatches($c_real_path_value, substr($c_path_value, 1))) { //if current path templ not equal to current raw path, and current path templ is is param, and the param obeys the restriction add to match count
                 $key = self::getParamName($c_path_value);
-//                $params[$key]
+                //                $params[$key]
                 $matches++;
             }
         }
@@ -146,10 +146,10 @@ class Router
 
             $c_path_value = trim(@$b_path[$i]); //current path value (template)
             $c_real_path_value = trim(@$b_real_path[$i]); //current path (from web browser)
-//            var_dump($c_path_value[strlen($c_path_value)-1]);
-            $is_optional = $c_path_value[strlen($c_path_value)-1] == '?';//check if last character is question mark
-            if($is_optional){
-                $c_path_value = substr($c_path_value,0,(strlen($c_path_value)-1));
+            //            var_dump($c_path_value[strlen($c_path_value)-1]);
+            $is_optional = @$c_path_value[strlen($c_path_value) - 1] == '?'; //check if last character is question mark
+            if ($is_optional) {
+                $c_path_value = substr($c_path_value, 0, (strlen($c_path_value) - 1));
             }
 
             if ($i > count($b_path)) { //if the amount of url path is more than required, return false
@@ -157,19 +157,15 @@ class Router
             }
 
             //            Continue execution
-//            var_dump([
-//                'is_optional' => $is_optional,
-//                'new_path' => $c_path_value
-//                ]);
 
             if ($c_path_value == $c_real_path_value) { // current template path is equal to real path from browser count it as matched
                 $matched++; //count
             } elseif (
                 $c_path_value != $c_real_path_value &&
-                $c_path_value[0] == "@" &&
+                @$c_path_value[0] == "@" &&
                 isset($b_path[$i]) &&
                 isset($b_real_path[$i]) &&
-                self::regexMatches($c_real_path_value,substr($c_path_value,1))
+                self::regexMatches($c_real_path_value, substr($c_path_value, 1))
             ) { //if path template is not equal to current path, and real path
                 $param_key = self::getParamName($c_path_value);
                 $params[$param_key] = $c_real_path_value;
@@ -199,7 +195,8 @@ class Router
         die();
     }
 
-    private static function isFloat($value){
+    private static function isFloat($value)
+    {
         $value = floatval($value);
         return ($value && intval($value) != $value);
     }
@@ -213,49 +210,50 @@ class Router
      * @internal param $path
      */
 
-    private static function regexMatches($value,$path_param){
-        if(self::isFloat($value)){
+    private static function regexMatches($value, $path_param)
+    {
+        if (self::isFloat($value)) {
             $value = floatval($value);
-        }elseif (is_numeric($value)){
-            $value = (int) $value;
+        } elseif (is_numeric($value)) {
+            $value = (int)$value;
         }
 
         $split = explode(":", $path_param);
         $key = $split[0];
 
-        if(isset($split[1])){
+        if (isset($split[1])) {
             $type = $split[1];
-            if($type == "int"){
-                if(filter_var($value,FILTER_VALIDATE_INT) === false){
+            if ($type == "int") {
+                if (filter_var($value, FILTER_VALIDATE_INT) === false) {
                     return false;
-                }else {
+                } else {
                     return true;
                 }
-            }elseif($type === "string"){
-                if(!is_string($value))
+            } elseif ($type === "string") {
+                if (!is_string($value))
                     return false;
                 else
                     return true;
-            }elseif ($type === "float"){
-                if(!self::isFloat($value))
+            } elseif ($type === "float") {
+                if (!self::isFloat($value))
                     return false;
                 else
                     return true;
-            }else{
-//
-                if(!preg_match("/{$type}/", $value))
+            } else {
+                //
+                if (!preg_match("/{$type}/", $value))
                     return false;
                 else
                     return true;
             }
-        }else{
+        } else {
             return true;
         }
     }
 
     public static function getParamName($raw_param)
     {
-        $raw_param = substr($raw_param,1);
+        $raw_param = substr($raw_param, 1);
 
         $param = explode(":", $raw_param);
         return $param[0];
@@ -345,10 +343,10 @@ class Router
         $_path = $this::joinPath($root, $path);
         $real_path = trim($this->real_path);
         $params = [];
-        if (!self::pathMatches($real_path, $_path,$params) && !$is_group) { //if the browser path doesn't match specified path template
+        if (!self::pathMatches($real_path, $_path, $params) && !$is_group) { //if the browser path doesn't match specified path template
             return false;
         }
-        $params = (object) $params;
+        $params = (object)$params;
 
 
         $this->assigned_paths[$root][] = [
