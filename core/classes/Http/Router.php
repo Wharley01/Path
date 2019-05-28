@@ -143,13 +143,24 @@ class Router
         $matched = 0; //number of matched paths(Both template and path
 
         for ($i = 0; $i < count($b_real_path); $i++) {
+
+            $c_path_value = trim(@$b_path[$i]); //current path value (template)
+            $c_real_path_value = trim(@$b_real_path[$i]); //current path (from web browser)
+//            var_dump($c_path_value[strlen($c_path_value)-1]);
+            $is_optional = $c_path_value[strlen($c_path_value)-1] == '?';//check if last character is question mark
+            if($is_optional){
+                $c_path_value = substr($c_path_value,0,(strlen($c_path_value)-1));
+            }
+
             if ($i > count($b_path)) { //if the amount of url path is more than required, return false
                 return false;
             }
 
             //            Continue execution
-            $c_path_value = @$b_path[$i]; //current path value (template)
-            $c_real_path_value = @$b_real_path[$i]; //current path (from web browser)
+//            var_dump([
+//                'is_optional' => $is_optional,
+//                'new_path' => $c_path_value
+//                ]);
 
             if ($c_path_value == $c_real_path_value) { // current template path is equal to real path from browser count it as matched
                 $matched++; //count
@@ -510,6 +521,7 @@ class Router
             $this->processRequest(["path" => trim($each_path), "middleware" => $_middle_ware, "fallback" => $_fallback], $callback, $method);
         }
     }
+
     private function processRequest($path, $callback, $method)
     {
 
