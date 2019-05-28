@@ -29,6 +29,16 @@ class Validator{
         return $this;
     }
 
+    /**
+     * @param mixed $model
+     * @return $this
+     */
+    public function setModel(Model $model)
+    {
+        $this->model = $model;
+        return $this;
+    }
+
     public function key($name){
         $this->keys[] = $name;
         $this->rules[$name] = [];
@@ -196,6 +206,19 @@ class Validator{
     ){
         return [
             "rule" => "unique",
+            "error_msg" => $error_message
+        ];
+    }
+
+    /**
+     * @param null $error_message
+     * @return array
+     */
+    public static function EXISTS(
+        $error_message = null
+    ){
+        return [
+            "rule" => "exists",
             "error_msg" => $error_message
         ];
     }
