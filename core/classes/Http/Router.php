@@ -189,6 +189,7 @@ class Router
     }
 
     private static function isFloat($value){
+        $value = floatval($value);
         return ($value && intval($value) != $value);
     }
 
@@ -225,7 +226,7 @@ class Router
                 else
                     return true;
             }elseif ($type === "float"){
-                if(filter_var($value,FILTER_VALIDATE_FLOAT) === false)
+                if(!self::isFloat($value))
                     return false;
                 else
                     return true;
