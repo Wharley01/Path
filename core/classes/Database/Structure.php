@@ -237,8 +237,14 @@ class Structure
         else
             $str  .= " NOT NULL";
 
-        if (isset($column_arr['default_value']))
-            $str  .= " DEFAULT '{$column_arr['default_value']}'";
+        if (isset($column_arr['default_value'])){
+            if($column_arr['default_value'] === "CURRENT_TIMESTAMP"){
+                $default = "DEFAULT CURRENT_TIMESTAMP";
+            }else{
+                $default = "DEFAULT '{$column_arr['default_value']}'";
+            }
+            $str  .= " ".$default;
+        }
 
         if (isset($column_arr['auto_increment'])) //check if to auto increment column
             $str  .= " AUTO_INCREMENT";
