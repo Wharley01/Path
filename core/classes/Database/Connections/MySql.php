@@ -40,6 +40,20 @@ class MySql implements DB
 
     }
 
+    public static function disableKeyCheck(){
+        $conn = self::$conn;
+        if($conn instanceof \PDO)
+            $conn->query("SET foreign_key_checks=0");
+
+    }
+
+    public static function enableKeyCheck(){
+        $conn = self::$conn;
+        if($conn instanceof \PDO)
+            $conn->query("SET foreign_key_checks=1");
+
+    }
+
     public static function close()
     {
         self::$conn = null;
