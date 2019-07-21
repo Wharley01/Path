@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @Author by Sulaiman Adewale.
  * @Date 12/24/2018
@@ -46,7 +47,7 @@ class Create extends CInterface
     private $email_templ_files_path = "path/Mail/Mailables";
     public function entry($params)
     {
-        $params = (object)$params;
+        $params = (object) $params;
         if (isset($params->controller)) {
             $this->createController($params->controller);
         } elseif (isset($params->command)) {
@@ -57,7 +58,7 @@ class Create extends CInterface
             $this->createMiddleWare($params->middleware);
         } elseif (isset($params->model)) {
             $this->createModel($params->model);
-        }elseif (isset($params->email)){
+        } elseif (isset($params->email)) {
             $this->createMailable($params->email);
         }
     }
@@ -322,7 +323,7 @@ public function $method(
         ";
         //        Write controller boiler plate
         fwrite($controller_file, $boiler_plate);
-        $this->write(PHP_EOL."`light_green`Live Controller Boiler plate code generated in: `light_green` `light_blue`{$this->live_controllers_path}`light_blue`");
+        $this->write(PHP_EOL . "`light_green`Live Controller Boiler plate code generated in: `light_green` `light_blue`{$this->live_controllers_path}`light_blue`");
         fclose($controller_file);
     }
     private function writeRouteControllerBoilerPlate($controller_file, $controller_name, $model_name)
@@ -448,7 +449,7 @@ class {$table_name} implements Table
 * Modify to suit your usage
 * 
 */
-namespace Path\App\Http\\MiddleWare;
+namespace Path\App\Http\\MiddleWares;
 
 
 use Path\Core\Http\\MiddleWare;
@@ -470,7 +471,7 @@ class {$middleware_name} implements MiddleWare
         return false;
     }
 
-    public function response(Request \$request, Response \$response)
+    public function fallBack(Request \$request, Response \$response)
     {
             return \$response->json([\"msg\" => \"This json response is from \\\"{$middleware_name}\\\" MiddleWare, you get this response because \\\$this->validate() returns false\"]);
     }
@@ -495,12 +496,13 @@ class {$middleware_name} implements MiddleWare
             $this->writeModelBoilerPlate($db_model_file, $model_name);
         }
     }
-    private function createMailable($email_name){
+    private function createMailable($email_name)
+    {
         $email_name = trim($email_name);
 
         $email_name = $email_name ?? $this->ask("Enter your email template name", true);
 
-        $templ_file = $this->email_templ_files_path.'/'.$email_name.'.php';
+        $templ_file = $this->email_templ_files_path . '/' . $email_name . '.php';
         if (file_exists($templ_file)) {
             if ($this->confirm("{$email_name} Email template Already exists, Override?")) {
                 $email_templ_file = fopen($templ_file, "w");
@@ -516,7 +518,8 @@ class {$middleware_name} implements MiddleWare
      * @param $email_templ_file
      * @param $email_name
      */
-    private function writeEmailBoilerCode($email_templ_file, $email_name){
+    private function writeEmailBoilerCode($email_templ_file, $email_name)
+    {
 
         $boiler_plate = "<?php
 
@@ -559,8 +562,7 @@ class {$email_name} extends Mailable
 }";
 
         fwrite($email_templ_file, $boiler_plate);
-        $this->write(PHP_EOL."`green`[+]`green` --  Email Template boiler plate for --`blue`{$email_name}`blue`-- generated in `green`\"{$this->email_templ_files_path}\"`green` " . PHP_EOL);
+        $this->write(PHP_EOL . "`green`[+]`green` --  Email Template boiler plate for --`blue`{$email_name}`blue`-- generated in `green`\"{$this->email_templ_files_path}\"`green` " . PHP_EOL);
         fclose($email_templ_file);
-
     }
 }
