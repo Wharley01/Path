@@ -48,6 +48,11 @@ class Router
     ];
     public $real_path;
 
+    public $scheme;
+
+    public $host;
+
+    public $sub_domain;
     /**
      * Router constructor.
      * @param string $root_path
@@ -57,12 +62,10 @@ class Router
         $this->root_path = $root_path;
         $this->request = new Request();
         $this->database = null;
-        $this->real_path =  preg_replace(
-            "/[^\w:.\/\d\-\@].*$/m",
-            "",
-            $this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL
-        );
-
+        $path_parse = parse_url($this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL);
+        $this->real_path = $path_parse["path"];
+        $this->host = $path_parse["host"] ?? $_SERVER["HTTP_HOST"];
+        $this->scheme = $path_parse["scheme"] ?? (@$_SERVER["HTTPS"] ? "https":"http");
         //        TODO: Initialize model for database
         $this->response_instance = new Response($this->build_path);
     }
@@ -124,10 +127,15 @@ class Router
     public static function pathMatches($real_path, $path, &$params = [])
     {
 
+
+        if ($real_path == $path) { //if the path are literally the same, don't do much hard job, return true
+            return true;
+        }
+
         /*
-         * $path holds the path template
-         * $real_path holds the path from the browser
-         */
+        * $path holds the path template
+        * $real_path holds the path from the browser
+        */
         $b_real_path = array_values(array_filter(explode("/", $real_path), function ($p) {
             return strlen(trim($p)) > 0;
         })); //get all paths in a array, filter
@@ -135,9 +143,7 @@ class Router
             return strlen(trim($p)) > 0;
         }));
 
-        if ($real_path == $path) { //if the path are literally the same, don't do much hard job, return true
-            return true;
-        }
+
         //        Else, continue checking
 
         $matched = 0; //number of matched paths(Both template and path
@@ -285,28 +291,23 @@ class Router
 
                     //            Check middle ware return
                     $check_middle_ware = $ini_middleware->validate($request, $this->response_instance);
-                    //                call the fall_back response
-                    $fallback_response = $ini_middleware->fallBack($request, $this->response_instance);
-                    if (!$check_middle_ware) { //if the middle ware control method returns false
 
+                    if ($check_middle_ware === false) { //if the middle ware control method returns false
+                        //                call the fall_back response
+                        $fallback_response = $ini_middleware->fallBack($request, $this->response_instance);
                         if (!is_null($fallback_response)) { //if user has a fallback method
 
-                            if ($fallback_response && !$fallback_response instanceof Response) {
-                                throw new Exceptions\Router(" \"fallBack\" method for \"{$middle_ware_name}\" MiddleWare is expected to return an instance of Response");
-                            } else {
+                            if ($fallback_response && is_array($fallback_response)) {
+                                $this->writeResponse($this->response_instance->json($fallback_response));
+                                die();
+                            } elseif($fallback_response instanceof Response) {
                                 $this->writeResponse($fallback_response);
-                                return true;
+                                die();
+                            }else{
+                                return false;
                             }
                         }
-
-                        if ($this->exception_callback) {
-                            $exception_callback = call_user_func_array($this->exception_callback, [$request, $this->response_instance, ['error_msg' => "MiddleWare validation failed for \"{$real_path}\""]]);
-                            if ($exception_callback instanceof Response) {
-                                $this->writeResponse($exception_callback);
-                            }
-                        } else {
-                            throw new Exceptions\Router("MiddleWare validation failed for \"{$real_path}\"");
-                        }
+                        die();
                     }
                 } else {
                     throw new Exceptions\Router("Expected \"{$middle_ware->method}\" to implement \"Path\\Http\\MiddleWare\" interface in \"{$_path}\"");
@@ -377,6 +378,8 @@ class Router
                 }
                 if ($class instanceof Response) { //Check if return value from callback is a Response Object
                     $this->writeResponse($class);
+                }elseif (is_array($class)){
+                    $this->writeResponse($this->response_instance->json($class));
                 }
             } else {
                 /** ************************************************ */
@@ -386,21 +389,26 @@ class Router
                     $callback = $this->importControllerFromString($callback, $params);
                 }
 
-                if ($callback instanceof \Closure)
+                if ($callback instanceof \Closure) {
                     $c = $callback($request, $this->response_instance);
-                elseif ($callback instanceof Controller or method_exists($callback, 'response'))
+                }
+                elseif ($callback instanceof Controller or method_exists($callback, 'response')) {
                     $c = $callback->response($request, $this->response_instance);
-                else
+                }else {
                     throw new Exceptions\Router('Custom Class Object must have a response method');
-
+                }
                 //                $c = ! $callback instanceof \Closure ? $callback->response($request, $this->response_instance)
                 //                    : $callback($request,$this->response_instance);
 
                 if ($c instanceof Response) { //Check if return value from callback is a Response Object
                     $this->writeResponse($c);
+                }elseif (is_array($c)){
+
+                    $this->writeResponse($this->response_instance->json($c));
                 } elseif ($c and !$c instanceof Response) {
-                    throw new Exceptions\Router("Expecting an instance of Response to be returned at \"GET\" -> \"$_path\"");
+                    throw new Exceptions\Router("Expecting an instance of Response or Array to be returned at \"GET\" -> \"$_path\"");
                 }
+
             }
             //call the callback, pass the params generated to it to be used
         }
