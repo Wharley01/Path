@@ -1,6 +1,5 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?php
-
 
 ini_set(
     'session.use_cookies',

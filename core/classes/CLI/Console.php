@@ -192,15 +192,15 @@ class Console extends CInterface
     {
         echo PHP_EOL;
         if ($argument['explain'] === null) {//no command specified, show all commands and their explanations
+            $mask2 = "%22.30s    %-30s".PHP_EOL;
+
             foreach ($this->commands as $cmd => $desc) {
-                $mask1 = "%30.30s      %30s ".PHP_EOL;
-                $this->write(["`light_green`{$cmd}`light_green`",$desc["description"]],$mask1);
-//
+                $this->write(["`light_green`{$cmd}`light_green`",$desc["description"]],'%22.30s    %-32.30s');
+                $this->write(PHP_EOL);
                 if (isset($desc["arguments"])) {
-                    $mask2 = "%32.30s    %30s ".PHP_EOL;
                     //                Out put all supported arguments
                     foreach ($desc["arguments"] as $arg => $value) {
-                        $this->write(["`light_blue`{$arg}`light_blue`",$value['desc']],$mask2);
+                        $this->write(["`green`{$arg}`green`",$value['desc']],$mask2);
                     }
                 }
 
@@ -211,13 +211,11 @@ class Console extends CInterface
                 $this->write("`light_red`!{$argument['explain']} not a recognized Command `light_red` You can create a custom CLI Command in path/Commands Folder");
 
             } else {
-                $mask = "%-5s          %30.30s\n";
-                $this->write(["`light_green`{$argument['explain']}`light_green`",$this->commands[$argument['explain']]["description"]],$mask);
-
-
-                $mask = "--- %-5s   %18s\n";
+                $mask = "%32.30s    %30s".PHP_EOL;
+                $this->write(["`light_green`{$argument['explain']}`light_green`",$this->commands[$argument['explain']]["description"]],'%32.30s    %-32.30s');
+                $this->write(PHP_EOL.PHP_EOL);
                 foreach ($this->commands[$argument['explain']]["arguments"] as $arg => $value) {
-                    $this->write(["`light_blue`{$arg}`light_blue`",$value['desc']],$mask);
+                    $this->write(["`green`{$arg}`green`",$value['desc']],$mask);
                 }
                 echo PHP_EOL . PHP_EOL;
             }
