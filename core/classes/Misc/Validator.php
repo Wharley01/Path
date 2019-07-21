@@ -61,11 +61,11 @@ class Validator
 
             foreach ($rules as $rule) {
                 if (is_string($rule)) {
-                    $this->validateKey($key, $rule, null);
+                    $this->validateKey($key, $rule, null,$rule['cust_key'] ?? null);
                 } else {
                     $rule_value = $rule['rule'];
                     $error_message = $rule['error_msg'];
-                    $this->validateKey($key, $rule_value, $error_message);
+                    $this->validateKey($key, $rule_value, $error_message, $rule['cust_key'] ?? null);
                 }
             }
         }
@@ -73,7 +73,7 @@ class Validator
     }
 
 
-    private function validateKey($key, $rule, $error_message)
+    private function validateKey($key, $rule, $error_message, $cust_key = null)
     {
         $value = &$this->values[$key];
         if (is_int($rule)) {
@@ -90,7 +90,7 @@ class Validator
         }
         if ($rule == 'exists') {
             if ($this->model instanceof Model) {
-                $count = $this->model->where([$key => $value])
+                $count = $this->model->where([$cust_key ?? $key => $value])
                     ->count();
                 if ($count < 1) {
                     $this->addError($key, $error_message ?? "{$key} does not exist");
@@ -158,9 +158,16 @@ class Validator
 
         if (preg_match("/{$this->equals_rule}/i", $rule, $regex_matches)) {
             $_key = $regex_matches[1];
-            if ($value != $this->values[$_key]) {
-                $this->addError($key, $error_message ?? "{$key} does not match $_key ");
+            if(!in_array($_key,$this->keys)){
+                if ($value != $_key) {
+                    $this->addError($key, $error_message ?? "{$key} does not match $_key ");
+                }
+            }else{
+                if ($value != $this->values[$_key]) {
+                    $this->addError($key, $error_message ?? "{$key} does not match $_key ");
+                }
             }
+
             return;
         }
     }
@@ -212,13 +219,16 @@ class Validator
 
     /**
      * @param null $error_message
+     * @param $key
      * @return array
      */
     public static function EXISTS(
-        $error_message = null
+        $error_message = null,
+        $key = null
     ) {
         return [
             "rule" => "exists",
+            "cust_key" => $key,
             "error_msg" => $error_message
         ];
     }
