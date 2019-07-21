@@ -14,7 +14,7 @@ use Path\Core\Storage\Sessions;
 use Path\Core\Router\Live\Controller;
 use Path\Core\Error\Exceptions;
 
-class SSE
+class SSE  implements WatcherInterface
 {
     private $watching;
     public $params;
@@ -29,6 +29,7 @@ class SSE
     private $has_changes = [];
     private $response = [];
     private $response_instance;
+    private $message;
 
     public function __construct($controller_name, $watching, $params)
     {
@@ -50,8 +51,7 @@ class SSE
 
             $controller = new $live_controller(
                 $this,
-                $this->session,
-                $message
+                $this->session
             );
             return $controller;
         }
@@ -61,10 +61,11 @@ class SSE
     public function watch($message = null)
     {
         $controller = $this->iniController($message);
+        $this->$message = $message;
+
         $controller->onConnect(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $watchable_list = $this->getWatchable($controller);
         if (count(array_keys($watchable_list)) < 1) {
@@ -157,10 +158,10 @@ class SSE
     public function receiveMessage($message)
     {
         $controller = $this->iniController($message);
+        $this->message = $message;
         $controller->onMessage(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
@@ -170,10 +171,10 @@ class SSE
 
     public function close($message = null){
         $controller = $this->iniController($message);
+        $this->message = $message;
         $controller->onClose(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $this->reset();
     }
@@ -184,8 +185,7 @@ class SSE
         $controller = $this->iniController($message);
         $controller->onConnect(
             $this,
-            $this->session,
-            $message
+            $this->session
         );
         $watch_list = $this->getWatchable($controller);
         $watch_list = self::castToString($watch_list);
@@ -225,7 +225,7 @@ class SSE
     /**
      * @return bool
      */
-    public function changesOccurred()
+    public function changesOccurred():bool
     {
         foreach ($this->has_changes as $method => $status) {
             if ($status === true) {
@@ -339,5 +339,15 @@ class SSE
             $this->session->delete($method);
         }
         $this->session->delete("watcher___cached_methods");
+    }
+
+    public function getMessage():?String
+    {
+        return $this->message;
+    }
+
+    public function getParams($key = null)
+    {
+        return $this->params[$key] ?? $this->params;
     }
 }
