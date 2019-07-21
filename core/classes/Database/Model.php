@@ -72,6 +72,7 @@ abstract class Model
     private $valid_where_clause_rule = "^([\w\->\[\]\\d.]+)\s*([><=!]+)\\s*([\\w\->\[\]\\d]+)$";
     private $valid_column_rule = "^[_\w\.|\s\(\)\`\\'\",->\[\]!]+$";
     public $total_pages = 0;
+    public $keys;
 
     public function __construct()
     {
@@ -86,6 +87,7 @@ abstract class Model
         $this->primary_key = $this->toFullName($this->primary_key);
         $this->updated_col = $this->toFullName($this->updated_col);
         $this->created_col = $this->toFullName($this->created_col);
+        $this->generatekeys($this->table_name);
     }
     private function toFullName($column)
     {
@@ -125,6 +127,22 @@ abstract class Model
             throw new Exceptions\Database($e->getMessage());
         }
     }
+
+    private function generatekeys($table)
+    {
+        try {
+            $q = $this->conn->query("DESCRIBE {$table}");
+            $keys = [];
+            foreach ($q as $k) {
+                $keys[] = $k["Field"];
+            }
+            $this->keys = $keys;
+        } catch (\PDOException $e) {
+            throw new Exceptions\Database($e->getMessage());
+        }
+    }
+
+
 
     /**
      * @param $col
@@ -264,7 +282,7 @@ abstract class Model
      */
     public function writable(array $columns)
     {
-        $this->writable_cols = array_merge($this->writable_cols, $columns);
+        $this->writable_cols = array_merge($this->writable_cols, $this->convertColumnsToFull($columns));
         return $this;
     }
 
@@ -274,7 +292,7 @@ abstract class Model
      */
     public function nonWritable(array $columns)
     {
-        $this->non_writable_cols = array_merge($this->non_writable_cols, $columns);
+        $this->non_writable_cols = array_merge($this->non_writable_cols, $this->convertColumnsToFull($columns));
         return $this;
     }
     /**
@@ -283,7 +301,7 @@ abstract class Model
      */
     public function readable(array $columns)
     {
-        $this->readable_cols = array_merge($this->readable_cols, $columns);
+        $this->readable_cols = array_merge($this->readable_cols, $this->convertColumnsToFull($columns));
         return $this;
     }
     /**
@@ -292,7 +310,7 @@ abstract class Model
      */
     public function nonReadable(array $columns)
     {
-        $this->non_readable_cols = array_merge($this->non_readable_cols, $columns);
+        $this->non_readable_cols = array_merge($this->non_readable_cols, $this->convertColumnsToFull($columns));
         return $this;
     }
 
@@ -404,7 +422,7 @@ abstract class Model
 
     public function whereCreatedSince($days)
     {
-        $where = "from_unixtime({$this->table_name}.{$this->created_col}) >= date_sub(now(), interval {$days} day)";
+        $where = "from_unixtime({$this->created_col}) >= date_sub(now(), interval {$days} day)";
         if ($this->query_structure["WHERE"]["query"]) {
             $this->query_structure["WHERE"]["query"] .= " AND " . $where;
         } else {
@@ -415,7 +433,18 @@ abstract class Model
 
     public function whereUpdatedSince($days)
     {
-        $where = "from_unixtime({$this->table_name}.{$this->updated_col}) >= date_sub(now(), interval {$days} day)";
+        $where = "from_unixtime({$this->updated_col}) >= date_sub(now(), interval {$days} day)";
+        if ($this->query_structure["WHERE"]["query"]) {
+            $this->query_structure["WHERE"]["query"] .= " AND " . $where;
+        } else {
+            $this->query_structure["WHERE"]["query"] = $where;
+        }
+        return $this;
+    }
+
+    public function whereNotUpdatedSince($days)
+    {
+        $where = "from_unixtime({$this->updated_col}) < date_sub(now(), interval {$days} day)";
         if ($this->query_structure["WHERE"]["query"]) {
             $this->query_structure["WHERE"]["query"] .= " AND " . $where;
         } else {
@@ -436,7 +465,7 @@ abstract class Model
         $where,
         ...$params
     ) {
-        if ($this->query_structure["WHERE"]["query"]) {
+        if (strlen(trim($this->query_structure["WHERE"]["query"])) > 0) {
             $this->query_structure["WHERE"]["query"] .= " AND " . $where;
         } else {
             $this->query_structure["WHERE"]["query"] = $where;
@@ -486,7 +515,6 @@ abstract class Model
 
     private function rawColumnGen($cols)
     {
-        //        var_dump($cols);
         foreach ($cols as $col) {
             if ($col instanceof Model) {
                 $this->generateRawSelectFromInstance($col);
@@ -606,7 +634,7 @@ abstract class Model
         try {
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
-            //$this->clearMemory();
+            $this->clearMemory();
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -645,7 +673,7 @@ abstract class Model
         try {
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
-            //$this->clearMemory();
+            $this->clearMemory();
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -738,7 +766,7 @@ abstract class Model
             $prepare    = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
             $this->last_insert_id = $this->conn->lastInsertId();
-            //$this->clearMemory();
+            $this->clearMemory();
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -759,7 +787,7 @@ abstract class Model
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
-        //$this->clearMemory();
+        $this->clearMemory();
         return $this;
     }
 
@@ -773,8 +801,7 @@ abstract class Model
         $cols = [],
         $sing_record = false
     ) {
-        if (!is_array($cols) && is_string($cols))
-            $cols = explode(",", $cols);
+
         if (is_array($cols)) {
             if (!$cols) {
                 if ((is_array($this->readable_cols) && count($this->readable_cols) > 0)) {
@@ -795,6 +822,11 @@ abstract class Model
             if (count($cols) > 0) {
                 $this->rawColumnGen($cols);
             }
+        }else{
+            if (is_string($cols)){
+                $cols = explode(",", $cols);
+                $this->rawColumnGen($cols);
+            }
         }
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($this->params["SELECT"], $this->params["WHERE"], $this->params["HAVING"], $this->params["LIMIT"]);
@@ -808,10 +840,10 @@ abstract class Model
             $this->total_pages = ceil($this->total_record / $this->record_per_page);
 
             if ($sing_record) {
-                //$this->clearMemory();
+                $this->clearMemory();
                 return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
             } else {
-                //$this->clearMemory();
+                $this->clearMemory();
                 return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
             }
         } catch (\PDOException $e) {
@@ -888,7 +920,7 @@ abstract class Model
         return $this;
     }
 
-    public function getPage($page = 1)
+    public function getPage($page = 1,$cols = [])
     {
         //        get total record
         $page -= 1;
@@ -1048,11 +1080,12 @@ abstract class Model
     }
 
     /**
+     * @param $cols
      * @return object
      */
-    public function getFirst()
+    public function getFirst($cols = [])
     {
-        return $this->first();
+        return $this->first($cols);
     }
 
     /**
@@ -1080,9 +1113,8 @@ abstract class Model
      */
     public function count()
     {
-        $this->query_structure["SELECT"]["query"] = "COUNT({$this->primary_key}) as total";
-        $this->groupBy($this->primary_key);
-        return $this->all(null, true)["total"];
+        $this->query_structure["SELECT"]["query"] = "COUNT(*)";
+        return (int) $this->all(null, true)["COUNT(*)"];
     }
 
     /**
@@ -1299,5 +1331,19 @@ abstract class Model
     {
         $this->where_gen($condition, "AND", "HAVING");
         return $this;
+    }
+
+    /**
+     * @param int $record_per_page
+     * @return $this
+     */
+    public function setRecordPerPage(int $record_per_page)
+    {
+        $this->record_per_page = $record_per_page;
+        return $this;
+    }
+
+    public function getKeys(){
+        return $this->keys;
     }
 }
