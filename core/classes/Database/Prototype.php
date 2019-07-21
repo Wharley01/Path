@@ -11,7 +11,7 @@ namespace Path\Core\Database;
 
 use Path\Core\Database\Connections\MySql;
 use Path\Core\Database\Structure;
-use Path\Core\DataStructureException;
+use Path\Core\Error\Exceptions;
 
 class Prototype
 {
@@ -67,7 +67,7 @@ class Prototype
         try {
             $query = $this->db_conn->query("DROP TABLE IF EXISTS {$tables}");
         } catch (\Exception $e) {
-            throw new DataStructureException($e->getMessage());
+            throw new Exceptions\DataStructure($e->getMessage());
         }
         return $this;
     }
@@ -75,14 +75,14 @@ class Prototype
     /**
      * @param $table
      * @return $this
-     * @throws DataStructureException
+     * @throws Exceptions\DataStructure
      */
     public function truncate($table)
     {
         try {
             $query = $this->db_conn->query("TRUNCATE TABLE `{$table}`");
         } catch (\Exception $e) {
-            throw new DataStructureException($e->getMessage());
+            throw new Exceptions\DataStructure($e->getMessage());
         }
         return $this;
     }
