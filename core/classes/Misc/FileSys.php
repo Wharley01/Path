@@ -152,7 +152,7 @@ class FileSys
                 }
             }
         } else {
-            //            this is file from server not sent from form
+            //            this is file from server not sent from credentials
 
         }
 
