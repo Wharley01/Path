@@ -52,6 +52,7 @@ class Version  extends CInterface
      */
     public function entry($argument)
     {
-        echo "Path '{$argument->version}' version is " . config("PROJECT->version");
+        $version = $argument['version'] ?? "development";
+        $this->write(PHP_EOL.'`green`'.config("PROJECT->name")." {$version} version is " . config("PROJECT->version").'`green`');
     }
 }
