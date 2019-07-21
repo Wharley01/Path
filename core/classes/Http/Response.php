@@ -28,7 +28,7 @@ class Response
     public function json($arr, $status = 200)
     {
         $arr = $this->convertToUtf8($arr);
-        $this->content = json_encode((array)$arr, JSON_PRETTY_PRINT);
+        $this->content = json_encode((array)$arr, JSON_NUMERIC_CHECK);
         $this->status = $status;
         $this->headers = ["Content-Type" => "application/json; charset=UTF-8"];
         return $this;
@@ -121,14 +121,11 @@ class Response
         return $this;
     }
 
-    public function SSEStream($raw_data, $delay = 300, $id = null, $status = 200)
+    public function SSEStream($raw_data, $delay = 1000, $id = null, $status = 200)
     {
         if (!$id)
             $id = time();
 
-        //        [
-        //          "event" => "response",
-        //        ];
         $data = "";
         $data .= "id: {$id}" . PHP_EOL;
         if (is_array($raw_data)) {
@@ -202,5 +199,13 @@ class Response
             return utf8_encode($d);
         }
         return $d;
+    }
+
+    public function info($msg,$fields = [],$has_error = false){
+        return $this->json([
+            "has_error" => true,
+            "error_msg" => $msg,
+            "fields" => $fields
+        ],$has_error ? 401:200);
     }
 }
