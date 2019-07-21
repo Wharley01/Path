@@ -1,6 +1,5 @@
 // let BrowserSyncPlugin = require('vue-cli-browser-sync-webpack-plugin');
 let config = require("./path/project.pconf.json");
-const path = require("path");
 
 const PORT = config.PROJECT.port;
 const HOST = config.PROJECT.host;
@@ -14,7 +13,10 @@ module.exports = {
       "/SSE": {
         target: config.PROJECT.server
       },
-      "/assets": {
+      "/src/assets/images": {
+        target: config.PROJECT.server
+      },
+      "/path": {
         target: config.PROJECT.server
       }
     },
@@ -22,7 +24,6 @@ module.exports = {
     historyApiFallback: true,
     host: HOST,
     hot: true,
-    inline: false,
     watchOptions: {
       aggregateTimeout: 300,
       poll: true,
@@ -38,14 +39,4 @@ module.exports = {
       open: true
     }
   }
-  // configureWebpack:{
-  //     plugins:[
-  //         new BrowserSyncPlugin({
-  //             host: HOST,
-  //             port: PORT,
-  //             proxy: `http://${HOST}:${PORT}`,
-  //             reload: false
-  //         }),
-  //     ]
-  // }
 };
