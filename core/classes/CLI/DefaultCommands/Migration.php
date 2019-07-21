@@ -44,6 +44,9 @@ class Migration extends CInterface
         ],
         "describe" => [
             "desc" => "Runs Update hook in your migration classes"
+        ],
+        "-force" => [
+            "desc" => "force uninstall(Ignores foreign key checks)"
         ]
     ];
 
@@ -61,10 +64,14 @@ class Migration extends CInterface
      * @param $params
      * @return mixed|void
      */
+    public $params;
+
     public function entry($params)
     {
         $params = (array)$params;
         unset($params['app']); //remove default root param
+
+        $this->params = $params;
 
         foreach ($params as $param => $arg) {
             $this->runCommand($param, $arg);
@@ -76,6 +83,13 @@ class Migration extends CInterface
     }
     private function runCommand($hook, $table = null)
     {
+        if(array_key_exists('-force',$this->params)){
+            MySql::disableKeyCheck();
+            $this->write(PHP_EOL."`red`[+]`red` disable key check".PHP_EOL);
+        }
+        if($hook == "-force")
+            return;
+
         if ($table && is_string($table)) {
             $table = $this->toLower($table);
             $table_class_instance =  $this->tables[$table];
@@ -108,6 +122,7 @@ class Migration extends CInterface
     }
     private function uninstall($table)
     {
+
         $this->prototype->drop($table);
         $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully uninstalled " . PHP_EOL);
     }
