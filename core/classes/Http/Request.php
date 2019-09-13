@@ -18,7 +18,8 @@ class Request
     public $fetching;
     private $headers = [];
     private $sending_post_feilds = [];
-    private $sending_query_feilds = [];
+    private $sending_post_json_fields = null;
+    private $sending_query_fields = [];
     private $IP;
     private $post;
     //    CONST
@@ -97,9 +98,15 @@ class Request
         return $this;
     }
 
+    public function setPostJsonFields(array $fields)
+    {
+        $this->sending_post_json_fields = json_encode($fields);
+        return $this;
+    }
+
     public function setQueryParams(array $fields)
     {
-        $this->sending_query_feilds = $fields;
+        $this->sending_query_fields = $fields;
         return $this;
     }
 
@@ -121,8 +128,8 @@ class Request
     private function httpRequest($url, $method): ?Response
     {
         $ch = curl_init();
-        if ($this->sending_query_feilds) {
-            $query = http_build_query($this->sending_query_feilds);
+        if ($this->sending_query_fields) {
+            $query = http_build_query($this->sending_query_fields);
             $url .= "?" . $query;
         }
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -134,6 +141,9 @@ class Request
         }
         if ($this->sending_post_feilds) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $this->sending_post_feilds);
+        }
+        if($this->sending_post_json_fields){
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $this->sending_post_json_fields);
         }
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $this->buildRawHeader());
