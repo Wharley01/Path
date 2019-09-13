@@ -116,6 +116,16 @@ class Structure
         return $this;
     }
 
+    public function placeAfter($column){
+        $this->columns[count($this->columns) - 1]["position"] = " AFTER {$column}";
+        return $this;
+    }
+
+    public function placeFirst($column){
+        $this->columns[count($this->columns) - 1]["position"] = " FIRST";
+        return $this;
+    }
+
     public function update()
     {
         $this->columns[count($this->columns) - 1]["is_updating"] = true;
@@ -237,7 +247,7 @@ class Structure
         else
             $str  .= " NOT NULL";
 
-        if (isset($column_arr['default_value'])){
+        if (array_key_exists('default_value',$column_arr)){
             if($column_arr['default_value'] === "CURRENT_TIMESTAMP"){
                 $default = "DEFAULT CURRENT_TIMESTAMP";
             }else{
@@ -248,6 +258,10 @@ class Structure
 
         if (isset($column_arr['auto_increment'])) //check if to auto increment column
             $str  .= " AUTO_INCREMENT";
+
+        if(array_key_exists('position',$column_arr)){
+            $str .= $column_arr['position'];
+        }
 
         return $str;
     }
