@@ -1,6 +1,13 @@
 {
   "name": "wharley/path",
-  "type": "project",
+  "type": "library",
+  "description": "PHP Framework for geniuses",
+  "keywords": [
+    "log",
+    "logging"
+  ],
+  "homepage": "https://github.com/Seldaek/monolog",
+  "license": "Apache License 2.0",
   "authors": [{
     "name": "Wharley01",
     "email": "hackerslord96@gmail.com"
