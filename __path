@@ -10,6 +10,7 @@ ini_set(
     false
 );
 require_once "core/kernel.php";
+require_once "vendor/autoload.php";
 
 
 $console = new \Path\Core\CLI\Console($argv);

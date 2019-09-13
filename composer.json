@@ -1,0 +1,13 @@
+{
+    "name": "wharley/path",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Wharley01",
+            "email": "hackerslord96@gmail.com"
+        }
+    ],
+  "require": {
+    "php": "^7.2",
+  }
+}

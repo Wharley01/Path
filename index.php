@@ -3,6 +3,7 @@ namespace Path\Core\Http;
 use Throwable;
 
 require_once "core/kernel.php";
+require_once "vendor/autoload.php";
 
 try {
 
