@@ -7,7 +7,7 @@
     "logging"
   ],
   "homepage": "https://github.com/Seldaek/monolog",
-  "license": "Apache License 2.0",
+  "license": "Apache-2.0",
   "authors": [{
     "name": "Wharley01",
     "email": "hackerslord96@gmail.com"
