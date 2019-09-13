@@ -95,13 +95,14 @@ class FileSys
                 $this->files[$i]['saved_name']      = $file_name;
                 $this->files[$i]['saved_fullname']  = $target_folder . $file_name;
 
-                if (@$this->rules["accepted_exts"]) {
+                if (count($this->rules["accepted_exts"]) > 0) {
+//                    var_dump($this->rules["accepted_exts"]);
                     if (!in_array($ext, $this->rules["accepted_exts"])) {
                         $this->errors[$real_file_name][] = "Invalid Extension {$ext}";
                     }
                 }
 
-                if (@$this->rules["restricted_exts"]) {
+                if (count($this->rules["restricted_exts"]) > 0) {
                     if (in_array($ext, $this->rules["restricted_exts"])) {
                         $this->errors[$real_file_name][] = "Invalid Extension {$ext}";
                     }
