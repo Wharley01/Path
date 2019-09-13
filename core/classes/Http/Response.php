@@ -28,7 +28,7 @@ class Response
     public function json($arr, $status = 200)
     {
         $arr = $this->convertToUtf8($arr);
-        $this->content = json_encode((array)$arr, JSON_NUMERIC_CHECK);
+        $this->content = json_encode((array)$arr, JSON_PRETTY_PRINT);
         $this->status = $status;
         $this->headers = ["Content-Type" => "application/json; charset=UTF-8"];
         return $this;
@@ -163,6 +163,7 @@ class Response
     public function redirect($url)
     {
         header("location: {$url}");
+        exit();
     }
     public function addHeader(array $header)
     {
