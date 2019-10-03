@@ -1,40 +1,49 @@
 <?php
 
 
-use Path\App\Mail\Mailables;
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
 use Path\Core\Http\Router;
-use Path\Core\Misc\Validator;
-use Path\Core\Mail;
-
 
 $router = new Router();
 $router->setBuildPath("/");
 
-// Catches any error,(for example Invalid parameter from user(browser))
-$router->exceptionCatch(function (Request $request, Response $response, array $error) {
-    // $error array contains error message and path where the error occurred
-    return $response->json(["error" => $error['msg']]);
-});
-$router->any("/", function (Request $request,Response $response){
-    return $response->bindState([
-        "name" => "Adewale"
-    ])->html("/test.html");
+$router->get("/test",function ($_,Response $response){
+    return $response->json(['HELLO WORLD']);
 });
 
-$router->get("test/@command", function () {
+$router->any("*", function (Request $request,Response $response){
 
+    $response->setTitle("Hello world! a server rendered Javascript in PHP");
 
-    $mailer = new Mail\Sender(Mailables\TestMail::class);
-    $mailer->bindState([
-        "name" => "Testing Testing",
-        "test" => "Testing",
-        "new_email" => "Another@email.com"
-    ]);
-    // echo "hello world";
-    $mailer->send();
+    $response->setHead(
+        Response::HTMLTag('link',[
+            "rel" => "stylesheet",
+            "type" => "text/css",
+            "href" => "/dist/css/server.css"
+        ]),
+        Response::HTMLTag('meta',[
+            "name" => "title",
+            "content" => "This is the search engine title"
+        ]),
+        Response::HTMLTag('meta',[
+            "name" => "description",
+            "content" => "This is the description"
+        ])
+    );
+
+    $response->setBottom(
+        Response::HTMLTag('script',[
+            "src" => "/dist/js/client.js"
+        ])
+    );
+
+    $response->setState("name","adewale");//Accessible in Current route View in your Javascript with $state global variable
+    $response->setState("school","mahmud");
+
+    return $response->SSR('/dist/js/server.js',200);
 });
+
 
 /*
  * Your Routes Can be here

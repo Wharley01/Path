@@ -143,7 +143,6 @@ class Router
             return strlen(trim($p)) > 0;
         }));
 
-
         //        Else, continue checking
 
         $matched = 0; //number of matched paths(Both template and path
@@ -152,6 +151,11 @@ class Router
 
             $c_path_value = trim(@$b_path[$i]); //current path value (template)
             $c_real_path_value = trim(@$b_real_path[$i]); //current path (from web browser)
+
+            if ($c_path_value == "*"){
+                return true;
+            }
+
             //            var_dump($c_path_value[strlen($c_path_value)-1]);
             $is_optional = @$c_path_value[strlen($c_path_value) - 1] == '?'; //check if last character is question mark
             if ($is_optional) {
@@ -180,6 +184,10 @@ class Router
                 return false;
             }
         }
+
+        if ($b_path[0] == "*")
+            return  true;
+
         return $matched == count($b_path);
     }
 

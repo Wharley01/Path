@@ -16,3 +16,5 @@ cache_modify.php
 path/struct.json
 path/structure.json
 test.php
+vendor
+composer.lock

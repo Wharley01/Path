@@ -9,6 +9,9 @@
 namespace Path\Core\Http;
 
 use Path\Core\Error\Exceptions;
+use Spatie\Ssr\Engines\V8;
+use Spatie\Ssr\Renderer;
+use V8Js;
 
 
 class Response
@@ -16,10 +19,20 @@ class Response
     public $content;
     public $status;
     public $headers = [];
+    public $state = [];
+    private $head = [];
+    private $bottom = [];
+    private $lang = "ng";
+    private $title = "A sample server-side rendered Path powered page";
+    private $should_cache = false;
+    public $ssr_route_path = null;
+    public $metas = [];
     public $build_path = "";
     public $is_binary = false;
     public $is_sse = false;
     private $response_state;
+
+
     public function __construct($build_path = '/')
     {
         $this->build_path = $build_path;
@@ -209,4 +222,161 @@ class Response
             "fields" => $fields
         ],$has_error ? 401:200);
     }
+
+    public function setState($key, $value){
+        $this->state[$key] = $value;
+    }
+
+    public function setHead(
+        ...$heads
+    ){
+        $this->head = $heads;
+        return $this;
+    }
+    static function HTMLTag(string $tag,array $attrs){
+
+        return [
+            $tag => $attrs
+        ];
+    }
+
+    private function arr2Tag(array $array,$should_cache = false){
+            $html_elements = [];
+            foreach ($array as $element){
+                foreach ($element as $tag => $attrs){
+
+                    if(is_numeric($tag))
+                        throw new Exceptions\Path("Head array should be associative array where the key is the tag and value is the attributes");
+
+                    $html = "<$tag";
+                    foreach ($attrs as $attr => $value){
+                        if(is_numeric($attr))
+                            throw new Exceptions\Path("Attribute array should be associative array where the key is the attribute and value is the attribute's value");
+//                    check if attr is src or href
+                        if((trim($attr) == 'src' || trim($attr) == 'href') && !$should_cache){
+                            $rand = rand(33,63434345);
+                            $html .= " {$attr}=\"{$value}?cache={$rand}\"";
+                        }else{
+                            $html .= " {$attr}=\"{$value}\"";
+                        }
+                    }
+
+                    $html .="></$tag>";
+                    $html_elements[] = $html;
+                }
+
+            }
+
+            return join("\n",$html_elements);
+    }
+
+    public function getHead($should_cache = false){
+
+        /*
+         * [
+         *      meta => [
+         *              "attr" => value,
+         *              "anotherattr" => ""
+         *          ],
+         *
+         *
+         * */
+        if(!empty($this->head)){
+            return $this->arr2Tag($this->head,$should_cache);
+        }else{
+            return "";
+        }
+    }
+
+    public function setBottom(
+        ...$bottom
+    ){
+        $this->bottom = $bottom;
+    }
+
+    public function getBottom($should_cache = false){
+        if(!empty($this->bottom)){
+            return $this->arr2Tag($this->bottom,$should_cache);
+        }else{
+            return "";
+        }
+    }
+
+    public function setRoutePath(
+        $route_path = null
+    ){
+        $router = new Router();
+        if(!$route_path){
+            $this->ssr_route_path = $router->real_path;
+        }else{
+            $this->ssr_route_path = $route_path;
+        }
+        return $this;
+    }
+
+    public function shouldCache(bool $status = false){
+        $this->should_cache = $status;
+
+        return $this;
+    }
+
+    public function SSR(
+        $entry,
+        $status = 200
+    ){
+        $router = new Router();
+        $route = $this->ssr_route_path ?? $router->real_path;
+
+        $head = $this->getHead($this->should_cache);
+        $bottom = $this->getBottom($this->should_cache);
+
+        $engine = new V8(new V8Js());
+        $renderer = new Renderer($engine);
+        $html = $renderer
+            ->debug(true)
+            ->enabled(true)
+            ->env('VUE_ENV','server')
+            ->env('NODE_ENV','production')
+            ->context('state',$this->state ?? [])
+            ->context('route',$route)
+            ->entry(ROOT_PATH.$entry)//
+            ->render();
+        $html_res = "
+<!DOCTYPE html>
+<html lang='{$this->lang}'>
+    <head>
+    {$head}
+        <title>{$this->title}</title>
+    </head>
+    <body>
+    {$html}
+    </body>
+    {$bottom}
+</html>
+        ";
+
+        return $this->htmlString($html_res,$status);
+    }
+
+    /**
+     * @param string $lang
+     * @return Response
+     */
+    public function setLang(string $lang): Response
+    {
+        $this->lang = $lang;
+        return $this;
+    }
+
+    /**
+     * @param string $title
+     * @return Response
+     */
+    public function setTitle(string $title): Response
+    {
+        $this->title = $title;
+        return $this;
+    }
+
+
 }

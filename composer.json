@@ -13,6 +13,8 @@
     "email": "hackerslord96@gmail.com"
   }],
   "require": {
-    "php": "^7.2"
+    "php": "^7.2",
+    "spatie/server-side-rendering": "^0.2.5",
+    "ext-v8js": "*"
   }
 }
