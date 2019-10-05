@@ -27,7 +27,8 @@ $ vue create .
 ```
 
 ```bash
-$ vue add path-vue```
+$ vue add path-vue
+```
 
 ## Contributing
 
