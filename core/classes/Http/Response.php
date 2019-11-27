@@ -9,6 +9,7 @@
 namespace Path\Core\Http;
 
 use Path\Core\Error\Exceptions;
+use Path\Core\Storage\Caches;
 use Spatie\Ssr\Engines\V8;
 use Spatie\Ssr\Renderer;
 use V8Js;
@@ -27,16 +28,34 @@ class Response
     private $should_cache = false;
     public $ssr_route_path = null;
     public $metas = [];
-    public $build_path = "";
+    public $build_path = "/dist/";
     public $is_binary = false;
     public $is_sse = false;
     private $response_state;
+    static $ASSETS_MANIFEST = null;
 
-
-    public function __construct($build_path = '/')
+    public function __construct($build_path = '/dist/')
     {
-        $this->build_path = $build_path;
+        $this->build_path = $build_path ?? '/dist/';
+
+        $this->generateManifest();
         return $this;
+    }
+    private function generateManifest(){
+        $manifest_filepath = ROOT_PATH.$this->build_path.'asset-manifest.json';
+        if(file_exists(ROOT_PATH.$this->build_path)){
+            if(!static::$ASSETS_MANIFEST){
+                if(file_exists($manifest_filepath)){
+                    if(!static::$ASSETS_MANIFEST = json_decode(file_get_contents($manifest_filepath))){
+                        throw new Exceptions\Router('Invalid Manifest.json file in '.$this->build_path);
+                    }
+                }else{
+                    throw new Exceptions\Router('manifest file does not exist, run: yarn build to generate one ');
+                }
+
+            }
+
+        }
     }
     public function json($arr, $status = 200)
     {
@@ -230,7 +249,7 @@ class Response
     public function setHead(
         ...$heads
     ){
-        $this->head = $heads;
+        $this->head = array_merge($this->head,$heads);
         return $this;
     }
     static function HTMLTag(string $tag,array $attrs){
@@ -241,46 +260,37 @@ class Response
     }
 
     private function arr2Tag(array $array,$should_cache = false){
-            $html_elements = [];
-            foreach ($array as $element){
-                foreach ($element as $tag => $attrs){
+        $html_elements = [];
+        foreach ($array as $element){
+            foreach ($element as $tag => $attrs){
 
-                    if(is_numeric($tag))
-                        throw new Exceptions\Path("Head array should be associative array where the key is the tag and value is the attributes");
+                if(is_numeric($tag))
+                    throw new Exceptions\Path("Head array should be associative array where the key is the tag and value is the attributes");
 
-                    $html = "<$tag";
-                    foreach ($attrs as $attr => $value){
-                        if(is_numeric($attr))
-                            throw new Exceptions\Path("Attribute array should be associative array where the key is the attribute and value is the attribute's value");
+                $html = "<$tag";
+                foreach ($attrs as $attr => $value){
+                    if(is_numeric($attr))
+                        throw new Exceptions\Path("Attribute array should be associative array where the key is the attribute and value is the attribute's value");
 //                    check if attr is src or href
-                        if((trim($attr) == 'src' || trim($attr) == 'href') && !$should_cache){
-                            $rand = rand(33,63434345);
-                            $html .= " {$attr}=\"{$value}?cache={$rand}\"";
-                        }else{
-                            $html .= " {$attr}=\"{$value}\"";
-                        }
+                    if((trim($attr) == 'src' || trim($attr) == 'href') && !$should_cache){
+                        $rand = rand(33,63434345);
+                        $html .= " {$attr}=\"{$value}?cache={$rand}\"";
+                    }else{
+                        $html .= " {$attr}=\"{$value}\"";
                     }
-
-                    $html .="></$tag>";
-                    $html_elements[] = $html;
                 }
 
+                $html .="></$tag>";
+                $html_elements[] = $html;
             }
 
-            return join("\n",$html_elements);
+        }
+
+        return join("\n",$html_elements);
     }
 
     public function getHead($should_cache = false){
 
-        /*
-         * [
-         *      meta => [
-         *              "attr" => value,
-         *              "anotherattr" => ""
-         *          ],
-         *
-         *
-         * */
         if(!empty($this->head)){
             return $this->arr2Tag($this->head,$should_cache);
         }else{
@@ -291,7 +301,7 @@ class Response
     public function setBottom(
         ...$bottom
     ){
-        $this->bottom = $bottom;
+        $this->bottom = array_merge($this->bottom,$bottom);
     }
 
     public function getBottom($should_cache = false){
@@ -321,41 +331,36 @@ class Response
     }
 
     public function SSR(
-        $entry,
-        $status = 200
+        $entry = null,
+        $status = 200,
+        $cache_salt = null
     ){
+//        entry points
+        $this->generateManifest();
+        $entry = $entry ?? $this->build_path.static::$ASSETS_MANIFEST->entrypoints->server->js[0];
+
         $router = new Router();
         $route = $this->ssr_route_path ?? $router->real_path;
 
-        $head = $this->getHead($this->should_cache);
-        $bottom = $this->getBottom($this->should_cache);
+        $hashed_entry = md5($entry.$route);
+//        get hashed state
 
-        $engine = new V8(new V8Js());
-        $renderer = new Renderer($engine);
-        $html = $renderer
-            ->debug(true)
-            ->enabled(true)
-            ->env('VUE_ENV','server')
-            ->env('NODE_ENV','production')
-            ->context('state',$this->state ?? [])
-            ->context('route',$route)
-            ->entry(ROOT_PATH.$entry)//
-            ->render();
-        $html_res = "
-<!DOCTYPE html>
-<html lang='{$this->lang}'>
-    <head>
-    {$head}
-        <title>{$this->title}</title>
-    </head>
-    <body>
-    {$html}
-    </body>
-    {$bottom}
-</html>
-        ";
 
-        return $this->htmlString($html_res,$status);
+        if($cache_salt){
+            $html = $this->compileJs($entry,$route);
+            Caches::cache($hashed_entry,$html);
+        }else{
+            $html = $this->compileJs($entry,$route);
+            Caches::cache($hashed_entry,$html);
+        }
+
+        $state = json_encode($this->state);
+
+        return $this->htmlString($this->generateHTML(
+            $html,
+            $state,
+            $this->build_path.'asset-manifest.json'
+        ),$status);
     }
 
     /**
@@ -376,6 +381,133 @@ class Response
     {
         $this->title = $title;
         return $this;
+    }
+
+    private function compileJs(?string $entry, $route)
+    {
+        $engine = new V8(new V8Js());
+
+        $renderer = new Renderer($engine);
+
+        $html = $renderer
+            ->debug(true)
+            ->enabled(true)
+            ->env('VUE_ENV','server')
+            ->env('NODE_ENV','development')
+            ->context('state',$this->state ?? [])
+            ->context('route',$route)
+            ->entry(ROOT_PATH.$entry)//
+            ->render();
+        return $html;
+    }
+
+    private function fetchMainClientJs(){
+        $assets = (object) static::$ASSETS_MANIFEST;
+
+        $main_client = $this->build_path.$assets->entrypoints->client->js[0];
+
+        $this->setHead(
+            Response::HTMLTag('link',[
+                'href' => $main_client,
+                'rel' => 'preload',
+                'as' => 'script'
+            ])
+        );
+
+        $this->setBottom(
+            Response::HTMLTag('script',[
+                "src" => $main_client
+            ])
+        );
+    }
+
+    private function fetchMainClientCSS(){
+        $assets = (object) static::$ASSETS_MANIFEST;
+
+        $main_client = $this->build_path.$assets->entrypoints->server->css[0];
+
+        $this->setHead(
+            Response::HTMLTag('link',[
+                'href' => $main_client,
+                'rel' => 'preload',
+                'as' => 'style'
+            ])
+        );
+
+        $this->setHead(
+            Response::HTMLTag('link',[
+                "href" => $main_client,
+                "rel" => "stylesheet"
+            ])
+        );
+    }
+
+    private function preFetchAssets(){
+        $ingores = [
+            'server.js',
+            'client.js',
+            'server.css',
+            'client.css'
+        ];
+        $assets = (array) static::$ASSETS_MANIFEST;
+        unset($assets['entrypoints']);//delete entry points
+
+        foreach ($assets as $asset => $path){
+            $split = explode('.',$asset);
+            $type = end($split);
+
+            if(in_array($asset,$ingores)){
+//                echo 'should ignore: '.$asset;
+                continue;
+            }
+
+            if($type == 'js'){
+                $this->setHead(
+                    Response::HTMLTag('link',[
+                        'href' => $this->build_path.$path,
+                        'rel' => 'prefetch'
+                    ])
+                );
+            }else{
+                $this->setHead(
+                    Response::HTMLTag('link',[
+                        'href' => $this->build_path.$path,
+                        'rel' => 'preload'
+                    ])
+                );
+            }
+
+        }
+
+    }
+
+    private function generateHTML(string $html, string $state, string $string)
+    {
+
+        $this->preFetchAssets();
+        $this->fetchMainClientCSS();
+        $this->fetchMainClientJs();
+
+
+        $head = $this->getHead($this->should_cache);
+        $bottom = $this->getBottom($this->should_cache);
+        $state = json_encode($this->state);
+        return "
+        
+        <!DOCTYPE html>
+<html lang='{$this->lang}'>
+    <head>
+    {$head}
+        <title>{$this->title}</title>
+    </head>
+    <body>{$html}</body>
+    <script>
+        window.__INITIAL_STATE__ = {$state}
+    </script>
+    {$bottom}
+</html>";
+
+
     }
 
 
