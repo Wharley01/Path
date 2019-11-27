@@ -20,7 +20,7 @@ class Router
     public  $root_path;
     private $database;
     private $response_instance;
-    private $build_path = "";
+    private $build_path = "/dist/";
     private $controllers_path = "path/Controllers/Route/";
     private $controllers_namespace = "Path\\App\\Controllers\\Route\\";
     private $middleware_path = "path/Http/MiddleWares/";
