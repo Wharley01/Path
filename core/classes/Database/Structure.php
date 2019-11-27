@@ -34,9 +34,7 @@ class Structure
      * */
     private $columns = [];
     private $primary_keys = ["id"];
-    private $unique_keys  = [];
-    private $foreign_keys = [];
-    private $foreign_key_references = [];
+    public $indexes = [];
     public $action = "creating"; #(creating || altering)
     private $engine = "InnoDB";
     private $charset = "latin1";
@@ -182,16 +180,25 @@ class Structure
         return $this;
     }
 
-    private function key($column = null, $type = "primary")
+    private function key($column, $type = "primary key",$reference = null)
     {
         if (!$column) {
             if (!$this->columns[count($this->columns) - 1]["name"])
                 throw new Exceptions\DataStructure("Column name not specified");
-            array_push($this->{$type . "_keys"}, $this->columns[count($this->columns) - 1]["name"]);
+
+            $this->indexes[strtoupper($type)][] = [
+                'column' => $this->columns[count($this->columns) - 1]["name"],
+                'references' => $reference
+            ];
+
             return $this;
         }
 
-        $this->{$type . "_keys"} = array_merge($this->{$type . "_keys"}, $column);
+        $this->indexes[strtoupper($type)][] = [
+            'column' => $column,
+            'references' => $reference
+        ];
+
         return $this;
     }
 
@@ -201,7 +208,12 @@ class Structure
      */
     public function primaryKey(...$column)
     {
-        $this->key($column, "primary");
+        $this->key($column, "primary key");
+        return $this;
+    }
+
+    public function indexColumn(...$column){
+        $this->key($column, "index");
         return $this;
     }
 
@@ -215,14 +227,24 @@ class Structure
         return $this;
     }
 
+    public function ordinaryIndex(...$column){
+        $this->key($column, "index");
+        return $this;
+    }
+
+    public function fullText(...$column){
+        $this->key($column, " fulltext");
+        return $this;
+    }
+
     /**
      * @param $reference
      * @return $this
      */
     public function references($reference)
     {
-        $this->key([], "foreign");
-        $this->foreign_key_references[] = $reference;
+        $column = $this->columns[count($this->columns) - 1]["name"];
+        $this->key($column, "foreign key",$reference);
         return $this;
     }
 
@@ -265,6 +287,22 @@ class Structure
 
         return $str;
     }
+
+    private function generateIndex(&$appended_query){
+        foreach ($this->indexes as $index => $column_arr){
+//                loop through the columns
+
+            foreach ($column_arr as $_column){
+                $column_name = $_column['column'];
+                $references = $_column['references'];
+                $appended_query .= ", ".strtoupper($index)."({$column_name}) ";
+
+                if($references){
+                    $appended_query .= " REFERENCES {$references}";
+                }
+            }
+        }
+    }
     public function getRawQuery()
     {
 
@@ -293,22 +331,25 @@ class Structure
                 if ($appended_query)
                     $appended_query .= ", " . $str;
                 else
-                    $appended_query  = $str;
-            }
-            $primary_key = join(",", array_unique($this->primary_keys));
-            $appended_query .= ", PRIMARY KEY({$primary_key})";
-            if ($this->unique_keys) {
-                $unique_key = join(",", array_unique($this->unique_keys));
-                $appended_query .= ", UNIQUE KEY({$unique_key})";
+                    $appended_query  .= $str;
             }
 
-            if ($this->foreign_keys) {
-                //                $foreign_keys = join(",",array_unique($this->foreign_keys));
-                for ($i = 0; $i < count($this->foreign_keys); $i++) {
-                    $foreign_keys = $this->foreign_keys[$i];
-                    $appended_query .= ", FOREIGN KEY({$foreign_keys}) REFERENCES {$this->foreign_key_references[$i]}";
-                }
-            }
+//            var_dump($appended_query);
+
+//            $primary_key = join(",", array_unique($this->primary_keys));
+//            $appended_query .= ", PRIMARY KEY({$primary_key})";
+//            if ($this->unique_keys) {
+//                $unique_key = join(",", array_unique($this->unique_keys));
+//                $appended_query .= ", UNIQUE KEY({$unique_key})";
+//            }
+//
+//            if ($this->foreign_keys) {
+//                //                $foreign_keys = join(",",array_unique($this->foreign_keys));
+//                for ($i = 0; $i < count($this->foreign_keys); $i++) {
+//                    $foreign_keys = $this->foreign_keys[$i];
+//                    $appended_query .= ", FOREIGN KEY({$foreign_keys}) REFERENCES {$this->foreign_key_references[$i]}";
+//                }
+//            }
         } elseif ($this->action == "altering") {
             foreach ($this->columns as $column) {
                 $str  = "";
@@ -339,13 +380,15 @@ class Structure
             }
         }
 
+        $this->generateIndex($appended_query);
+//        var_dump($appended_query);
         $query = str_replace("@appended_query", $appended_query, $query);
         return $query;
     }
 
     public function executeQuery()
     {
-        //        var_dump($this->columns);
+//                var_dump($this->getRawQuery());
         try {
             $query = $this->db_conn->query($this->getRawQuery());
         } catch (\PDOException $e) {
