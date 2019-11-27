@@ -473,13 +473,23 @@ abstract class Model
         $this->params["WHERE"] = array_merge($this->params["WHERE"], $params);
         return $this;
     }
+
+    public function whereColIsNull($col){
+        $this->rawWhere("{$col} IS NULL");
+        return $this;
+    }
+
+    public function whereColIsNotNull($col){
+        $this->rawWhere("{$col} IS NOT NULL");
+        return $this;
+    }
+
     public function identify(
-        $id = false
+        $id
     ) {
         if (!$this->primary_key)
             throw new Exceptions\Database("specify primary key in {$this->model_name}");
-        if ($id === false)
-            throw new Exceptions\Database("specify id in identify method of \"{$this->model_name}\"");
+
 
         $this->where_gen([$this->primary_key => $id], "AND");
         return $this;
@@ -832,7 +842,7 @@ abstract class Model
         $params     = array_merge($this->params["SELECT"], $this->params["WHERE"], $this->params["HAVING"], $this->params["LIMIT"]);
 
         //        var_dump($params);
-        //        echo "<br>".$query."<br>";
+//                echo "<br>".$query."<br>";
         try {
             $prepare                = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
