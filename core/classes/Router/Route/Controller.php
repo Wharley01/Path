@@ -77,4 +77,17 @@ abstract class Controller
     {
         return false;
     }
+
+    public function getResponseAsArray($method,Request $request){
+        if(!method_exists($this,$method))
+            throw new Exceptions\Router("{$method} does not exist");
+        $instance = new $this($request);
+
+        $response = $instance->{$method}($request,new Response());
+        if($content = json_decode($response->content,true)){
+            return $content;
+        }else{
+            return $response->content;
+        }
+    }
 }
