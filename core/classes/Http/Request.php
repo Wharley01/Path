@@ -27,15 +27,22 @@ class Request
     {
         $this->METHOD = @$_SERVER["REQUEST_METHOD"];
         $input = file_get_contents("php://input");
-        if (strlen(trim($input)) > 1) {
-            $input = file_get_contents("php://input");
+        $input_arr = [];
 
-        } else {
-            $input = "[]";
+        if(is_string($input) && strlen($input) > 0){
+            if($_input = json_decode($input, true)){
+                $input_arr = $_input;
+            }else{
+                parse_str($input,$input_arr);
+            }
+        }else{
+            $input_arr = [];
         }
-        if (@$_SERVER['REQUEST_METHOD'] === 'POST' && empty($_POST)) {
-            $_REQUEST = array_merge($_REQUEST, json_decode($input, true));
-            $this->post = json_decode($input, true);
+
+        if (@$_SERVER['REQUEST_METHOD'] !== 'GET' && array_key_exists('REQUEST_METHOD',@$_SERVER)) {
+
+            $_REQUEST = array_merge($_REQUEST ?? [], $input_arr);
+            $this->post = array_merge($input_arr,$_POST);
         }
 
 
@@ -44,7 +51,6 @@ class Request
 
         if (!@$_SERVER['REDIRECT_URL'])
             $_SERVER['REDIRECT_URL'] = "/";
-
         $this->server = (object)$_SERVER;
     }
     public function fetch($key)
@@ -58,9 +64,21 @@ class Request
      */
     public function getPost($key = null){
         if(!is_null($key))
-            return $this->post[$key] ??  $_POST[$key] ?? null;
+            return $this->inputs[$key] ??  $_POST[$key] ?? null;
 
-        return $this->post ?? $_POST;
+        return $this->inputs ?? $_POST;
+    }
+
+
+    /**
+     * @param null $key
+     * @return mixed
+     */
+    public function getPatch($key = null){
+        if(!is_null($key))
+            return $this->inputs[$key] ?? null;
+
+        return $this->inputs ?? [];
     }
 
 
@@ -71,12 +89,14 @@ class Request
         return $_GET;
     }
 
+
     /**
      * @param mixed $params
      */
     public function setParams($params)
     {
         $this->params = $params;
+        return $this;
     }
 
     public  function file($name)
@@ -92,13 +112,14 @@ class Request
         return $this;
     }
 
-    public function setPostFields(array $fields)
+    public function setPost(array $fields)
     {
         $this->sending_post_feilds = $fields;
+        $this->inputs = $fields;
         return $this;
     }
 
-    public function setPostJsonFields(array $fields)
+    public function setPostJson(array $fields)
     {
         $this->sending_post_json_fields = json_encode($fields);
         return $this;
@@ -107,6 +128,7 @@ class Request
     public function setQueryParams(array $fields)
     {
         $this->sending_query_fields = $fields;
+        $_GET = $fields;
         return $this;
     }
 
