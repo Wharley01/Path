@@ -76,6 +76,7 @@ class Migration extends CInterface
         foreach ($params as $param => $arg) {
             $this->runCommand($param, $arg);
         }
+
     }
     private function toLower($string)
     {
