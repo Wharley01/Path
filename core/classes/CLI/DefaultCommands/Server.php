@@ -30,7 +30,7 @@ class Server extends CInterface
         "port"  => [
             "desc" => "port to use"
         ],
-        "--ip=" => [
+        "--ip" => [
             "desc" => "IP to use"
         ]
     ];
@@ -53,6 +53,9 @@ class Server extends CInterface
 
     private function getIp($ip)
     {
+        if(!$ip)
+            return self::DEFAULT_IP;
+
         if (@filter_var($ip, FILTER_VALIDATE_IP)) {
             return $ip;
         } else {
@@ -64,7 +67,7 @@ class Server extends CInterface
     public function entry($argument)
     {
         $port = $this->getPort(@$argument['port']);
-        $ip = $this->getIp($argument['--ip=']);
+        $ip = $this->getIp($argument['--ip'] ?? null);
         $cmd = "cd " . ROOT_PATH . "/ && php -S {$ip}:{$port}";
         echo PHP_EOL;
         $this->write("`green`[+] Server started at: `green` {$ip}:{$port}" . PHP_EOL);
