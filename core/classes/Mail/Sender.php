@@ -17,7 +17,10 @@ class Sender
     private $mail_state;
     private $mail_to = null;
     private $mail_from = null;
+    private $reply_to = [];
     private $throw_exception = true;
+
+    private $use = '';
 
     private $errors;
 
@@ -25,42 +28,40 @@ class Sender
     {
         $this->mailable = $mailable;
         $this->mail_state = new State();
+
+        $this->use = strtolower(config("MAILER->USE") ?? '');
     }
 
-    /**
-     * @return mixed
-     */
-    public function getMailable():?Mailable
-    {
-        return new $this->mailable;
-    }
-
-    public function bindState(Array $array){
-        foreach ($array as $property => $value){
-            $this->mail_state->{$property} = $value;
-        }
+    public function bindState(array $array){
+        $this->mail_state->bind($array);
         return $this;
     }
 
     private function phpMailer():PHPMailer{
         $mail = new PHPMailer();
 
-        $mail->SMTPDebug = 0;                                 // Enable verbose debug output
-        $mail->isSMTP();                                      // Set mailer to use SMTP
-        $mail->Host = config("MAILER->SMTP->host");  // Specify main and backup SMTP servers
-        $mail->SMTPAuth = true;                               // Enable SMTP authentication
-        $mail->Username = config("MAILER->SMTP->username");        // SMTP username
-        $mail->Password = config("MAILER->SMTP->password");        // SMTP password
-        $mail->SMTPSecure = config("MAILER->SMTP->protocol");      // Enable TLS encryption, `ssl` also accepted
-        $mail->Port = config("MAILER->SMTP->port");                // TCP port to connect to
-        $mail->CharSet = config("MAILER->SMTP->charset");
+        if ($this->use == 'smtp'){
+            $mail->isSMTP();// Set mailer to use SMTP
+            $mail->Host = config("MAILER->SMTP->host");  // Specify main and backup SMTP servers
+            $mail->SMTPAuth = true;                               // Enable SMTP authentication
+            $mail->Username = config("MAILER->SMTP->username");        // SMTP username
+            $mail->Password = config("MAILER->SMTP->password");        // SMTP password
+            $mail->SMTPSecure = config("MAILER->SMTP->protocol");      // Enable TLS encryption, `ssl` also accepted
+            $mail->Port = config("MAILER->SMTP->port");                // TCP port to connect to
+            $mail->CharSet = config("MAILER->SMTP->charset");
+            $mail->SMTPDebug = 0;                                 // Enable verbose debug output
+        } elseif ($this->use == 'sendmail'){
+            $mail->isSendmail();
+        }else{
+            throw new Exceptions\Path("Specified mail configuration is invalid");
+        }
 
         $from = $this->getFrom();
         $recipient = $this->getTo();
         //Recipients
         $mail->setFrom($from["email"], $from["name"] ?? "");
         $mail->addAddress($recipient["email"]);     // Add a recipient
-        $mail->addReplyTo($from["email"], $from["name"]);
+        $mail->addReplyTo($this->reply_to['email'] ?? $from["email"], $this->reply_to['name'] ?? $from["name"]);
         //Content
         $mail->isHTML(true);                                  // Set email format to HTML
         return $mail;
@@ -81,6 +82,7 @@ class Sender
 
     /**
      * @param mixed $from
+     * @return Sender
      */
     public function setFrom($from)
     {
@@ -92,10 +94,12 @@ class Sender
         }else{
             $this->mail_from = $from;
         }
+        return $this;
     }
 
     /**
      * @param mixed $to
+     * @return Sender
      */
     public function setTo($to)
     {
@@ -107,6 +111,21 @@ class Sender
         }else{
             $this->mail_to = $to;
         }
+        return $this;
+    }
+
+
+    public function setReplyTo($to)
+    {
+        if(is_string($to)){
+            $this->reply_to = [
+                "email" => $to,
+                "name"  => null
+            ];
+        }else{
+            $this->reply_to = $to;
+        }
+        return $this;
     }
 
     /**
@@ -153,25 +172,25 @@ class Sender
 
     public function send(){
         $mailable = $this->mailable;
-        $this->mailable = new $mailable($this->mail_state);
+        $this->mailable = is_object($this->mailable) ? $this->mailable : new $mailable($this->mail_state);
         $mailable = $this->mailable;
         if($mailable instanceof Mailable){
             $template = $mailable->template($this->mail_state);
             $title = $mailable->title($this->mail_state);
             $this->sendMail($template,$title);
-
         }else{
             throw new Exceptions\Mailer("Invalid Mailable Class");
         }
 
     }
 
-    private function sendMail($template,$title){
+    protected function sendMail($template,$title){
 
         $to = $this->getTo();
         $from = $this->getFrom();
         $should_use_smtp = config("MAILER->USE_SMTP");
-        if($should_use_smtp){
+
+        if($this->use){
             $mail = $this->phpMailer();
             $mail->Subject = $title;
             $mail->Body    = $template;
