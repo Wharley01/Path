@@ -2,34 +2,45 @@
   "DATABASE": {
     "host": "localhost",
     "user": "root",
-    "password": "",
-    "name": "test"
+    "password": "@@##$$1234",
+    "name": "your_db",
+    "charset": "utf8mb4",
+    "collate": "utf8mb4_unicode_ci"
+  },
+  "SESSION": {
+    "domain": ".website.com"
   },
   "FILE": {
     "max_size": 5242880
   },
+  "SSR": {
+    "is_node": false,
+    "node_path": "node"
+  },
   "PROJECT": {
     "name": "Path",
-    "status": "production",
+    "is_production": true,
+    "recaptcha_secret_key": "6Le3JsUUAAAAAN66trdf1SJsXpz_tA3K3uSg-Ltv",
     "version": "1.0",
     "directory": "",
-    "host": "localhost",
-    "port": 3000,
+    "host": "192.168.0.128",
+    "port": 8080,
     "protocol": "http",
-    "server": "http://macroware-vue.loc",
+    "server": "https://localhost:8080",
     "_comment": "SSE/WS can be value of watch_method",
-    "watch_method": "WS"
+    "watch_method": "SSE",
+    "currency_format": "decimal(0,00)"
   },
   "WATCHER": {
-    "method": "WS",
+    "method": "SSE",
     "WEBSOCKET": {
-      "host": "macroware-vue.loc",
+      "host": "https://localhost:8080",
       "port": 443,
       "scheme": "SSL"
     }
   },
   "MAILER": {
-    "USE_SMTP": false,
+    "USE": "sendmail",
     "SMTP": {
       "host": "",
       "username": "",
@@ -39,8 +50,8 @@
       "charset": "UTF-8"
     },
     "ADMIN_INFO": {
-      "email": "admin@__path.com",
-      "name": "Path Admin"
+      "email": "noreply@waploadadewale.dev",
+      "name": "Path"
     }
   }
 }
