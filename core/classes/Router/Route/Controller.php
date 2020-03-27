@@ -80,7 +80,7 @@ abstract class Controller
 
     public function onOptions(Request $request, Response $response)
     {
-        return false;
+        return $response->success('OPTION SENT');
     }
 
     public function getResponseAsArray($method){
