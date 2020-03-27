@@ -11,6 +11,7 @@ function root_path()
     return preg_replace("/Core$/i", "", __DIR__);
 }
 
+$parsed_config = null;
 /**
  * @param $key
  * @return mixed
@@ -18,21 +19,23 @@ function root_path()
  */
 function config($key)
 {
-    $root_path = root_path() . "path" . DIRECTORY_SEPARATOR . "project.pconf.json";
-    if (!file_exists($root_path))
-        throw new Exceptions\Config("config file \"{$root_path}\" not found");
+    if ($GLOBALS['parsed_config'] == null){
+        $root_path = root_path() . "path" . DIRECTORY_SEPARATOR . "project.pconf.json";
+        if (!file_exists($root_path))
+            throw new Exceptions\Config("config file \"{$root_path}\" not found");
 
-    if (!$configs = json_decode(file_get_contents($root_path), true))
-        throw new Exceptions\Config("unable to parse json in \"{$root_path}\", please check the syntax docs for json");
+        if (!$GLOBALS['parsed_config'] = json_decode(file_get_contents($root_path), true))
+            throw new Exceptions\Config("unable to parse json in \"{$root_path}\", please check the syntax docs for json");
+    }
 
+    $configs = $GLOBALS['parsed_config'];
     $key = explode("->", $key);
-    $root = $configs[$key[0]];
+    $root = @$configs[$key[0]];
     for ($i = 1; $i < count($key); $i++) {
         $root = @$root[$key[$i]];
     }
     return $root;
 }
-
 
 /**
  * @param mixed $classes
