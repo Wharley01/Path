@@ -11,8 +11,8 @@ namespace Path\Plugins\SSEController;
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
 use Path\Core\Http\Watcher\SSE;
-use Path\Core\Storage\Sessions;
 use Path\Core\Router\Route\Controller;
+use Path\Core\Storage\Sessions;
 
 class SSEServer extends Controller
 {
@@ -50,7 +50,7 @@ class SSEServer extends Controller
         }
 
         if ($this->sse_watcher->changesOccurred()) {
-            return $response->SSEStream($this->sse_watcher->getResponse())->addHeader([
+            return $response->SSEStream($this->sse_watcher->getResponse(),5000)->addHeader([
                 'Access-Control-Allow-Origin' => '*',
                 'Access-Control-Allow-Methods' => 'GET, POST',
                 'Access-Control-Allow-Headers' => 'X-Requested-With'
