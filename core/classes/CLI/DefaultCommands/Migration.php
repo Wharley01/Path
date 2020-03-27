@@ -112,6 +112,9 @@ class Migration extends CInterface
                 throw new Exceptions\Database("\"{$table}\" Does not exist in {$this->migration_files_path}");
             } elseif ($table_class_instance instanceof Table) {
                 $this->$hook($table, $table_class_instance);
+                if($hook == "install" || $hook == "update"){
+                    $this->activate($table, $table_class_instance);
+                }
             } else {
                 throw new Exceptions\Database("{$table} Must implement Path\\Database\\Table");
             }
@@ -123,6 +126,9 @@ class Migration extends CInterface
                     throw new Exceptions\Database("\"{$table}\" Does not exist in {$this->migration_files_path}");
                 } elseif ($table_class_instance instanceof Table) {
                     $this->$hook($table, $table_class_instance);
+                    if($hook == "install" || $hook == "update"){
+                        $this->activate($table, $table_class_instance);
+                    }
                 } else {
                     throw new Exceptions\Database("{$table} Must implement Path\\Database\\Table");
                 }
