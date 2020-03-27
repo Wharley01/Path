@@ -18,6 +18,7 @@ abstract class Model
     protected $updated_col     = "last_update_date";
     protected $created_col     = "date_added";
     protected $record_per_page = 10;
+    private $has_specified_needed = false;
     public $query_structure = [
         "WITH"              => "",
         "SELECT"            => [
@@ -66,7 +67,7 @@ abstract class Model
 
     protected $fetch_method         = "FETCH_ASSOC";
     private $pages                = [];
-    private $current_page        = 0;
+    public $current_page        = 0;
     public $total_record         = 0;
 
     private $validator;
@@ -877,30 +878,32 @@ abstract class Model
         $sing_record = false
     ) {
 
-        if (is_array($cols)) {
-            if (!$cols) {
-                if ((is_array($this->readable_cols) && count($this->readable_cols) > 0)) {
-                    $cols = $this->filterNonReadable($this->readable_cols);
-                } elseif (is_array($this->non_readable_cols) && count($this->non_readable_cols) > 0) {
-                    $cols = $this->filterNonReadable($this->table_columns);
-                } else {
-                    $cols = $this->filterNonReadable($this->table_columns);
+        if(!$this->has_specified_needed){
+            if (is_array($cols)) {
+                if (!$cols) {
+                    if ((is_array($this->readable_cols) && count($this->readable_cols) > 0)) {
+                        $cols = $this->filterNonReadable($this->readable_cols);
+                    } elseif (is_array($this->non_readable_cols) && count($this->non_readable_cols) > 0) {
+                        $cols = $this->filterNonReadable($this->table_columns);
+                    } else {
+                        $cols = $this->filterNonReadable($this->table_columns);
+                    }
                 }
-            }
 
-            $cols = $this->filterNonReadable($cols);
+                $cols = $this->filterNonReadable($cols);
 
-            //            if(!$cols)
-            //                throw new Exceptions\Database("Error Attempting to update Empty data set");
-            if (!$this->table_name)
-                throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
-            if (count($cols) > 0) {
-                $this->rawColumnGen($cols);
-            }
-        }else{
-            if (is_string($cols)){
-                $cols = explode(",", $cols);
-                $this->rawColumnGen($cols);
+                //            if(!$cols)
+                //                throw new Exceptions\Database("Error Attempting to update Empty data set");
+                if (!$this->table_name)
+                    throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
+                if (count($cols) > 0) {
+                    $this->rawColumnGen($cols);
+                }
+            }else{
+                if (is_string($cols)){
+                    $cols = explode(",", $cols);
+                    $this->rawColumnGen($cols);
+                }
             }
         }
         $query      = $this->buildWriteRawQuery("SELECT");
@@ -994,13 +997,16 @@ abstract class Model
         $this->params["LIMIT"]          = [$_from, $_to];
         return $this;
     }
-
-    public function getPage($page = 1,$cols = [])
+    public function setPage($page){
+        $this->current_page = $page;
+        return $this;
+    }
+    public function getPage($page = null,$cols = [])
     {
         //        get total record
         $page -= 1;
-        $this->current_page = $page;
-        $offset =  $this->record_per_page * $page;
+        $this->current_page = $page ?? $this->current_page;
+        $offset =  $this->record_per_page * $this->current_page;
         $total = $this->record_per_page;
 
         $this->query_structure["LIMIT"] = "?,?";
@@ -1289,6 +1295,7 @@ abstract class Model
      */
     public function select(...$columns)
     {
+        $this->has_specified_needed = true;
         if (count($columns) == 1 && $columns[0] instanceof Model) {
             $columns = $columns[0];
             $this->generateRawSelectFromInstance($columns);
