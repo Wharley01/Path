@@ -7,6 +7,7 @@ namespace Path\Core\Database;
 use Path\Core\Database\Connections\MySql;
 use Path\Core\Error\Exceptions;
 use Path\Core\Misc\Validator;
+use Path\Core\Storage\Caches;
 
 abstract class Model
 {
@@ -100,6 +101,11 @@ abstract class Model
             return $column;
         }
     }
+
+    private function toColName($column){
+        $column = explode('.',$column);
+        return end($column);
+    }
     private function convertColumnsToFull($columns)
     {
         $return = [];
@@ -116,27 +122,26 @@ abstract class Model
     }
     private function getColumns($table)
     {
-        try {
-            $q = $this->conn->query("DESCRIBE {$table}");
-            $cols = [];
-            foreach ($q as $k) {
-                $cols[] = $table . "." . $k["Field"];
+        $cache_path = "table_{$table}_cols";
+        $read_path =  ROOT_PATH.'path/Database/Activation/';
+
+        $cached_cols = Caches::get( $cache_path, $read_path);
+        if($cached_cols){
+            if($cols = json_decode($cached_cols)){
+
+                return $cols;
+            }else{
+                throw new Exceptions\Database('Database model not activated, "run ./__path app activate '.$table.'" to activate');
             }
-            return $cols;
-        } catch (\PDOException $e) {
-            throw new Exceptions\Database($e->getMessage());
         }
+
     }
 
     private function generatekeys($table)
     {
         try {
-            $q = $this->conn->query("DESCRIBE {$table}");
-            $keys = [];
-            foreach ($q as $k) {
-                $keys[] = $k["Field"];
-            }
-            $this->keys = $keys;
+
+            $this->keys = $this->table_columns;
         } catch (\PDOException $e) {
             throw new Exceptions\Database($e->getMessage());
         }
@@ -367,6 +372,15 @@ abstract class Model
         return $return;
     }
 
+    private function isExpression($value){
+        return preg_match('/^`(.+)`$/',$value);
+    }
+    private function stripOffExpIdentifier($value){
+        $value = preg_replace('/^`/','',$value);
+        $value = preg_replace('/`$/','',$value);
+
+        return $value;
+    }
     /**
      * @param array $data
      * @param string $type
@@ -378,12 +392,15 @@ abstract class Model
 
 
         foreach ($data as $column => $value) {
+
+            $has_value = array_key_exists($type,$this->query_structure) && strlen($this->query_structure[$type]) > 0;
+
             $string = "";
             if ($this->isJsonRef($column)) {
                 $_value = is_array($value) ? $this->generateSqlObjFromArray($value) : "?";
                 $func = $json_action == "UPDATE" ? "JSON_SET" : "JSON_INSERT";
                 $_column = $this->genJsonPath($column);
-                if (@$this->query_structure[$type]) {
+                if ($has_value) {
                     $this->query_structure[$type] .= ",{$_column['column']} = {$func}({$_column['column']},'{$_column['path']}',$_value)";
                     if ($_value == "?") {
                         $this->params[$type][] = $value;
@@ -396,60 +413,70 @@ abstract class Model
                 }
                 $string = preg_replace("/,\s*$/", "", $string); //remove trailing comma
             } else {
+                $has_value = array_key_exists($type,$this->query_structure) && strlen($this->query_structure[$type]) > 0;
+
                 $value = is_array($value) ? json_encode($value) : $value;
                 $string = "";
-                if (@$this->query_structure[$type]) {
-                    $this->query_structure[$type] .= ",{$column} = ?";
+
+                if(!$this->isExpression($value)){
+                    $this->query_structure[$type] .= $has_value ? ",{$column} = ?":"{$column} = ?";
                     $this->params[$type][] = $value;
-                } else {
-                    $this->query_structure[$type] .= "{$column} = ?";
-                    $this->params[$type][] = $value;
+                }else{
+                    $value = $this->stripOffExpIdentifier($value);
+                    $this->query_structure[$type] .= $has_value ?  ",{$column} = $value": "{$column} = $value";
                 }
                 $string = preg_replace("/,\s*$/", "", $string); //remove trailing comma
             }
         }
     }
+
     /**
      * @param $conditions
      * @return $this
+     * @throws Exceptions\Database
      */
     public function where(
         $conditions
     ) {
-        $this->where_gen($conditions, "AND");
+        if($conditions)
+            $this->where_gen($conditions, "AND");
         return $this;
     }
 
     public function whereCreatedSince($days)
     {
         $where = "from_unixtime({$this->created_col}) >= date_sub(now(), interval {$days} day)";
-        if ($this->query_structure["WHERE"]["query"]) {
-            $this->query_structure["WHERE"]["query"] .= " AND " . $where;
-        } else {
-            $this->query_structure["WHERE"]["query"] = $where;
-        }
+        $this->where_gen($where);
+        return $this;
+    }
+
+    public function whereNotCreatedSince($days)
+    {
+        $where = "from_unixtime({$this->created_col}) < date_sub(now(), interval {$days} day)";
+        $this->where_gen($where);
         return $this;
     }
 
     public function whereUpdatedSince($days)
     {
         $where = "from_unixtime({$this->updated_col}) >= date_sub(now(), interval {$days} day)";
-        if ($this->query_structure["WHERE"]["query"]) {
-            $this->query_structure["WHERE"]["query"] .= " AND " . $where;
-        } else {
-            $this->query_structure["WHERE"]["query"] = $where;
-        }
+        $this->where_gen($where);
+
+        return $this;
+    }
+
+
+
+    public function whereCreatedOn($date,$date_format = '%e/%c/%Y')
+    {
+        $this->rawWhere("(DATE_FORMAT(FROM_UNIXTIME($this->created_col), '$date_format') = ?)",$date);
         return $this;
     }
 
     public function whereNotUpdatedSince($days)
     {
         $where = "from_unixtime({$this->updated_col}) < date_sub(now(), interval {$days} day)";
-        if ($this->query_structure["WHERE"]["query"]) {
-            $this->query_structure["WHERE"]["query"] .= " AND " . $where;
-        } else {
-            $this->query_structure["WHERE"]["query"] = $where;
-        }
+        $this->where_gen($where);
         return $this;
     }
 
@@ -564,7 +591,7 @@ abstract class Model
                 break;
             case "SELECT":
                 $columns     = $this->query_structure["SELECT"]["query"];
-                $query      = "SELECT SQL_CALC_FOUND_ROWS {$columns}";
+                $query      = "SELECT {$columns}";
                 $query     .= PHP_EOL . " FROM {$this->table_name} ";
                 if ($this->query_structure["JOIN"]) {
                     $query .= " " . $this->rawJoinGen($this->query_structure["JOIN"]);
@@ -652,6 +679,36 @@ abstract class Model
         return $this;
     }
 
+    public function incrementWhereExist($column, $by = 1){
+        $exists = (clone $this)->exists();
+        if($exists){
+            $this->increment($column,$by)->update();
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public function decrementWhereExist($column, $by = 1){
+        $exists = (clone $this)->exists();
+        if($exists){
+            $this->decrement($column,$by)->update();
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public function updateWhereExist(?array $data){
+        $exists = (clone $this)->exists();
+        if($exists){
+            $this->update($data);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
     public function update(array $data = [])
     {
         if (!$data)
@@ -664,7 +721,8 @@ abstract class Model
         if (!$this->table_name)
             throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
 
-        $data[$this->updated_col] = time();
+        $data[$this->updated_col ?? $this->table_name.'.'."last_update_date"] = array_key_exists($this->toColName($this->updated_col),$data) ? $data[$this->toColName($this->updated_col)] : time();
+
         if ($this->validator instanceof Validator) {
             if ($this->validator->hasError()) {
                 throw new Exceptions\Database("Validation failed");
@@ -691,22 +749,22 @@ abstract class Model
         return $this;
     }
 
-    public function increment($column)
+    public function increment($column,$by = 1)
     {
         if ($this->query_structure["UPDATE"]) {
-            $this->query_structure["UPDATE"] = ", {$column} = {$column} + 1";
+            $this->query_structure["UPDATE"] = ", {$column} = {$column} + {$by}";
         } else {
-            $this->query_structure["UPDATE"] = "{$column} = {$column} + 1";
+            $this->query_structure["UPDATE"] = "{$column} = {$column} + {$by}";
         }
         return $this;
     }
 
-    public function decrement($column)
+    public function decrement($column,$by = 1)
     {
         if ($this->query_structure["UPDATE"]) {
-            $this->query_structure["UPDATE"] = ", {$column} = {$column} - 1";
+            $this->query_structure["UPDATE"] = ", {$column} = {$column} - {$by}";
         } else {
-            $this->query_structure["UPDATE"] = "{$column} = {$column} - 1";
+            $this->query_structure["UPDATE"] = "{$column} = {$column} - {$by}";
         }
         return $this;
     }
@@ -755,8 +813,13 @@ abstract class Model
         if (!$this->table_name)
             throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
         //        add miscellinouse data
-        $data[$this->updated_col] = time();
-        $data[$this->created_col ?? "date_added"] = time();
+
+        $data[$this->updated_col ?? $this->table_name.'.'."last_update_date"] = array_key_exists($this->toColName($this->updated_col),$data) ? $data[$this->toColName($this->updated_col)] : time();
+
+        $data[$this->created_col ?? $this->table_name.'.'."date_added"] = array_key_exists($this->toColName($this->created_col),$data) ? $data[$this->toColName($this->created_col)] : time();
+        unset($data['date_added']);
+        unset($data['last_update_date']);
+
         if ($this->validator instanceof Validator) {
             if ($this->validator->hasError()) {
                 return false;
@@ -766,9 +829,11 @@ abstract class Model
         //        GET and set raw query from array
         $this->rawKeyValueBind($data, "INSERT");
         //        Process and execute query
-
+//        return;
         $query      = $this->buildWriteRawQuery("INSERT");
+
         $params     = $this->params["INSERT"];
+
         //        var_dump($params);
         //        echo PHP_EOL.$query;
 
@@ -840,18 +905,18 @@ abstract class Model
         }
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($this->params["SELECT"], $this->params["WHERE"], $this->params["HAVING"], $this->params["LIMIT"]);
-
-        //        var_dump($params);
+//
+//                var_dump($params);
 //                echo "<br>".$query."<br>";
+//                exit();
         try {
             $prepare                = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
-            $this->total_record     = $this->conn->query("SELECT FOUND_ROWS()")->fetchColumn();
-            $this->total_pages = ceil($this->total_record / $this->record_per_page);
 
             if ($sing_record) {
                 $this->clearMemory();
-                return $prepare->fetch(constant("\PDO::{$this->fetch_method}"));
+                $data = $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
+                return count($data) > 0 ? $data[0]:null;
             } else {
                 $this->clearMemory();
                 return $prepare->fetchAll(constant("\PDO::{$this->fetch_method}"));
@@ -964,6 +1029,9 @@ abstract class Model
             }
         }
         return $this;
+    }
+    public function shuffle(){
+        return $this->sortBy('RAND()');
     }
     public function like($wild_card)
     {
@@ -1082,11 +1150,12 @@ abstract class Model
      * @param array $cols
      * @return object
      */
-    public function first($cols = []): object
+    public function first($cols = []): ?object
     {
         $this->query_structure["ORDER_BY"] = "{$this->primary_key} ASC";
         $this->query_structure["LIMIT"]    = "0,1";
-        return (object)$this->all($cols, true);
+        $data = $this->all($cols, true);
+        return $data ? (object) $data:null;
     }
 
     /**
@@ -1101,17 +1170,20 @@ abstract class Model
     /**
      * @param array $cols
      * @return object
+     * @throws Exceptions\Database
      */
-    public function last($cols = []): object
+    public function last($cols = []): ?object
     {
         $this->query_structure["ORDER_BY"] = "{$this->primary_key} DESC";
         $this->query_structure["LIMIT"]    = "0,1";
-        return (object)$this->all($cols, true);
+        $data = $this->all($cols, true);
+        return $data ? (object) $data:null;
     }
 
 
     /**
      * @return object
+     * @throws Exceptions\Database
      */
     public function getLast()
     {
@@ -1120,11 +1192,30 @@ abstract class Model
 
     /**
      * @return mixed
+     * @throws Exceptions\Database
      */
     public function count()
     {
-        $this->query_structure["SELECT"]["query"] = "COUNT(*)";
-        return (int) $this->all(null, true)["COUNT(*)"];
+        $primary = $this->primary_key;
+        $this->query_structure["SELECT"]["query"] = "COUNT({$primary})";
+        return (int) $this->all(null, true)["COUNT({$primary})"];
+    }
+
+    public function getTotalPages(){
+        $total_record = (clone $this)->count();
+        $this->total_pages = ceil($total_record / $this->record_per_page);
+        return $this->total_pages;
+    }
+
+    /**
+     * @param $column
+     * @return mixed
+     * @throws Exceptions\Database
+     */
+    public function getSum($column)
+    {
+        $this->select("SUM($column)");
+        return (int) $this->all(null, true)["SUM($column)"];
     }
 
     /**
