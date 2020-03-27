@@ -9,6 +9,7 @@ try {
     $__routes = new Router();
     $__routes->get("SSE/@controller/@action", 'Path\Plugins\SSEController\SSEServer->watch');
     require_once "path/Routes.php";
+    $__routes->end();
 } catch (Throwable $e) {
     echo "<pre>";
     echo "Path error: " . $e->getMessage() . " trace: <pre>" . $e->getTraceAsString() . "</pre>";
