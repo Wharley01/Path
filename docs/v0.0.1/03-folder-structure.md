@@ -9,6 +9,7 @@ These are the folders you probably would be concerned with (unless you are plann
 -------Controllers\
 ----------Live\
 ----------Route\
+----------Graph\
 -------Database\
 ----------Migration\
 ----------Models\

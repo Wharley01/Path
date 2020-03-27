@@ -18,19 +18,14 @@ Initiate folder as git repository
 git init
 ```
 
-### Installation Method one
+### Installation using composer
 
-Pull Path's source to the directory you created with:
-
-```bash
-git pull https://github.com/Wharley01/Path.git
-```
-
-If you are trying to download Path into an already existing git folder with unrelated history use:
+navigate to an empty folder you created for your project:
 
 ```bash
-git pull http://github.com/Wharley01/Path.git --allow-unrelated-histories
+$ composer create-project wharley01/path .
 ```
+
 
 ### Installation method two
 
