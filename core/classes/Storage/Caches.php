@@ -16,12 +16,13 @@ class Caches
     /**
      *
      * @param $key
+     * @param null $read_path
      * @return null|string
      */
-    static public function get($key): ?string
+    static public function get($key,$read_path = null): ?string
     {
         //        TODO: Do some validation for the key
-        $caches_path = root_path() . self::CACHE_DIR . $key . ".pch";
+        $caches_path = ($read_path ?? ROOT_PATH . self::CACHE_DIR) . $key . ".pch";
         $value = @file_get_contents($caches_path);
         return  $value ?? null;
     }
@@ -30,31 +31,33 @@ class Caches
      *
      * @param $key
      * @param $value
+     * @param null $write_path
      * @return bool|int
      */
-    static public function set($key, $value)
+    static public function set($key, $value, $write_path = null)
     {
-        $caches_path = root_path() . self::CACHE_DIR . $key . ".pch";
+        $caches_path = ($write_path ?? ROOT_PATH . self::CACHE_DIR) . $key . ".pch";
         return file_put_contents($caches_path, $value);
     }
 
-    static public function cache($key, $value)
+    static public function cache($key, $value, $write_path = null)
     {
-        $caches_path = root_path() . self::CACHE_DIR . $key . ".pch";
+        $caches_path = ($write_path ?? ROOT_PATH . self::CACHE_DIR) . $key . ".pch";
         return file_put_contents($caches_path, $value);
     }
 
     /**
      * @param $key
+     * @param null $write_path
      */
-    static public function delete($key)
+    static public function delete($key, $write_path = null)
     {
-        $caches_path = root_path() . self::CACHE_DIR . $key . ".pch";
+        $caches_path = ($write_path ?? ROOT_PATH . self::CACHE_DIR). $key . ".pch";
         @unlink($caches_path);
     }
 
     static function deleteAll(){
-        $files = glob(self::CACHE_DIR.'*'); // get all file names
+        $files = glob(($write_path ?? ROOT_PATH . self::CACHE_DIR).'*'); // get all file names
         foreach($files as $file){ // iterate files
             if(is_file($file))
                 unlink($file); // delete file
