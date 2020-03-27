@@ -14,6 +14,7 @@ class Request
     public $METHOD;
     public $server;
     public $params;
+    public $args;
     public $inputs;
     public $fetching;
     public $headers = [];
@@ -75,7 +76,7 @@ class Request
      * @return mixed
      */
     public function getPost($key = null){
-        $posts = array_merge($this->inputs,$_POST);
+        $posts = $this->inputs;
         $posts = array_merge($posts,$this->sending_post_feilds);
         if(!is_null($key))
             return $posts[$key] ?? null;
@@ -190,6 +191,11 @@ class Request
     {
         $this->sending_post_feilds = array_merge($this->sending_post_feilds,$fields);
 //        $this->inputs = $fields;
+        return $this;
+    }
+
+    public function overridePost(array $fields){
+        $this->inputs = $fields;
         return $this;
     }
 
@@ -349,5 +355,10 @@ class Request
     public function delete($url): ?Response
     {
         return $this->httpRequest($url, "DELETE");
+    }
+
+    public function getAny(string $key)
+    {
+        return $this->getQuery($key) ?? $this->getPost($key) ?? $this->getPatch($key);
     }
 }
