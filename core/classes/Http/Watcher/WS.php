@@ -9,11 +9,11 @@
 namespace Path\Core\Http\Watcher;
 
 
-use Path\Core\Http\Response;
-use Path\Core\Storage\Caches;
-use Path\Core\Router\Live\Controller as LiveController;
-use Path\Core\Storage\Sessions;
 use Path\Core\Error\Exceptions;
+use Path\Core\Http\Response;
+use Path\Core\Router\Live\Controller as LiveController;
+use Path\Core\Storage\Caches;
+use Path\Core\Storage\Sessions;
 
 
 class WS implements WatcherInterface
