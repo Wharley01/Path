@@ -8,9 +8,9 @@
 
 namespace Path\Core\Router\Route;
 
+use Path\Core\Error\Exceptions;
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
-use Path\Core\Error\Exceptions;
 
 abstract class Controller
 {
@@ -22,6 +22,11 @@ abstract class Controller
      * @return mixed|null
      * @throws Exceptions\Router
      */
+    public function __construct(Request $request)
+    {
+        $this->request = $request;
+    }
+
     final public function response(Request $request, Response $response)
     {
         $this->request = $request;
@@ -78,16 +83,16 @@ abstract class Controller
         return false;
     }
 
-    public function getResponseAsArray($method,Request $request){
+    public function getResponseAsArray($method){
         if(!method_exists($this,$method))
             throw new Exceptions\Router("{$method} does not exist");
-        $instance = new $this($request);
 
-        $response = $instance->{$method}($request,new Response());
+        $response = $this->{$method}($this->request,new Response());
         if($content = json_decode($response->content,true)){
             return $content;
         }else{
             return $response->content;
         }
     }
+
 }
