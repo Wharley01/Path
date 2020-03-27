@@ -470,7 +470,7 @@ class {$middleware_name} implements MiddleWare
         return false;
     }
 
-    public function response(Request \$request, Response \$response)
+    public function fallBack(Request \$request, Response \$response)
     {
             return \$response->json([\"msg\" => \"This json response is from \\\"{$middleware_name}\\\" MiddleWare, you get this response because \\\$this->validate() returns false\"]);
     }

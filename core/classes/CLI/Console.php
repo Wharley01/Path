@@ -11,7 +11,7 @@ namespace Path\Core\CLI;
 class Console extends CInterface
 {
     protected   $args;
-    protected $default_cmd_path = "core/classes/CLI/DefaultCommands/";
+    protected $default_cmd_path = ROOT_PATH."core/classes/CLI/DefaultCommands/";
     protected $user_cmd_namespace = "Path\\App\\Commands\\";
     protected $default_cmd_namespace = "Path\\Core\\CLI\\DefaultCommands\\";
     protected $user_cmd_path = "path/Commands/";
