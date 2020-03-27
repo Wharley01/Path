@@ -589,6 +589,12 @@ class Router
         }
     }
 
+    public function graph($path = "/graph-path")
+    {
+        $this->processMultipleRequestPath($path, GraphPath::class, "ANY");
+        return $this;
+    }
+
     /**
      * @param $path
      * @param $callback
