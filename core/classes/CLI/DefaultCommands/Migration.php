@@ -5,15 +5,13 @@ namespace Path\Core\CLI\DefaultCommands;
 
 
 use Path\Core\CLI\CInterface;
-//use Path\Core\Database\Connections\MySql;
 use Path\Core\Database\Connections\MySql;
 use Path\Core\Database\Model;
 use Path\Core\Database\Prototype;
-use Path\Core\Database\Structure;
 use Path\Core\Database\Table;
 use Path\Core\Error;
 use Path\Core\Error\Exceptions;
-
+use Path\Core\Storage\Caches;
 
 
 class Migration extends CInterface
@@ -42,6 +40,9 @@ class Migration extends CInterface
         "update" => [
             "desc" => "Runs Update hook in your migration classes"
         ],
+        "activate" => [
+            "desc" => "Activate model for Usage"
+        ],
         "describe" => [
             "desc" => "Runs Update hook in your migration classes"
         ],
@@ -54,10 +55,10 @@ class Migration extends CInterface
     private $migration_class_namespace = "Path\App\\Database\\Migration";
     private $tables = [];
     private $prototype;
+    private $conn;
+
     public function __construct()
     {
-        $this->tables = $this->getAllMigrationClasses();
-        $this->prototype = new Prototype();
     }
 
     /**
@@ -68,10 +69,13 @@ class Migration extends CInterface
 
     public function entry($params)
     {
+        $this->tables = $this->getAllMigrationClasses();
+        $this->prototype = new Prototype();
         $params = (array)$params;
         unset($params['app']); //remove default root param
 
         $this->params = $params;
+        $this->conn = MySql::connection();
 
         foreach ($params as $param => $arg) {
             $this->runCommand($param, $arg);
@@ -82,8 +86,18 @@ class Migration extends CInterface
     {
         return strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $string));
     }
+
+    private function showLoading($interval,$length = 500){
+        $this->write(PHP_EOL.'`green`[`green`');
+        for ($i = 0; $i < $length; $i++){
+            usleep($interval);
+            $this->write('++');
+        }
+        $this->write('`green`]`green`'.PHP_EOL.PHP_EOL);
+    }
     private function runCommand($hook, $table = null)
     {
+        $this->showLoading(10 * 1000,40 );
         if(array_key_exists('-force',$this->params)){
             MySql::disableKeyCheck();
             $this->write(PHP_EOL."`red`[+]`red` disable key check".PHP_EOL);
@@ -121,6 +135,28 @@ class Migration extends CInterface
         $this->prototype->create($table, $table_class_instance);
         $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully installed " . PHP_EOL);
     }
+
+    private function activate($table,$table_class_instance){
+        $cache_path = "table_{$table}_cols";
+        $write_path = ROOT_PATH.'path/Database/Activation/';
+
+        try {
+            $q = $this->conn->query("DESCRIBE {$table}");
+            $cols = [];
+            foreach ($q as $k) {
+                $cols[] = $table . "." . $k["Field"];
+            }
+            if($cols = json_encode($cols,JSON_PRETTY_PRINT)){
+                Caches::set( $cache_path, $cols, $write_path);
+                $this->write("`green`[+]`green` `light_green`{$table}`light_green` Successfully Activated " . PHP_EOL);
+            }else{
+                throw new Exceptions\Database('Unable to generate migration column JSON');
+            }
+        } catch (\PDOException $e) {
+            throw new Exceptions\Database($e->getMessage());
+        }
+    }
+
     private function uninstall($table)
     {
 
@@ -152,21 +188,25 @@ class Migration extends CInterface
     }
     private function printTableToTerminal($table)
     {
-        $q = (MySql::connection())->query("DESCRIBE {$table}");
-        $cols = [];
+        try{
+            $q = (MySql::connection())->query("DESCRIBE {$table}");
+            $cols = [];
 
-        $this->write(PHP_EOL . PHP_EOL . "{$table}" . PHP_EOL);
+            $this->write(PHP_EOL . PHP_EOL . "{$table}" . PHP_EOL);
 
-        $this->write("`green`------------------------------------------------------`green`" . PHP_EOL);
-        $mask = "| %-30.30s | %-15.30s | %-15.30s |\n";
-        printf($mask, "Column", "Type", "Default Value");
-        printf($mask, "", "", "");
-        $str = "";
-        foreach ($q as $k) {
-            printf($mask, $k["Field"], $k["Type"], $k["Default"] === NULL ? "NULL" : $k["Default"]);
+            $this->write("`white`______________________________________________________________________`white`" . PHP_EOL);
+            $mask = "| %-30.30s | %-15.30s | %-15.30s |\n";
+            printf($mask, "Column", "Type", "Default Value");
+            printf($mask, "", "", "");
+            $str = "";
+            foreach ($q as $k) {
+                printf($mask, $k["Field"], $k["Type"], $k["Default"] === NULL ? "NULL" : $k["Default"]);
+            }
+            $this->write("`white`______________________________________________________________________`white`");
+            //        var_dump($cols);
+        }catch (Exceptions\Database $exception){
+            $this->write('`red`'.$exception->getMessage().'`red`');
         }
-        $this->write("`green`--------------------------------------------------`green`");
-        //        var_dump($cols);
 
     }
     private function describe($table)
