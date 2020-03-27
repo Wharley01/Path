@@ -9,8 +9,6 @@
 namespace Path\Core\Mail;
 
 
-use Path\Core\Database\Model;
-
 abstract class Mailable
 {
 
