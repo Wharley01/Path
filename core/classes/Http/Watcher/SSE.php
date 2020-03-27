@@ -9,10 +9,10 @@
 namespace Path\Core\Http\Watcher;
 
 
-use Path\Core\Http\Response;
-use Path\Core\Storage\Sessions;
-use Path\Core\Router\Live\Controller;
 use Path\Core\Error\Exceptions;
+use Path\Core\Http\Response;
+use Path\Core\Router\Live\Controller;
+use Path\Core\Storage\Sessions;
 
 class SSE  implements WatcherInterface
 {
