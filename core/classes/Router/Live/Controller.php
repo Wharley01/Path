@@ -16,6 +16,7 @@ abstract class Controller
 {
 
 
+    private $interval = 1000;
 
     public function onMessage(
         WatcherInterface &$watcher,
