@@ -22,7 +22,7 @@ class Response
     public $content;
     public $status;
     public $headers = [
-        'X-Powered-By' => 'PathPHP/1.5.4'
+        'X-Powered-By' => 'PathPHP/1.5.4',
     ];
     public $state = [];
     private $head = [];
@@ -45,6 +45,14 @@ class Response
             $this->generateManifest();
         }catch (\Throwable $exception){}
         return $this;
+    }
+    public function disableCORS(){
+        $this->headers = array_merge($this->headers,[
+            "Access-Control-Allow-Origin" => "*",
+            "Access-Control-Allow-Credentials" => "true",
+            "Access-Control-Allow-Methods" => "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers" => "Origin, Content-Type, Accept"
+        ]);
     }
     private function generateManifest(){
         $manifest_filepath = ROOT_PATH.$this->build_path.'asset-manifest.json';
@@ -101,14 +109,14 @@ class Response
         $res = array_merge($res,$keys);
         return $this->json($res,$status);
     }
-    public function data(Model &$model,int $page = 1,string $msg = '',int $status = 200){
-        $data = (clone $model)->getPage($page);
+    public function data(Model $model,string $msg = '',int $status = 200,$page = null){
+        $data = (clone $model)->getPage(1);
         $has_data = count($data) > 0;
         return $this->json([
             "has_error" => false,
             "msg" => $msg,
             "data" => $data,
-            "current_page" => $page,
+            "current_page" => $model->current_page,
             "total_pages" => $model->getTotalPages()
         ],!$has_data ? 201:$status);
     }
