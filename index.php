@@ -6,7 +6,6 @@ require_once "core/kernel.php";
 require_once "vendor/autoload.php";
 
 try {
-
     $__routes = new Router();
     $__routes->get("SSE/@controller/@action", 'Path\Plugins\SSEController\SSEServer->watch');
     require_once "path/Routes.php";

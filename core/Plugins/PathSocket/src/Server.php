@@ -9,7 +9,6 @@
 namespace Path\Plugins\PathSocket;
 
 use Path\Core\Http\Watcher\WS;
-use Path\Plugins\PathSocket\Client;
 
 
 class Server

@@ -1,4 +1,5 @@
 <?php
+
 use Path\Core\Error\Exceptions;
 
 session_start();
