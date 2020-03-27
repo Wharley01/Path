@@ -16,16 +16,29 @@ class Request
     public $params;
     public $inputs;
     public $fetching;
-    private $headers = [];
+    public $headers = [];
     private $sending_post_feilds = [];
     private $sending_post_json_fields = null;
     private $sending_query_fields = [];
     private $IP;
     private $post;
+    private $files;
+    private $as_local = false;
     //    CONST
+    /**
+     * @var array
+     */
+    private $sending_patch_fields = [];
+    private $timeout = 30;
+    /**
+     * @var bool
+     */
+    private $redirect = true;
+
     public function __construct()
     {
-        $this->METHOD = @$_SERVER["REQUEST_METHOD"];
+        $this->server = (object)$_SERVER;
+        $this->METHOD = strtoupper($this->getQuery('_method') ?? $_SERVER["REQUEST_METHOD"] ?? "GET");
         $input = file_get_contents("php://input");
         $input_arr = [];
 
@@ -39,19 +52,18 @@ class Request
             $input_arr = [];
         }
 
-        if (@$_SERVER['REQUEST_METHOD'] !== 'GET' && array_key_exists('REQUEST_METHOD',@$_SERVER)) {
-
-            $_REQUEST = array_merge($_REQUEST ?? [], $input_arr);
+        if ($this->METHOD === 'POST' || $this->METHOD === 'PATCH' || $this->METHOD === 'PUT') {
             $this->post = array_merge($input_arr,$_POST);
+            $this->inputs = $this->post;
         }
 
 
 
-        $this->inputs = @$_REQUEST;
 
         if (!@$_SERVER['REDIRECT_URL'])
             $_SERVER['REDIRECT_URL'] = "/";
-        $this->server = (object)$_SERVER;
+
+
     }
     public function fetch($key)
     {
@@ -63,10 +75,22 @@ class Request
      * @return mixed
      */
     public function getPost($key = null){
+        $posts = array_merge($this->inputs,$_POST);
+        $posts = array_merge($posts,$this->sending_post_feilds);
         if(!is_null($key))
-            return $this->inputs[$key] ??  $_POST[$key] ?? null;
+            return $posts[$key] ?? null;
 
-        return $this->inputs ?? $_POST;
+        return $posts;
+    }
+    /**
+     * @param null $key
+     * @return mixed
+     */
+    public function getHeader($key = null){
+        $heads = $this->headers;
+        if(!is_null($key))
+            return $heads[$key] ?? null;
+        return $heads;
     }
 
 
@@ -75,18 +99,22 @@ class Request
      * @return mixed
      */
     public function getPatch($key = null){
-        if(!is_null($key))
-            return $this->inputs[$key] ?? null;
 
-        return $this->inputs ?? [];
+        $patches = array_merge($this->inputs,$this->sending_patch_fields);
+
+        if(!is_null($key))
+            return $patches[$key] ?? null;
+
+        return $patches ?? [];
     }
 
 
     public function getQuery($key = null){
+        $queries = array_merge($_GET,$this->sending_query_fields);
         if(!is_null($key))
-            return $_GET[$key] ?? null;
+            return $queries[$key] ?? null;
 
-        return $_GET;
+        return $queries;
     }
 
 
@@ -95,15 +123,56 @@ class Request
      */
     public function setParams($params)
     {
-        $this->params = $params;
+        $this->params = (object) $params;
         return $this;
+    }
+
+    public function getParam($param){
+        return $this->params->{$param} ?? null;
     }
 
     public  function file($name)
     {
-        $this->fetching = $name;
+        $file = @$_FILES[$name];
+        if(!$file){
+            $this->fetching = [];
+            return $this;
+        }
+        $files = is_array($file['name']) ? $this->restructure($file) : [$file];
+        $this->fetching = $files;
+
         return $this;
     }
+
+    private function restructure($file)
+    {
+        $file_ary = array();
+        $file_count = count($file['name']);
+        $file_key = array_keys($file);
+
+        for ($i = 0; $i < $file_count; $i++) {
+            foreach ($file_key as $val) {
+                $file_ary[$i][$val] = $file[$val][$i];
+            }
+        }
+        return $file_ary;
+    }
+
+    public  function getFile($name,$as_array = false)
+    {
+        $file = @$_FILES[$name];
+
+        if(!$file){
+            $this->fetching = [];
+            return $as_array ? null:$this;
+        }
+
+        $files = is_array($file['name']) ? $this->restructure($file) : [$file];
+        $this->fetching = $files;
+
+        return $as_array ? (!$file ? null: $files):$this;
+    }
+
     public function setRequestIP($IP)
     {
         $this->headers['REMOTE_ADDR'] = $IP;
@@ -112,10 +181,49 @@ class Request
         return $this;
     }
 
+    public function asLocal(){
+        $this->as_local = true;
+        return $this;
+    }
+
     public function setPost(array $fields)
     {
-        $this->sending_post_feilds = $fields;
-        $this->inputs = $fields;
+        $this->sending_post_feilds = array_merge($this->sending_post_feilds,$fields);
+//        $this->inputs = $fields;
+        return $this;
+    }
+
+    public function setFile(string $key, $file_path, $file_details = [])
+    {
+
+        $file_name = $file_details['name'] ?? basename($file_path);
+        $file_type = $file_details['type'] ?? null;
+        $file_size = $file_details['size'] ?? null;
+
+        if(!$file_path)
+            throw new \Path\Core\Error\Exceptions\Router('File path not specified');
+        if(!is_file($file_path))
+            throw new \Path\Core\Error\Exceptions\Router('FIle path not valid');
+        $_file = new \CURLFile($file_path,$file_type,$file_name);
+
+        $this->files[$key] = $_file;
+        $i = 0;
+        foreach ($this->files as $_key => $file){
+            $this->sending_post_feilds[$_key."[$i]"] = $file;
+            $i ++;
+        }
+
+//        $this->inputs = $fields;
+        return $this;
+    }
+
+    public function dump(){
+        var_dump($this->sending_post_feilds);
+    }
+    public function setPatch(array $fields)
+    {
+        $this->sending_patch_fields = $fields;
+//        $this->inputs = $fields;
         return $this;
     }
 
@@ -125,7 +233,7 @@ class Request
         return $this;
     }
 
-    public function setQueryParams(array $fields)
+    public function setQuery(array $fields)
     {
         $this->sending_query_fields = $fields;
         $_GET = $fields;
@@ -134,17 +242,35 @@ class Request
 
     private function buildRawHeader(array $headers = null)
     {
+//        var_dump($this->headers);
         $headers = $headers ?? $this->headers;
         $header = [];
         foreach ($headers as $key => $value) {
             $header[] = "{$key}: {$value}";
         }
+
         return $header;
     }
 
     public function setHeader(array $headers = [])
     {
         $this->headers = $headers;
+    }
+
+    /**
+     * @param int $timeout
+     * @return Request
+     */
+    public function setTimeout(int $timeout): Request
+    {
+        $this->timeout = $timeout;
+        return $this;
+    }
+
+    public function followRedirection(bool $redirect = true): Request
+    {
+        $this->redirect = $redirect;
+        return $this;
     }
 
     private function httpRequest($url, $method): ?Response
@@ -156,8 +282,14 @@ class Request
         }
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $this->redirect);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+
+        if($this->as_local){
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        }
         if ($this->IP) {
             curl_setopt($ch, CURLOPT_PROXY, $this->IP);
         }
@@ -167,8 +299,16 @@ class Request
         if($this->sending_post_json_fields){
             curl_setopt($ch, CURLOPT_POSTFIELDS, $this->sending_post_json_fields);
         }
+//        curl_setopt($ch, CURLOPT_HEADER, 1);
+        if($method == 'HEAD'){
+            curl_setopt($ch, CURLOPT_NOBODY, true);
+        }
+//        if($method == 'POST'){
+//            curl_setopt($ch, CURLOPT_POST,1);
+//        }
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $this->buildRawHeader());
+        $head = $this->buildRawHeader();
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $head);
 
         $headers = [];
         // Then, after your curl_exec call:
@@ -188,6 +328,8 @@ class Request
         $response->status = $status;
         $response->content = $raw_response;
 
+        curl_close($ch);
+
         return $response;
     }
 
@@ -199,5 +341,13 @@ class Request
     public function post($url): ?Response
     {
         return $this->httpRequest($url, "POST");
+    }
+    public function head($url): ?Response
+    {
+        return $this->httpRequest($url, "HEAD");
+    }
+    public function delete($url): ?Response
+    {
+        return $this->httpRequest($url, "DELETE");
     }
 }
