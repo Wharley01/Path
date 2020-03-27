@@ -8,8 +8,6 @@
 
 namespace Path\Core\Http;
 
-use Path\Core\Http\Request;
-use Path\Core\Http\Response;
 use Path\Core\Error\Exceptions;
 use Path\Core\Router\Route\Controller;
 
@@ -19,12 +17,9 @@ class Router
     public  $request;
     public  $root_path;
     private $database;
-    private $response_instance;
-    private $build_path = "/dist/";
-    private $controllers_path = "path/Controllers/Route/";
+    public $response;
+    private $build_path = "";
     private $controllers_namespace = "Path\\App\\Controllers\\Route\\";
-    private $middleware_path = "path/Http/MiddleWares/";
-    private $middleware_namespace = "Path\\App\\Http\\MiddleWare\\";
     private $assigned_paths = [ //to hold all paths assigned
 
     ];
@@ -53,6 +48,9 @@ class Router
     public $host;
 
     public $sub_domain;
+
+    private $error_404_res;
+
     /**
      * Router constructor.
      * @param string $root_path
@@ -61,19 +59,33 @@ class Router
     {
         $this->root_path = $root_path;
         $this->request = new Request();
+        $this->request->headers = $this->cleanHeader();
         $this->database = null;
         $path_parse = parse_url($this->request->server->REQUEST_URI ?? $this->request->server->REDIRECT_URL);
         $this->real_path = $path_parse["path"];
         $this->host = $path_parse["host"] ?? $_SERVER["HTTP_HOST"];
         $this->scheme = $path_parse["scheme"] ?? (@$_SERVER["HTTPS"] ? "https":"http");
         //        TODO: Initialize model for database
-        $this->response_instance = new Response($this->build_path);
+        $this->response = new Response($this->build_path);
+    }
+
+    private function cleanHeader(){
+        $headers = (array) $this->request->server;
+        $heads = [];
+        foreach ($headers as $key => $value){
+            if(strpos($key,'HTTP_') !== false){
+                $_key = preg_replace('/^(HTTP_)/','',$key);
+                $_key = str_ireplace('_','-',$_key);
+                $heads[$_key] = $value;
+            }
+        }
+        return $heads;
     }
 
     public function setBuildPath($path)
     {
         $this->build_path = $path;
-        $this->response_instance = new Response($this->build_path);
+//        $this->response->build_path = $this->build_path;
     }
 
     /**
@@ -156,7 +168,6 @@ class Router
                 return true;
             }
 
-            //            var_dump($c_path_value[strlen($c_path_value)-1]);
             $is_optional = @$c_path_value[strlen($c_path_value) - 1] == '?'; //check if last character is question mark
             if ($is_optional) {
                 $c_path_value = substr($c_path_value, 0, (strlen($c_path_value) - 1));
@@ -206,7 +217,7 @@ class Router
         @ob_end_flush();
         @ob_flush();
         @flush();
-        die();
+        exit();
     }
 
     private static function isFloat($value)
@@ -278,6 +289,7 @@ class Router
      * @param $params
      * @param $_path
      * @param $real_path
+     * @return bool
      * @throws Exceptions\Router
      */
     private function validateAllMiddleWare($middle_wares, $params, $_path, $real_path)
@@ -285,28 +297,37 @@ class Router
         if (!is_array($middle_wares) || is_string($middle_wares))
             $middle_wares = [$middle_wares];
 
-        $request = new Request();
+        $request = $this->request;
         $request->params = $params;
         foreach ($middle_wares as $middle_ware) {
             if ($middle_ware) {
-                $middle_ware_name = explode("\\", $middle_ware);
-                $middle_ware_name = $middle_ware_name[count($middle_ware_name) - 1];
+
+                $argument = null;
                 //            Load middleware class
-                $ini_middleware = new $middle_ware();
+                if(is_array($middle_ware)){
+                    $ini_middleware = new $middle_ware[0]();
+                    $argument = $middle_ware[1] ?? null;
+                }elseif (is_string($middle_ware)){
+                    $ini_middleware = new $middle_ware();
+                }else{
+                    throw new Exceptions\Router('Invalid Middle passed');
+                }
+// TODO: added magic arg property
+                $ini_middleware->arg = $argument;
 
                 if ($ini_middleware instanceof MiddleWare) {
                     //            initialize middleware
 
                     //            Check middle ware return
-                    $check_middle_ware = $ini_middleware->validate($request, $this->response_instance);
+                    $check_middle_ware = $ini_middleware->validate($request, $this->response);
 
                     if ($check_middle_ware === false) { //if the middle ware control method returns false
                         //                call the fall_back response
-                        $fallback_response = $ini_middleware->fallBack($request, $this->response_instance);
+                        $fallback_response = $ini_middleware->fallBack($request, $this->response);
                         if (!is_null($fallback_response)) { //if user has a fallback method
 
                             if ($fallback_response && is_array($fallback_response)) {
-                                $this->writeResponse($this->response_instance->json($fallback_response));
+                                $this->writeResponse($this->response->json($fallback_response));
                                 die();
                             } elseif($fallback_response instanceof Response) {
                                 $this->writeResponse($fallback_response);
@@ -371,23 +392,25 @@ class Router
         //        TODO: check if path contains a parameter path/$id
         //            Check if method calling response is
         if ($is_group) {
-            $router = new Router($_path);
+            $router = clone $this;
+            $router->root_path = $_path;
+
             $c = $callback($router); //call the callback, pass the params generated to it to be used
         } else {
-            $request = new Request();
+            $request = &$this->request;
             $request->params = $params;
             if (is_string($callback) && strpos($callback, "->")) {
                 $_callback = $this->breakController($callback, $params);
 
                 try {
-                    $class = $_callback->ini_class->{$_callback->method}($request, $this->response_instance);
+                    $class = $_callback->ini_class->{$_callback->method}($request, $this->response);
                 } catch (\Throwable $e) {
                     throw new Exceptions\Router($e->getMessage(), 0, $e);
                 }
                 if ($class instanceof Response) { //Check if return value from callback is a Response Object
                     $this->writeResponse($class);
                 }elseif (is_array($class)){
-                    $this->writeResponse($this->response_instance->json($class));
+                    $this->writeResponse($this->response->json($class));
                 }
             } else {
                 /** ************************************************ */
@@ -398,10 +421,10 @@ class Router
                 }
 
                 if ($callback instanceof \Closure) {
-                    $c = $callback($request, $this->response_instance);
+                    $c = $callback($request, $this->response);
                 }
                 elseif ($callback instanceof Controller or method_exists($callback, 'response')) {
-                    $c = $callback->response($request, $this->response_instance);
+                    $c = $callback->response($request, $this->response);
                 }else {
                     throw new Exceptions\Router('Custom Class Object must have a response method');
                 }
@@ -412,7 +435,7 @@ class Router
                     $this->writeResponse($c);
                 }elseif (is_array($c)){
 
-                    $this->writeResponse($this->response_instance->json($c));
+                    $this->writeResponse($this->response->json($c));
                 } elseif ($c and !$c instanceof Response) {
                     throw new Exceptions\Router("Expecting an instance of Response or Array to be returned at \"GET\" -> \"$_path\"");
                 }
@@ -432,13 +455,21 @@ class Router
 
         foreach ($this->assigned_paths as $root => $paths) {
             $root = $root == "/" ? "" : $root;
-            for ($i = 0; $i < count($this->assigned_paths); $i++) {
-                if ($paths[$i]['is_group'] and self::isRoot($real_path, $paths[$i]['path'])) {
-                    return false;
-                }
+            for ($i = 0; $i < count($paths); $i++) {
+
                 if (self::pathMatches($real_path, $root . $paths[$i]['path']) && ($paths[$i]['method'] == $current_method || $paths[$i]['method'] == "ANY")) {
+                    if(self::isRoot($real_path, $paths[$i]['path'])){
+                        return true;
+                    }
                     return false;
+                }else{
+                    return true;
                 }
+
+//                if ($paths[$i]['is_group'] and self::isRoot($real_path, $paths[$i]['path'])) {
+//
+//                    return false;
+//                }
             }
         }
 
@@ -471,7 +502,8 @@ class Router
         $real_path = trim($this->real_path);
         if (self::isRoot($real_path, self::joinPath($this->root_path, $_path))) {
             $this->response("ANY", $this->root_path, $_path, $callback, $_middle_ware, $_fallback, true);
-            die();
+            $this->runError404($this->error_404_res);
+            $this->end();
         }
     }
     private function breakController($controller_str, $params)
@@ -492,9 +524,9 @@ class Router
         //        load_class($class_ini,"controllers");
 
         try {
-            $request = new Request();
+            $request = &$this->request;
             $request->params = $params;
-            $class_ini = new $class_ini($request, $this->response_instance);
+            $class_ini = new $class_ini($request, $this->response);
         } catch (\Throwable $e) {
             throw new Exceptions\Router($e->getMessage());
         }
@@ -505,10 +537,10 @@ class Router
     private function importControllerFromString($controller, $params)
     {
 
-        $request = new Request();
+        $request = $this->request;
         $request->params = $params;
 
-        $controller_instance = new $controller($request, $this->response_instance);
+        $controller_instance = new $controller($request, $this->response);
 
         return $controller_instance;
     }
@@ -534,6 +566,7 @@ class Router
         foreach ($_path as $each_path) {
             $this->processRequest(["path" => trim($each_path), "middleware" => $_middle_ware, "fallback" => $_fallback], $callback, $method);
         }
+
     }
 
     private function processRequest($path, $callback, $method)
@@ -646,11 +679,25 @@ class Router
         $this->exception_callback = $callback;
         return true;
     }
-    public function error404($callback)
+
+    /**
+     * @param mixed $error_404_res
+     */
+    public function error404(callable $error_404_res): void
+    {
+        $this->error_404_res = $error_404_res;
+    }
+    public function end(){
+        $this->runError404($this->error_404_res);
+        exit();
+    }
+    private function runError404($callback)
     { //executes when no route is specified
         if ($this->shouldFallBack()) { //check if the current request doesn't match any request
             //            print_r($this->assigned_paths);
-            $c = $callback($this->request, $this->response_instance); //call the callback, pass the params generated to it to be used
+            $this->error_404_res = $callback;
+
+            $c = $callback($this->request, $this->response); //call the callback, pass the params generated to it to be used
             if ($c instanceof Response) { //Check if return value from callback is a Response Object
 
                 $this->writeResponse($c);
