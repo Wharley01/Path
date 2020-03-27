@@ -2,6 +2,8 @@
 namespace Path\Core\Database\Connections;
 
 
+use Path\Core\Error\Exceptions\Database;
+
 /**
  *
  */
@@ -21,6 +23,7 @@ class MySql implements DB
         $USER           = config("DATABASE->user");
         $NAME           = config("DATABASE->name");
         $PASSWORD       = config("DATABASE->password");
+        $CHARSET        = config("DATABASE->charset") ?? 'utf8mb4';
         if(self::$conn === null){
             try {
                 $opt = [
@@ -28,11 +31,16 @@ class MySql implements DB
                     \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
                     \PDO::ATTR_EMULATE_PREPARES   => false,
                 ];
-                self::$conn = new \PDO("mysql:host={$HOST};dbname={$NAME}", $USER, $PASSWORD,$opt);
+               
+                self::$conn = new \PDO("mysql:host={$HOST};dbname={$NAME};charset={$CHARSET};", $USER, $PASSWORD,$opt);
                 self::$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                register_shutdown_function(function (){
+                    self::close();
+                });
                 return self::$conn;
             } catch (\PDOException $e) {
-                die($e->getMessage());
+//                var_dump($e->getTrace());
+                throw new Database($e->getMessage());
             }
         }elseif(self::$conn instanceof \PDO){
             return self::$conn;
