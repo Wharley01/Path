@@ -10,7 +10,6 @@ namespace Path\Core\Database;
 
 
 use Path\Core\Database\Connections\MySql;
-use Path\Core\Database\Structure;
 use Path\Core\Error\Exceptions;
 
 class Prototype

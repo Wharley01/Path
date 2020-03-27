@@ -37,7 +37,8 @@ class Structure
     public $indexes = [];
     public $action = "creating"; #(creating || altering)
     private $engine = "InnoDB";
-    private $charset = "latin1";
+    private $charset = "utf8mb4";
+    private $collation = "utf8mb4_unicode_ci";
     private $existing_columns = [];
     private $db_conn;
 
@@ -45,6 +46,9 @@ class Structure
     {
         $this->db_conn = MySql::connection();
         $this->table = $table;
+        $this->charset = config('DATABASE->charset') ?? $this->charset;
+        $this->collation = config('DATABASE->collation') ?? $this->collation;
+        $this->engine = config('DATABASE->engine') ?? $this->engine;
         $this->getExistingCols();
     }
 
@@ -180,15 +184,26 @@ class Structure
         return $this;
     }
 
-    private function key($column, $type = "primary key",$reference = null)
+    private function key(
+        $column,
+        $type = "primary key",
+        $reference = null,
+        $delete_constraint = null,
+        $update_constraint = null,
+        $new_column = null
+    )
     {
+
         if (!$column) {
             if (!$this->columns[count($this->columns) - 1]["name"])
                 throw new Exceptions\DataStructure("Column name not specified");
 
             $this->indexes[strtoupper($type)][] = [
                 'column' => $this->columns[count($this->columns) - 1]["name"],
-                'references' => $reference
+                'new_column' => $this->columns[count($this->columns) - 1]["new_name"],
+                'references' => $reference,
+                'del_constraint' => $delete_constraint,
+                'update_constraint' => $update_constraint
             ];
 
             return $this;
@@ -196,7 +211,10 @@ class Structure
 
         $this->indexes[strtoupper($type)][] = [
             'column' => $column,
-            'references' => $reference
+            'new_column' => $new_column ?? $column,
+            'references' => $reference,
+            'del_constraint' => $delete_constraint,
+            'update_constraint' => $update_constraint
         ];
 
         return $this;
@@ -239,12 +257,15 @@ class Structure
 
     /**
      * @param $reference
+     * @param string $delete_constraint
+     * @param string $update_constraint
      * @return $this
+     * @throws Exceptions\DataStructure
      */
-    public function references($reference)
+    public function references($reference, $delete_constraint = null, $update_constraint = null)
     {
         $column = $this->columns[count($this->columns) - 1]["name"];
-        $this->key($column, "foreign key",$reference);
+        $this->key($column, "foreign key",$reference,$delete_constraint,$update_constraint);
         return $this;
     }
 
@@ -259,9 +280,10 @@ class Structure
 
     /**
      * @param $column_arr
+     * @param bool $creating
      * @return string
      */
-    private function genColQueryStr($column_arr)
+    private function genColQueryStr($column_arr,$creating = false)
     {
         $str = "";
         if (isset($column_arr["is_nullable"])) //check if it's nullable
@@ -281,24 +303,41 @@ class Structure
         if (isset($column_arr['auto_increment'])) //check if to auto increment column
             $str  .= " AUTO_INCREMENT";
 
-        if(array_key_exists('position',$column_arr)){
+        if(array_key_exists('position',$column_arr) && !$creating){
             $str .= $column_arr['position'];
         }
 
         return $str;
     }
 
-    private function generateIndex(&$appended_query){
+    private function generateIndex(&$appended_query,$creating = true){
         foreach ($this->indexes as $index => $column_arr){
 //                loop through the columns
 
             foreach ($column_arr as $_column){
+//                var_dump($_column);
                 $column_name = $_column['column'];
+                $new_column_name = $_column['new_column'] ?? null;
                 $references = $_column['references'];
-                $appended_query .= ", ".strtoupper($index)."({$column_name}) ";
+                $delete_constraint = $_column['del_constraint'] ?? null;
+                if($delete_constraint){
+                    $delete_constraint = "ON DELETE {$delete_constraint}";
+                }else{
+                    $delete_constraint = "";
+                }
+                $update_constraint = $_column['update_constraint'] ?? null;
+                if($update_constraint){
+                    $update_constraint = "ON UPDATE {$update_constraint}";
+                }else{
+                    $update_constraint = "";
+                }
+                $add = $creating ? '':'ADD ';
+//                var_dump($new_column_name);
+                $k = $new_column_name ?? $column_name;
+                $appended_query .= ",$add ".strtoupper($index)."({$k})";
 
                 if($references){
-                    $appended_query .= " REFERENCES {$references}";
+                    $appended_query .= " REFERENCES {$references} {$delete_constraint} {$update_constraint}";
                 }
             }
         }
@@ -312,7 +351,7 @@ class Structure
             
             @appended_query
             
-            ) ENGINE={$this->engine}  DEFAULT CHARSET={$this->charset}
+            ) ENGINE={$this->engine}  DEFAULT CHARSET={$this->charset} COLLATE {$this->collation};
             ";
         } else {
             $query = "
@@ -324,11 +363,15 @@ class Structure
 
         if ($this->action == "creating") {
             foreach ($this->columns as $column) {
-                $str = " `{$column['name']}` {$column['type']}";
+                $col_type = $column['type'] ?? null;
+                $col_name = $column['name'] ?? null;
+                if(!$col_type)
+                    throw new Exceptions\Database('specify column type of '.$col_name);
+                $str = " `{$col_name}` {$col_type} ";
 
-                $str .= $this->genColQueryStr($column);
+                $str .= $this->genColQueryStr($column,true);
 
-                if ($appended_query)
+                if (strlen(trim($appended_query)) > 0)
                     $appended_query .= ", " . $str;
                 else
                     $appended_query  .= $str;
@@ -352,8 +395,10 @@ class Structure
 //            }
         } elseif ($this->action == "altering") {
             foreach ($this->columns as $column) {
+//                var_dump($column);
                 $str  = "";
                 if (!$this->colExists($column['name'])) {
+
                     $str .= " ADD ";
                     $str .= " `{$column['name']}` {$column['type']}";
 
@@ -369,18 +414,21 @@ class Structure
                     }
                 }
 
-                if (strlen(trim($appended_query)) > 0) {
-                    //                   echo "........TEST....'{$appended_query}'".PHP_EOL;
-                    if (strlen(trim($str)) > 0) {
-                        $appended_query .= ", " . $str;
-                    }
-                } else {
-                    $appended_query  = $str;
-                }
+
+                if (strlen(trim($appended_query)) > 0)
+                    $appended_query .= ", " . $str;
+                else
+                    $appended_query  .= " " . $str;
+
             }
+
         }
 
-        $this->generateIndex($appended_query);
+        if(strlen(trim($appended_query)) < 1){
+            return null;
+        }
+
+        $this->generateIndex($appended_query,$this->action == "creating");
 //        var_dump($appended_query);
         $query = str_replace("@appended_query", $appended_query, $query);
         return $query;
@@ -388,9 +436,11 @@ class Structure
 
     public function executeQuery()
     {
-//                var_dump($this->getRawQuery());
+
         try {
-            $query = $this->db_conn->query($this->getRawQuery());
+            $raw_query = $this->getRawQuery();
+            if($raw_query)
+                $query = $this->db_conn->query($raw_query);
         } catch (\PDOException $e) {
             throw new Exceptions\DataStructure($e->getMessage());
         }
