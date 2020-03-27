@@ -34,6 +34,15 @@ class Create extends CInterface
         ],
         "email" => [
             "desc" => "create email Mailable, e.g: __path create email yourTemplateName"
+        ],
+        "--graph" => [
+            "desc" => "create graph controller"
+        ],
+        "--live" => [
+            "desc" => "create live controller"
+        ],
+        "--rest" => [
+            "desc" => "create controller"
         ]
     ];
 
@@ -44,11 +53,13 @@ class Create extends CInterface
     private $migration_files_path = "path/Database/Migration";
     private $middleware_files_path = "path/Http/MiddleWares";
     private $email_templ_files_path = "path/Mail/Mailables";
+    private $graph_controllers_path = "path/Controllers/Graph/";
+
     public function entry($params)
     {
-        $params = (object)$params;
+        $params = (object) $params;
         if (isset($params->controller)) {
-            $this->createController($params->controller);
+            $this->createController($params->controller,(array) $params);
         } elseif (isset($params->command)) {
             $this->createCommand($params->command);
         } elseif (isset($params->migration)) {
@@ -139,43 +150,57 @@ class $command_file_name extends CInterface
         $this->write("[+] ----  Database model boiler plate for --`blue`{$command_file_name}`blue`-- generated in `green`\"{$this->commands_path}\"`green` " . PHP_EOL);
         fclose($write_instance);
     }
-    private function createController($controller_name)
-    {
-        if ($controller_name === true) {
-            $controller_name = $this->ask("Enter Controller's name", true);
-        }
-        //        Create file in Database/Models
-        //        Create file controllers/
-
-        if (!$this->confirm("Do you have existing Model for your controller? ")) {
-            $_model_name = $this->ask("Enter new Model's Name:", true);
-            $_db_model_file = "{$this->models_path}{$_model_name}.php";
-            if (file_exists($_db_model_file)) {
-                if ($this->confirm("{$_model_name} Database model Already exists, Override?")) {
-                    $db_model_file = fopen($_db_model_file, "w");
-                    $this->writeModelBoilerPlate($db_model_file, $_model_name);
-                }
-            } else {
+    private function createModel($_model_name = null){
+        $_model_name = $_model_name ?? $this->ask("Enter new Model's Name:", true);
+        $_db_model_file = "{$this->models_path}{$_model_name}.php";
+        if (file_exists($_db_model_file)) {
+            if ($this->confirm("{$_model_name} Database model Already exists, Override?")) {
                 $db_model_file = fopen($_db_model_file, "w");
                 $this->writeModelBoilerPlate($db_model_file, $_model_name);
             }
-            $new_model_name = $_model_name;
         } else {
-            $new_model_name = $this->ask("Enter Existing Model's Name", true);
+            $db_model_file = fopen($_db_model_file, "w");
+            $this->writeModelBoilerPlate($db_model_file, $_model_name);
+        }
+        return $_model_name;
+    }
+    private function createController($controller_name,$params)
+    {
+
+        if ($controller_name === true) {
+            $controller_name = $this->ask("Enter Controller's name", true);
         }
 
-        if ($controller_type = strtolower($this->confirm('Controller Type', 'Route', 'Live'))) {
+        //        Create file in Database/Models
+        //        Create file controllers/
+        $controller_type = array_key_exists('--graph',$params) ?? strtolower($this->ask('Controller Type Route/Live/Graph', true));
+
+
+        if($controller_type !== "graph" && !array_key_exists('--graph',$params)){
+            if (!$this->confirm("Do you have existing Model for your controller? ")) {
+                $new_model_name = $this->createModel();
+            } else {
+                $new_model_name = $this->ask("Enter Existing Model's Name", true);
+            }
+        }
+        if ($controller_type === "route") {
+            var_dump($controller_type);
+
             $_controller_file = "{$this->route_controllers_path}{$controller_name}.php";
-            if (file_exists($_controller_file)) {
-                if ($this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
+
+            if (!file_exists($_controller_file) || $this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
                     $controller_file = fopen($_controller_file, "w");
                     $this->writeRouteControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
                 }
-            } else {
+
+        } elseif ($controller_type === "graph" || array_key_exists('--graph',$params)){
+            $_controller_file = "{$this->graph_controllers_path}{$controller_name}.php";
+
+            if (!file_exists($_controller_file) || $this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
                 $controller_file = fopen($_controller_file, "w");
-                $this->writeRouteControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
+                $this->writeGraphControllerBoilerPlate($controller_file, $controller_name);
             }
-        } else {
+        } else if ($controller_type === "live") {
             //            TODO: implement Live controller generation here
             $this->write('creating live controller');
             $_controller_file = "{$this->live_controllers_path}{$controller_name}.php";
@@ -188,6 +213,8 @@ class $command_file_name extends CInterface
                 $controller_file = fopen($_controller_file, "w");
                 $this->writeLiveControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
             }
+        }else{
+            $this->write("\n`red`Invalid Input`red`");
         }
         echo PHP_EOL . PHP_EOL . "[+] ---- CLOSING -----" . PHP_EOL . PHP_EOL;
 
@@ -368,6 +395,54 @@ class {$controller_name} extends Controller
         echo PHP_EOL . PHP_EOL . "[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->route_controllers_path}\" " . PHP_EOL;
         fclose($controller_file);
     }
+    private function writeGraphControllerBoilerPlate($controller_file, $controller_name)
+    {
+        $model_name = $this->createModel($controller_name);
+
+        $model_name_var = strtolower($model_name);
+        $contr_boiler_plate = "<?php
+
+/*
+* This is automatically generated 
+* Edit to fit your need
+* Powered By: Path
+*/
+
+namespace Path\App\\Controllers\\Graph;
+
+
+use Path\Core\\Router\\Graph\\Controller;
+use Path\Core\\Http\\Request;
+use Path\Core\\Http\\Response;
+use Path\Core\\Storage\\Sessions;
+
+use Path\App\Database\Model;
+
+
+
+class {$controller_name} extends Controller
+{
+    public \$model;
+    public function __construct()
+    {
+        /* Do not change/remove anything */
+        \$this->model = new Model\\{$model_name}();
+    }
+    
+    /*
+    your service  functions
+    */
+
+}";
+
+
+
+        //        Write controller boiler plate
+        fwrite($controller_file, $contr_boiler_plate);
+        echo PHP_EOL . PHP_EOL . "[+] ----  Graph Service boiler plate for --{$model_name}-- generated in \"{$this->graph_controllers_path}\" " . PHP_EOL;
+        fclose($controller_file);
+    }
+
     private function createMigration($table_name)
     {
         $table_name = is_string($table_name) ? $table_name : $this->ask("Enter Table Name", true);
@@ -480,21 +555,7 @@ class {$middleware_name} implements MiddleWare
         $this->write("`green`[+]`green`  MiddleWare Boiler Code Generated in {$this->middleware_files_path} folder");
         fclose($middleware_file);
     }
-    private function createModel($model_name)
-    {
 
-        $model_file = "{$this->models_path}{$model_name}.php";
-
-        if (file_exists($model_file)) {
-            if ($this->confirm("{$model_name} Database model Already exists, Override?")) {
-                $db_model_file = fopen($model_file, "w");
-                $this->writeModelBoilerPlate($db_model_file, $model_name);
-            }
-        } else {
-            $db_model_file = fopen($model_file, "w");
-            $this->writeModelBoilerPlate($db_model_file, $model_name);
-        }
-    }
     private function createMailable($email_name){
         $email_name = trim($email_name);
 
