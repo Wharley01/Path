@@ -8,8 +8,10 @@
 
 namespace Path\Core\Http;
 
+use Path\Core\Database\Model;
 use Path\Core\Error\Exceptions;
 use Path\Core\Storage\Caches;
+use Spatie\Ssr\Engines\Node;
 use Spatie\Ssr\Engines\V8;
 use Spatie\Ssr\Renderer;
 use V8Js;
@@ -19,7 +21,9 @@ class Response
 {
     public $content;
     public $status;
-    public $headers = [];
+    public $headers = [
+        'X-Powered-By' => 'PathPHP/1.5.4'
+    ];
     public $state = [];
     private $head = [];
     private $bottom = [];
@@ -37,8 +41,9 @@ class Response
     public function __construct($build_path = '/dist/')
     {
         $this->build_path = $build_path ?? '/dist/';
-
-        $this->generateManifest();
+        try{
+            $this->generateManifest();
+        }catch (\Throwable $exception){}
         return $this;
     }
     private function generateManifest(){
@@ -59,24 +64,74 @@ class Response
     }
     public function json($arr, $status = 200)
     {
-        $arr = $this->convertToUtf8($arr);
-        $this->content = json_encode((array)$arr, JSON_PRETTY_PRINT);
+//        $arr = $this->convertToUtf8($arr);
+        $this->content = json_encode((array)$arr, JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE);
         $this->status = $status;
-        $this->headers = ["Content-Type" => "application/json; charset=UTF-8"];
+        $this->headers = array_merge(["Content-Type" => "application/json; charset=UTF-8"],$this->headers);
+        return $this;
+    }
+
+    public function info($msg,$status = 200,$keys = []){
+        $res = [
+            "has_error" => true,
+            "msg" => $msg,
+            "data" => []
+        ];
+
+        $res = array_merge($res,$keys);
+        return $this->json($res,$status);
+    }
+    public function error($msg,$fields = [],$status = 401, $keys = []){
+        $res = [
+            "has_error" => true,
+            "msg" => $msg,
+            "data" => $fields
+        ];
+
+        $res = array_merge($res,$keys);
+        return $this->json($res,$status);
+    }
+    public function success($msg,$fields = [],$status = 200,$keys = []){
+        $res = [
+            "has_error" => false,
+            "msg" => $msg,
+            "data" => $fields
+        ];
+
+        $res = array_merge($res,$keys);
+        return $this->json($res,$status);
+    }
+    public function data(Model &$model,int $page = 1,string $msg = '',int $status = 200){
+        $data = (clone $model)->getPage($page);
+        $has_data = count($data) > 0;
+        return $this->json([
+            "has_error" => false,
+            "msg" => $msg,
+            "data" => $data,
+            "current_page" => $page,
+            "total_pages" => $model->getTotalPages()
+        ],!$has_data ? 201:$status);
+    }
+
+    public function raw($content, $status = 200)
+    {
+        $this->content = $content;
+        $this->status = $status;
+        $this->headers = array_merge(["Content-Type" => "application/octet-stream"],$this->headers);
         return $this;
     }
     public function text(String $text, $status = 200)
     {
         $this->content = $text;
         $this->status = $status;
-        $this->headers = ["Content-Type" => "text/plain; charset=UTF-8"];
+        $this->headers = array_merge(["Content-Type" => "text/plain; charset=UTF-8"],$this->headers);
         return $this;
     }
     public function htmlString(String $html, $status = 200)
     {
         $this->content = $html;
         $this->status = $status;
-        $this->headers = ["Content-Type" => "text/html; charset=UTF-8"];
+        $this->headers = array_merge(["Content-Type" => "text/html; charset=UTF-8"],$this->headers);
         return $this;
     }
     public function bindState(array $state)
@@ -99,7 +154,6 @@ class Response
 
         $link_resources = function ($raw_data) use ($public_path) {
             return preg_replace_callback('/(href|src)=\"?([^">\s]+)\"?[^\s>]*/m', function ($matches) use ($public_path) {
-                //            var_dump($matches);
                 $resources_path = explode("/", $matches[2]);
                 array_shift($resources_path);
                 $resources_path = join("/", $resources_path);
@@ -141,7 +195,8 @@ class Response
 
         $this->content = $match_resources;
         $this->status = $status;
-        $this->headers = ["Content-Type" => "text/html; charset=UTF-8"];
+        $this->headers = array_merge(["Content-Type" => "text/html; charset=UTF-8"],$this->headers);
+
 
         return $this;
     }
@@ -149,7 +204,7 @@ class Response
     {
         $this->content = $data;
         $this->status = $status;
-        $this->headers = ["Content-Type" => "application/octet-stream; charset=UTF-8"];
+        $this->headers = array_merge(["Content-Type" => "application/octet-stream; charset=UTF-8"],$this->headers);
         return $this;
     }
 
@@ -192,14 +247,14 @@ class Response
         return $this;
     }
 
-    public function redirect($url)
+    public function redirect($url, int $code = 302, bool $replace = true)
     {
-        header("location: {$url}");
+        header("location: {$url}", $replace, $code);
         exit();
     }
     public function addHeader(array $header)
     {
-        $this->headers = array_merge($this->headers, $header);
+        $this->headers = array_merge($this->headers,$header);
         return $this;
     }
     public function file($file_path)
@@ -234,13 +289,6 @@ class Response
         return $d;
     }
 
-    public function info($msg,$fields = [],$has_error = false){
-        return $this->json([
-            "has_error" => true,
-            "error_msg" => $msg,
-            "fields" => $fields
-        ],$has_error ? 401:200);
-    }
 
     public function setState($key, $value){
         $this->state[$key] = $value;
@@ -279,8 +327,10 @@ class Response
                         $html .= " {$attr}=\"{$value}\"";
                     }
                 }
-
-                $html .="></$tag>";
+                if($tag == 'script')
+                    $html .="></$tag>";
+                else
+                    $html .=">";
                 $html_elements[] = $html;
             }
 
@@ -317,7 +367,7 @@ class Response
     ){
         $router = new Router();
         if(!$route_path){
-            $this->ssr_route_path = $router->real_path;
+            $this->ssr_route_path = $router->browser_path;
         }else{
             $this->ssr_route_path = $route_path;
         }
@@ -330,25 +380,36 @@ class Response
         return $this;
     }
 
+    public function cacheIsValid($hashed_entry){
+        $state_salt = md5(json_encode($this->state));
+        $cache_salt = md5($hashed_entry.$state_salt);
+        $cache_path = $hashed_entry.'_state';
+
+        if ($cache_salt != Caches::get($cache_path)) {
+            Caches::set($cache_path, $cache_salt);
+            return false;
+        }else{
+            return true;
+        }
+
+    }
+
     public function SSR(
         $entry = null,
-        $status = 200,
-        $cache_salt = null
+        $status = 200
     ){
 //        entry points
         $this->generateManifest();
-        $entry = $entry ?? $this->build_path.static::$ASSETS_MANIFEST->entrypoints->server->js[0];
+        $entry = $entry ?? @($this->build_path.static::$ASSETS_MANIFEST->entrypoints->server->js[0]) ?? null;
 
         $router = new Router();
         $route = $this->ssr_route_path ?? $router->real_path;
-
         $hashed_entry = md5($entry.$route);
+
 //        get hashed state
 
-
-        if($cache_salt){
-            $html = $this->compileJs($entry,$route);
-            Caches::cache($hashed_entry,$html);
+        if(config('PROJECT->is_production') && $this->cacheIsValid($hashed_entry)){
+            $html =  Caches::get($hashed_entry);
         }else{
             $html = $this->compileJs($entry,$route);
             Caches::cache($hashed_entry,$html);
@@ -362,7 +423,6 @@ class Response
             $this->build_path.'asset-manifest.json'
         ),$status);
     }
-
     /**
      * @param string $lang
      * @return Response
@@ -385,9 +445,22 @@ class Response
 
     private function compileJs(?string $entry, $route)
     {
-        $engine = new V8(new V8Js());
-
-        $renderer = new Renderer($engine);
+        if(config("SSR->is_node")){
+            $engine = new Node(config("SSR->node_path") ?? 'node', ROOT_PATH.'path/.Storage');
+            $renderer = new class($engine) extends Renderer{
+                protected function dispatchScript(): string
+                {
+                    return <<<JS
+var dispatch = function (result) {
+    return {$this->engine->getDispatchHandler()}(result)
+}
+JS;
+                }
+            };
+        } else{
+            $engine = new V8(new V8Js());
+            $renderer = new Renderer($engine);
+        }
 
         $html = $renderer
             ->debug(true)
@@ -405,7 +478,7 @@ class Response
         $assets = (object) static::$ASSETS_MANIFEST;
 
         $main_client = $this->build_path.$assets->entrypoints->client->js[0];
-
+//
         $this->setHead(
             Response::HTMLTag('link',[
                 'href' => $main_client,
@@ -483,7 +556,6 @@ class Response
 
     private function generateHTML(string $html, string $state, string $string)
     {
-
         $this->preFetchAssets();
         $this->fetchMainClientCSS();
         $this->fetchMainClientJs();
@@ -492,22 +564,16 @@ class Response
         $head = $this->getHead($this->should_cache);
         $bottom = $this->getBottom($this->should_cache);
         $state = json_encode($this->state);
-        return "
-        
-        <!DOCTYPE html>
-<html lang='{$this->lang}'>
-    <head>
-    {$head}
-        <title>{$this->title}</title>
-    </head>
-    <body>{$html}</body>
-    <script>
-        window.__INITIAL_STATE__ = {$state}
-    </script>
-    {$bottom}
-</html>";
 
+        return str_replace([
+            '<data:head></data:head>',
+            '<data:scripts></data:scripts>'
+        ], [
+            $head,
+            "<script>window.__INITIAL_STATE__ = {$state}</script>{$bottom}"
+        ],
 
+            $html);
     }
 
 
