@@ -14,7 +14,6 @@
   }],
   "require": {
     "php": "^7.2",
-    "spatie/server-side-rendering": "^0.2.5",
-    "ext-v8js": "*"
+    "spatie/server-side-rendering": "^0.2.5"
   }
 }
