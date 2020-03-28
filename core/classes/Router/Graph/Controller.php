@@ -2,6 +2,7 @@
 namespace Path\Core\Router\Graph;
 
 
+use Path\Core\Database\Model;
 use Path\Core\Http\Request;
 use Path\Core\Http\Response;
 
@@ -19,12 +20,16 @@ abstract class Controller
     }
 
     public function set(Request $request,Response $response):Response{
-
+        if($this->model instanceof Model){
+            $this->model->insert($request->getPost());
+        }
         return $response->success('successfully updated');
     }
 
     public function update(Request $request,Response $response):Response{
-
+        if($this->model instanceof Model){
+            $this->model->update($request->getPost());
+        }
         return $response->success('successfully updated');
     }
 
