@@ -18,7 +18,7 @@ $router->setBuildPath("/");
 $router->get('/', function (Request $request,Response $response) {
     //   echo phpinfo()
 
-    return $response->html('/dist/default.html');
+    return $response->success('PATH v2.0.3');
 });
 
 $router->end();
