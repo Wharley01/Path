@@ -19,7 +19,7 @@ $ cd proj-name
 #### initiate folder as PathPHP project
 
 ```bash
-$ composer create-project __path/path .
+$ composer create-project path/app .
 ```
 
 You can additionally install Path's Vue plugin

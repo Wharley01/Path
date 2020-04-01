@@ -23,7 +23,7 @@ git init
 navigate to an empty folder you created for your project:
 
 ```bash
-$ composer create-project wharley01/path .
+$ composer create-project path/app .
 ```
 
 
