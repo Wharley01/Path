@@ -41,7 +41,7 @@ class Create extends CInterface
         "--live" => [
             "desc" => "create live controller"
         ],
-        "--rest" => [
+        "--route" => [
             "desc" => "create controller"
         ]
     ];
@@ -173,16 +173,24 @@ class $command_file_name extends CInterface
 
         //        Create file in Database/Models
         //        Create file controllers/
-        $controller_type = array_key_exists('--graph',$params) ?? strtolower($this->ask('Controller Type Route/Live/Graph', true));
+        if(array_key_exists('--graph',$params))
+            $controller_type = "graph";
+        elseif(array_key_exists('--live',$params))
+            $controller_type = "live";
+        elseif(array_key_exists('--route',$params))
+            $controller_type = "route";
+        else
+            $controller_type =  strtolower($this->ask('Controller Type Route/Live/Graph', true));
 
 
-        if($controller_type !== "graph" && !array_key_exists('--graph',$params)){
+        if($controller_type !== "graph"){
             if (!$this->confirm("Do you have existing Model for your controller? ")) {
                 $new_model_name = $this->createModel();
             } else {
                 $new_model_name = $this->ask("Enter Existing Model's Name", true);
             }
         }
+        var_dump($controller_type);
         if ($controller_type === "route") {
             var_dump($controller_type);
 
@@ -193,7 +201,7 @@ class $command_file_name extends CInterface
                     $this->writeRouteControllerBoilerPlate($controller_file, $controller_name, $new_model_name);
                 }
 
-        } elseif ($controller_type === "graph" || array_key_exists('--graph',$params)){
+        } elseif ($controller_type === "graph"){
             $_controller_file = "{$this->graph_controllers_path}{$controller_name}.php";
 
             if (!file_exists($_controller_file) || $this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
