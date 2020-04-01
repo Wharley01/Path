@@ -23,14 +23,14 @@ abstract class Controller
         if($this->model instanceof Model){
             $this->model->insert($request->getPost());
         }
-        return $response->success('successfully updated');
+        return $response->success('successfully updated',$request->getPost());
     }
 
     public function update(Request $request,Response $response):Response{
         if($this->model instanceof Model){
             $this->model->update($request->getPost());
         }
-        return $response->success('successfully updated');
+        return $response->success('successfully updated',$request->getPatch());
     }
 
     public function schema(){

@@ -118,6 +118,7 @@ class GraphPath extends Route\Controller
 
         $data = [];
         foreach ($query as $service => $structure){
+            $table_name = strtolower($service);
             $service = $this->controller_namespace. $service;
             $service_name = $this->controller_namespace. $service;
             if(!class_exists($service)){
@@ -133,7 +134,6 @@ class GraphPath extends Route\Controller
             }elseif ($this->request_method === "PATCH"){
                 $func = "update";
             }
-
 
             try {
                 $filters = $this->cleanAndValidateKeys($structure['filters']);
@@ -191,9 +191,6 @@ class GraphPath extends Route\Controller
                             }
 
                         }
-
-
-//
                     }
                 }
 
@@ -210,8 +207,7 @@ class GraphPath extends Route\Controller
                 if($model instanceof Model){
                     $self_id = null;
                     if($this->auto_link && $parent){
-                        $table_name = explode('\\',$service_name);
-                        $table_name = $table_name[count($table_name)-1];
+
                         $self_id_key = strtolower($table_name).'_id';
                         $self_id = $parent->$self_id_key ?? '_____';
                     }
@@ -233,13 +229,16 @@ class GraphPath extends Route\Controller
 
 
                 $columns = @$structure['columns'];
-                if($columns){
-                    $this->generateSelectColumns($model,$columns);
-                }
 
+                if($columns && $this->request_method == "GET"){
+                    $this->generateSelectColumnsToModel($model,$columns);
+                }
 
                 $res = $service->{$func}($req,$res);
                 $message = "";
+
+                $last_ins_id = $model->last_insert_id ?? null;
+
                 if($res instanceof Response){
                     if($data = json_decode($res->content)){
 
@@ -253,9 +252,13 @@ class GraphPath extends Route\Controller
                         throw new ResponseError("Expected returned value of $service_name->$func to be either error/success/data of ".Response::class );
                     }
 //                    loop through column
+                    if($columns && ($this->request_method === "POST" || $this->request_method == "PATCH")){
+                        $this->generateSelectColumnsToRes($data,$columns);
+                    }
 
-                    $this->getColumnData($data,$columns);
-
+                    $this->getColumnData($data,$columns,$last_ins_id);
+                    if ($parent)
+                        $this->cleanUp($data,$table_name);
                     return $data;
                 }else{
                     throw new ResponseError("Expected returned value of $service_name->$func to be Instance of ".Response::class );
@@ -268,11 +271,12 @@ class GraphPath extends Route\Controller
         foreach ($this->reserved_post_keys as $_ => $key){
             unset($posts[$key]);
         }
-        return array($posts);
+        return $posts;
     }
-    private function generateSelectColumns(Model &$model,$columns){
+    private function generateSelectColumnsToModel(Model &$model, $columns){
 
         foreach ($columns as $column => $det){
+//            var_dump($det);
             if($det['type'] == "column"){
                 $model->select($column);
             }elseif ($det['type'] == "service"){
@@ -293,11 +297,12 @@ class GraphPath extends Route\Controller
           str += `&${root}[${column.name}][params]=${paramsToStr(column.params)}`;
     }*/
 
-    private function getColumnData(&$data,$columns){
+    private function getColumnData(&$data,$columns,$ref_id){
         if (is_object($data)){
             foreach ($data as $key => $value){
                 $column = @$columns[$key];
                 if(@$column['type'] == "service"){
+                    $data->ref_id = $ref_id;
                     $data->$key = $this->generateResponseData([
                         $column['service'] => $column
                     ],$data);
@@ -309,6 +314,8 @@ class GraphPath extends Route\Controller
                 foreach ($_data as $key => $value){
 
                     $column = @$columns[$key];
+
+                    $_data->ref_id = $ref_id;
                     if(@$column['type'] == "service"){
                         $_data->$key = $this->generateResponseData([
                             $column['service'] => $column
@@ -357,6 +364,21 @@ class GraphPath extends Route\Controller
                 throw new ResponseError("$func of  requires $arg parameter, make sure $arg is added to your parameter");
             }
         }
+    }
+
+    private function generateSelectColumnsToRes($data, $columns)
+    {
+        foreach ($columns as $column => $det){
+//            var_dump($det);
+            if($det['type'] == "column"){
+//                $data
+            }elseif ($det['type'] == "service"){
+                $data->$column = "service:{$det['service']}";
+            }
+        }
+    }
+    private function cleanUp(&$data,$model_name){
+        unset($data->$model_name);
     }
 
 }
