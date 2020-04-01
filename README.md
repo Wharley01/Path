@@ -4,20 +4,22 @@ Path's Documentation can be found here [https://path.adewale.dev/](https://path.
 
 ## Installation
 
-#### Create project folder 
+#### Create project folder
 
 ```bash
 $ mkdir proj-name
 ```
+
 #### navigate into the folder
 
 ```bash
 $ cd proj-name
 ```
+
 #### initiate folder as PathPHP project
 
 ```bash
-$ composer create-project wharley/path .
+$ composer create-project __path/path .
 ```
 
 You can additionally install Path's Vue plugin
