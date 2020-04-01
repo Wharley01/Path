@@ -7,7 +7,6 @@ use Path\Core\Http\Router;
 
 $router = new Router();
 
-$router->get("SSE/@controller/@action", 'Path\Plugins\SSEController\SSEServer->watch');
 $router->error404(function (Request $request, Response $response) {
     return $response->error('Error 404', [], 404);
 });
@@ -15,7 +14,7 @@ $router->error404(function (Request $request, Response $response) {
 
 $router->graph('/path-graph');
 $router->setBuildPath("/");
-$router->get('/', function (Request $request,Response $response) {
+$router->get('/', function (Request $request, Response $response) {
     //   echo phpinfo()
 
     return $response->success('PATH v2.0.3');

@@ -1,5 +1,7 @@
 <?php
+
 namespace Path\Core\Http;
+
 use Throwable;
 
 require_once "core/kernel.php";
