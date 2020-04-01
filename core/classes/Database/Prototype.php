@@ -64,7 +64,7 @@ class Prototype
     {
         $tables = join(",", $tables);
         try {
-            $query = $this->db_conn->query("DROP TABLE IF EXISTS {$tables}");
+            $query = $this->db_conn->query("DROP TABLE IF EXISTS `{$tables}`");
         } catch (\Exception $e) {
             throw new Exceptions\DataStructure($e->getMessage());
         }

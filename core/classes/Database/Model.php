@@ -574,18 +574,18 @@ abstract class Model
         switch ($command) {
             case "UPDATE":
                 $columns     = $this->query_structure[$command];
-                $command    = "UPDATE " . $this->table_name . " SET ";
+                $command    = "UPDATE `" . $this->table_name . "` SET ";
                 $query      = $command . $columns;
                 if ($this->query_structure["WHERE"]["query"])
                     $query .= " WHERE " . $this->query_structure["WHERE"]["query"];
                 break;
             case "INSERT":
                 $columns     = $this->query_structure[$command];
-                $command    = "INSERT INTO {$this->table_name} SET {$columns}";
+                $command    = "INSERT INTO `{$this->table_name}` SET {$columns}";
                 $query      = $command;
                 break;
             case "DELETE":
-                $query      = "DELETE FROM {$this->table_name} ";
+                $query      = "DELETE FROM `{$this->table_name}` ";
 
                 if ($this->query_structure["WHERE"]["query"])
                     $query .= PHP_EOL . " WHERE " . $this->query_structure["WHERE"]["query"];
@@ -593,7 +593,7 @@ abstract class Model
             case "SELECT":
                 $columns     = $this->query_structure["SELECT"]["query"];
                 $query      = "SELECT {$columns}";
-                $query     .= PHP_EOL . " FROM {$this->table_name} ";
+                $query     .= PHP_EOL . " FROM `{$this->table_name}` ";
                 if ($this->query_structure["JOIN"]) {
                     $query .= " " . $this->rawJoinGen($this->query_structure["JOIN"]);
                 }
@@ -610,7 +610,7 @@ abstract class Model
                 break;
             case "SORT":
                 $columns     = $this->query_structure["SELECT"]["query"];
-                $query      = "SELECT {$columns} FROM {$this->table_name} ";
+                $query      = "SELECT {$columns} FROM `{$this->table_name}` ";
                 if ($this->query_structure["WHERE"]["query"])
                     $query .= " WHERE " . $this->query_structure["WHERE"]["query"];
                 break;
@@ -810,7 +810,7 @@ abstract class Model
             $data = array_merge($this->filterNonWritable($data), $this->writing);
 
         if (!$data)
-            throw new Exceptions\Database("Error Attempting to update Empty data set");
+            throw new Exceptions\Database("Error Attempting to add Empty data set");
         if (!$this->table_name)
             throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
         //        add miscellinouse data

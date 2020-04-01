@@ -64,7 +64,7 @@ class Structure
     private function getExistingCols()
     {
         try {
-            $q = $this->db_conn->query("DESCRIBE {$this->table}");
+            $q = $this->db_conn->query("DESCRIBE `{$this->table}`");
             $cols = [];
             foreach ($q as $k) {
                 $cols[] = $k["Field"];

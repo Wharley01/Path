@@ -147,7 +147,7 @@ class Migration extends CInterface
         $write_path = ROOT_PATH.'path/Database/Activation/';
 
         try {
-            $q = $this->conn->query("DESCRIBE {$table}");
+            $q = $this->conn->query("DESCRIBE `{$table}`");
             $cols = [];
             foreach ($q as $k) {
                 $cols[] = $table . "." . $k["Field"];
@@ -195,7 +195,7 @@ class Migration extends CInterface
     private function printTableToTerminal($table)
     {
         try{
-            $q = (MySql::connection())->query("DESCRIBE {$table}");
+            $q = (MySql::connection())->query("DESCRIBE `{$table}`");
             $cols = [];
 
             $this->write(PHP_EOL . PHP_EOL . "{$table}" . PHP_EOL);
