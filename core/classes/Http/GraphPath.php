@@ -16,7 +16,16 @@ class GraphPath extends Route\Controller
     private $controller_namespace = "Path\\App\\Controllers\\Graph\\";
     private $request_method = "GET";
     private $auto_link = null;
-    private $reserved_post_keys = ["_____graph", "_____method", "_____auto_link"];
+    private $reserved_post_keys = [
+        "_____graph",
+        "_____method",
+        "_____auto_link"
+    ];
+    private $http_verb_func_pair = [
+        "POST" => "set",
+        "PATCH" => "update",
+        "DELETE" => "delete"
+    ];
     private $allowed_key_pattern = "/^([^\s\W]+)$/";
 
     public function onGet(Request $request, Response $response)
@@ -129,10 +138,8 @@ class GraphPath extends Route\Controller
 
             $func = $structure['func'];
 
-            if ($this->request_method === "POST"){
-                $func = "set";
-            }elseif ($this->request_method === "PATCH"){
-                $func = "update";
+            if (array_key_exists($this->request_method,$this->http_verb_func_pair)){
+                $func = $this->http_verb_func_pair[$this->request_method];
             }
 
             try {

@@ -33,6 +33,13 @@ abstract class Controller
         return $response->success('successfully updated',$request->getPatch());
     }
 
+    public function delete(Request $request,Response $response):Response{
+        if($this->model instanceof Model){
+            $this->model->delete();
+        }
+        return $response->success('successfully deleted');
+    }
+
     public function schema(){
 //        specify service that can call it
         return [

@@ -6,7 +6,7 @@ use Path\Core\Http\Response;
 use Path\Core\Http\Router;
 
 $router = new Router();
-
+$router->response->disableCORS();
 $router->error404(function (Request $request, Response $response) {
     return $response->error('Error 404', [], 404);
 });
