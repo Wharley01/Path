@@ -27,6 +27,7 @@ class GraphPath extends Route\Controller
         "DELETE" => "delete"
     ];
     private $allowed_key_pattern = "/^([^\s\W]+)$/";
+    private $page = 1;
 
     public function onGet(Request $request, Response $response)
     {
@@ -104,7 +105,7 @@ class GraphPath extends Route\Controller
         try {
 //            $response_data = [];
             $data = $this->generateResponseData($query,null);
-            return $response->success('',$data);
+            return $data;
         } catch (\Throwable $e) {
             if(method_exists($e,'getResponse')){
                 $res = $e->getResponse();
@@ -117,7 +118,7 @@ class GraphPath extends Route\Controller
         }
     }
 
-    private function generateResponseData($query,$parent = null){
+    private function generateResponseData($query,$parent = null,$parent_tbl_name = null){
         $req = new Request();
         $req->METHOD = $this->request_method;
         $req->args = $parent;
@@ -137,7 +138,8 @@ class GraphPath extends Route\Controller
 //            check for middleware
 
             $func = $structure['func'];
-
+//            page
+            $page = $structure['page'] ?? 1;
             if (array_key_exists($this->request_method,$this->http_verb_func_pair)){
                 $func = $this->http_verb_func_pair[$this->request_method];
             }
@@ -231,7 +233,10 @@ class GraphPath extends Route\Controller
                     }
                     $model->where($filters);
 //                    check if auto link is enabled
+                    $model->setPage($page);
 
+                }else{
+                    throw new ResponseError("Error!: 'model' property's value of $service_name is not instance of ". Model::class );
                 }
 
 
@@ -243,18 +248,21 @@ class GraphPath extends Route\Controller
 
                 $res = $service->{$func}($req,$res);
                 $message = "";
+                $total_pages = 1;
+                $current_page = 1;
 
                 $last_ins_id = $model->last_insert_id ?? null;
 
                 if($res instanceof Response){
                     if($data = json_decode($res->content)){
-
                         if(!property_exists($data,'data')){
                             throw new ResponseError("Unable to find data key in response returned in $service_name->$func");
                         }else{
                             $data = $data->data;
                         }
                         $message = $data->message ?? "";
+                        $total_pages = $data->total_pages ?? 1;
+                        $current_page = $data->current_page ?? 1;
                     }else{
                         throw new ResponseError("Expected returned value of $service_name->$func to be either error/success/data of ".Response::class );
                     }
@@ -263,10 +271,19 @@ class GraphPath extends Route\Controller
                         $this->generateSelectColumnsToRes($data,$columns);
                     }
 
-                    $this->getColumnData($data,$columns,$last_ins_id);
+                    $this->getColumnData($data,$columns,$last_ins_id, $table_name);
                     if ($parent)
                         $this->cleanUp($data,$table_name);
-                    return $data;
+                    if(!$parent) {
+                        return [
+                            "data" => $data,
+                            "msg" => $message,
+                            "total_pages" => $total_pages,
+                            "current_page" => $page
+                        ];
+                    }else{
+                        return $data;
+                    }
                 }else{
                     throw new ResponseError("Expected returned value of $service_name->$func to be Instance of ".Response::class );
                 }
@@ -304,15 +321,17 @@ class GraphPath extends Route\Controller
           str += `&${root}[${column.name}][params]=${paramsToStr(column.params)}`;
     }*/
 
-    private function getColumnData(&$data,$columns,$ref_id){
+    private function getColumnData(&$data,$columns,$ref_id, $parent_tbl_name){
         if (is_object($data)){
             foreach ($data as $key => $value){
                 $column = @$columns[$key];
                 if(@$column['type'] == "service"){
-                    $data->ref_id = $ref_id;
+                    if($ref_id && $parent_tbl_name){
+                        $data->{$parent_tbl_name.'_id'} = $ref_id;
+                    }
                     $data->$key = $this->generateResponseData([
                         $column['service'] => $column
-                    ],$data);
+                    ],$data,$parent_tbl_name);
                 }
             }
         }elseif (is_array($data)){
@@ -321,12 +340,13 @@ class GraphPath extends Route\Controller
                 foreach ($_data as $key => $value){
 
                     $column = @$columns[$key];
-
-                    $_data->ref_id = $ref_id;
+                    if($ref_id && $parent_tbl_name){
+                        $_data->{$parent_tbl_name.'_id'} = $ref_id;
+                    }
                     if(@$column['type'] == "service"){
                         $_data->$key = $this->generateResponseData([
                             $column['service'] => $column
-                        ],$_data);
+                        ],$_data,$parent_tbl_name);
                     }
                 }
             }

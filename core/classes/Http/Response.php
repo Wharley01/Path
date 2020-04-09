@@ -109,8 +109,8 @@ class Response
         $res = array_merge($res,$keys);
         return $this->json($res,$status);
     }
-    public function data(Model $model,string $msg = '',int $status = 200,$page = null){
-        $data = (clone $model)->getPage(1);
+    public function data(Model $model,$page = null,string $msg = '',int $status = 200){
+        $data = (clone $model)->getPage($page ?? $model->current_page);
         $has_data = count($data) > 0;
         return $this->json([
             "has_error" => false,
