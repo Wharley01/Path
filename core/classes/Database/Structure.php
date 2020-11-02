@@ -94,6 +94,17 @@ class Structure
     }
 
     /**
+     * @param $expression
+     * @param bool $stored
+     * @return $this
+     */
+    public function as($expression, $stored = true)
+    {
+        $this->columns[count($this->columns) - 1]["expression"] = $expression;
+        $this->columns[count($this->columns) - 1]["store_expression"] = $stored;
+        return $this;
+    }
+    /**
      * @param $value
      * @return $this
      */
@@ -107,7 +118,6 @@ class Structure
     {
         if (!$columns) {
             $this->columns[count($this->columns) - 1]["is_dropping"] = true;
-            echo "Dropping cols";
             return $this;
         }
 
@@ -115,6 +125,11 @@ class Structure
             $this->column($column);
             $this->columns[count($this->columns) - 1]["is_dropping"] = true;
         }
+        return $this;
+    }
+
+    public function withConstraint($constraint){
+        $this->columns[count($this->columns) - 1]["constraint"] = $constraint;
         return $this;
     }
 
@@ -223,6 +238,7 @@ class Structure
     /**
      * @param $column
      * @return $this
+     * @throws Exceptions\DataStructure
      */
     public function primaryKey(...$column)
     {
@@ -238,6 +254,7 @@ class Structure
     /**
      * @param $column
      * @return $this
+     * @throws Exceptions\DataStructure
      */
     public function uniqueKey(...$column)
     {
@@ -265,7 +282,7 @@ class Structure
     public function references($reference, $delete_constraint = null, $update_constraint = null)
     {
         $column = $this->columns[count($this->columns) - 1]["name"];
-        $this->key($column, "foreign key",$reference,$delete_constraint,$update_constraint);
+        $this->key("`$column`", "foreign key",$reference,$delete_constraint,$update_constraint);
         return $this;
     }
 
@@ -365,34 +382,21 @@ class Structure
             foreach ($this->columns as $column) {
                 $col_type = $column['type'] ?? null;
                 $col_name = $column['name'] ?? null;
+                $expression = $column['expression'] ?? null;
+                $expression_store = $column['store_expression'] ?? null;
                 if(!$col_type)
                     throw new Exceptions\Database('specify column type of '.$col_name);
                 $str = " `{$col_name}` {$col_type} ";
-
-                $str .= $this->genColQueryStr($column,true);
+                if($expression)
+                    $str .= "GENERATED ALWAYS AS (".$expression.") ".($expression_store ? ' STORED':'');
+                else
+                    $str .= $this->genColQueryStr($column,true);
 
                 if (strlen(trim($appended_query)) > 0)
                     $appended_query .= ", " . $str;
                 else
                     $appended_query  .= $str;
             }
-
-//            var_dump($appended_query);
-
-//            $primary_key = join(",", array_unique($this->primary_keys));
-//            $appended_query .= ", PRIMARY KEY({$primary_key})";
-//            if ($this->unique_keys) {
-//                $unique_key = join(",", array_unique($this->unique_keys));
-//                $appended_query .= ", UNIQUE KEY({$unique_key})";
-//            }
-//
-//            if ($this->foreign_keys) {
-//                //                $foreign_keys = join(",",array_unique($this->foreign_keys));
-//                for ($i = 0; $i < count($this->foreign_keys); $i++) {
-//                    $foreign_keys = $this->foreign_keys[$i];
-//                    $appended_query .= ", FOREIGN KEY({$foreign_keys}) REFERENCES {$this->foreign_key_references[$i]}";
-//                }
-//            }
         } elseif ($this->action == "altering") {
             foreach ($this->columns as $column) {
 //                var_dump($column);
@@ -439,6 +443,7 @@ class Structure
 
         try {
             $raw_query = $this->getRawQuery();
+//            echo $raw_query;
             if($raw_query)
                 $query = $this->db_conn->query($raw_query);
         } catch (\PDOException $e) {

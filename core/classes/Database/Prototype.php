@@ -56,6 +56,7 @@ class Prototype
         $proto->action = "altering";
         $table_instance->update($proto);
 
+
         $proto->executeQuery();
         return $proto;
     }
