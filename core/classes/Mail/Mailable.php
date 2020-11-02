@@ -9,11 +9,26 @@
 namespace Path\Core\Mail;
 
 
-abstract class Mailable
+ abstract class Mailable
 {
+    protected $template = "";
+    protected $title = "";
+    public function title($state):?String{
+        return $this->title;
+    }
 
-    abstract public function title(State $state):String;
+    public function template($state):?String{
+        return $this->template;
+    }
 
-    abstract public function template(State $state):String;
+     public function footer($states):string {
+         return "";
+     }
 
-}
+
+     public function header($states):string {
+         return "";
+     }
+
+
+ }

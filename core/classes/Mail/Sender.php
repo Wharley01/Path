@@ -9,6 +9,7 @@
 namespace Path\Core\Mail;
 
 use Path\Core\Error\Exceptions;
+use Path\Core\File\File;
 use Path\Plugins\PHPMailer\PHPMailer;
 
 class Sender
@@ -17,17 +18,17 @@ class Sender
     private $mail_state;
     private $mail_to = null;
     private $mail_from = null;
-    private $reply_to = [];
-    private $throw_exception = true;
-
-    private $use = '';
+    private array $reply_to = [];
+    private bool $throw_exception = true;
+    private ?string $templ_path = null;
+    private ?string $use = '';
 
     private $errors;
 
     public function __construct($mailable)
     {
         $this->mailable = $mailable;
-        $this->mail_state = new State();
+        $this->mail_state = new States();
 
         $this->use = strtolower(config("MAILER->USE") ?? '');
     }
@@ -43,9 +44,9 @@ class Sender
         if ($this->use == 'smtp'){
             $mail->isSMTP();// Set mailer to use SMTP
             $mail->Host = config("MAILER->SMTP->host");  // Specify main and backup SMTP servers
-            $mail->SMTPAuth = true;                               // Enable SMTP authentication
-            $mail->Username = config("MAILER->SMTP->username");        // SMTP username
-            $mail->Password = config("MAILER->SMTP->password");        // SMTP password
+            $mail->SMTPAuth = config("MAILER->SMTP->uses_auth") ?? true;
+            $mail->Username = config("MAILER->SMTP->username") ?? '';        // SMTP username
+            $mail->Password = config("MAILER->SMTP->password") ?? '';        // SMTP password
             $mail->SMTPSecure = config("MAILER->SMTP->protocol");      // Enable TLS encryption, `ssl` also accepted
             $mail->Port = config("MAILER->SMTP->port");                // TCP port to connect to
             $mail->CharSet = config("MAILER->SMTP->charset");
@@ -104,7 +105,7 @@ class Sender
     public function setTo($to)
     {
         if(is_string($to)){
-            $this->mail_from = [
+            $this->mail_to = [
                 "email" => $to,
                 "name"  => null
             ];
@@ -131,6 +132,7 @@ class Sender
     /**
      * @return array
      * @throws Exceptions\Mailer
+     * @throws Exceptions\Config
      */
     public function getFrom()
     {
@@ -177,7 +179,29 @@ class Sender
         if($mailable instanceof Mailable){
             $template = $mailable->template($this->mail_state);
             $title = $mailable->title($this->mail_state);
-            $this->sendMail($template,$title);
+            $header = $mailable->header($this->mail_state);
+            $footer = $mailable->footer($this->mail_state);
+            $tmpl = $this->templ_path ?? ROOT_PATH . '/path/Mail/Templates/main.html';
+            $tmpl = File::file($tmpl);
+            $templ_content = null;
+            if($tmpl->exists()){
+//                template exists, use it
+                $templ_content = $tmpl->getContent();
+                if($templ_content){
+                    $templ_content = preg_replace([
+                        '/\#\#HEADER\#\#/',
+                        '/\#\#CONTENT\#\#/',
+                        '/\#\#FOOTER\#\#/'
+                    ],[
+                        $header,
+                        $template,
+                        $footer
+                    ],$templ_content);
+                }
+            }
+//            echo $templ_content;
+//            return;
+            $this->sendMail($templ_content ?? ($header.$template.$footer),$title);
         }else{
             throw new Exceptions\Mailer("Invalid Mailable Class");
         }
@@ -220,5 +244,15 @@ class Sender
     public function getErrors()
     {
         return $this->errors;
+    }
+
+    /**
+     * @param string|null $templ_path
+     * @return Sender
+     */
+    public function setTemplate(?string $templ_path): Sender
+    {
+        $this->templ_path = $templ_path;
+        return $this;
     }
 }
