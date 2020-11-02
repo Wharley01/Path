@@ -63,6 +63,8 @@ abstract class Model
     private $reading              = []; //currently updated column and value
     public $last_insert_id;
     private $table_columns;
+    private $table_columns_str;
+    private $table_columns_short;
     public $columns;
 
     protected $fetch_method         = "FETCH_ASSOC";
@@ -79,7 +81,8 @@ abstract class Model
     public function __construct()
     {
         $this->conn = MySql::connection();
-        $this->table_columns = $this->getColumns($this->table_name);
+        $this->table_columns = $this->getColumns($this->table_name)->full;
+        $this->table_columns_short = $this->getColumns($this->table_name)->short;
         $this->columns = $this->filterNonReadable($this->table_columns);
         $this->model_name =  get_class($this);
         $this->readable_cols = $this->convertColumnsToFull($this->readable_cols);
@@ -121,16 +124,34 @@ abstract class Model
         }
         return $return;
     }
+
+    /**
+     * @param string $column
+     * @return bool
+     */
+    public function hasColumn(string $column): bool
+    {
+        $columns = $this->table_columns_short;
+        return in_array($column,$columns);
+    }
     private function getColumns($table)
     {
+        if($this->table_columns_str)
+            return $this->table_columns_str;
+
         $cache_path = "table_{$table}_cols";
         $read_path =  ROOT_PATH.'path/Database/Activation/';
 
         $cached_cols = Caches::get( $cache_path, $read_path);
         if($cached_cols){
             if($cols = json_decode($cached_cols)){
-
-                return $cols;
+                $res = new \stdClass();
+                $res->full = $cols;
+                $res->short = array_map(function ($col){
+                    return explode('.',$col)[1];
+                },$cols);
+                $this->table_columns_str = $res;
+                return $res;
             }else{
                 throw new Exceptions\Database('Database model not activated, "run ./__path app activate '.$table.'" to activate');
             }
@@ -390,8 +411,6 @@ abstract class Model
 
     private function rawKeyValueBind(array $data, $type = "UPDATE", $json_action = "UPDATE")
     {
-
-
         foreach ($data as $column => $value) {
 
             $has_value = array_key_exists($type,$this->query_structure) && strlen($this->query_structure[$type]) > 0;
@@ -401,17 +420,12 @@ abstract class Model
                 $_value = is_array($value) ? $this->generateSqlObjFromArray($value) : "?";
                 $func = $json_action == "UPDATE" ? "JSON_SET" : "JSON_INSERT";
                 $_column = $this->genJsonPath($column);
-                if ($has_value) {
-                    $this->query_structure[$type] .= ",{$_column['column']} = {$func}({$_column['column']},'{$_column['path']}',$_value)";
-                    if ($_value == "?") {
-                        $this->params[$type][] = $value;
-                    }
-                } else {
-                    $this->query_structure[$type] .= "{$_column['column']} = {$func}({$_column['column']},'{$_column['path']}',$_value) ";
-                    if ($_value == "?") {
-                        $this->params[$type][] = $value;
-                    }
+                $this->query_structure[$type] .= $has_value ? ',':'';
+                $this->query_structure[$type] .= $_column['column'] . " = " . $func . "(" . $_column['column'] . ",'" . $_column['path'] . "'," . $_value . ")";
+                if ($_value == "?") {
+                    $this->params[$type][] = $value;
                 }
+
                 $string = preg_replace("/,\s*$/", "", $string); //remove trailing comma
             } else {
                 $has_value = array_key_exists($type,$this->query_structure) && strlen($this->query_structure[$type]) > 0;
@@ -439,9 +453,29 @@ abstract class Model
     public function where(
         $conditions
     ) {
-        if($conditions)
+        if($conditions && (is_array($conditions) || is_string($conditions))){
             $this->where_gen($conditions, "AND");
+        }elseif ($conditions && is_callable($conditions)){
+            $inst = new static();
+            $c = $conditions($inst);
+            $q = $inst->getWhereQuery();
+            $this->rawWhere("( {$q->query} )",...$q->params);
+        }
         return $this;
+    }
+
+    private function getWhereQuery(){
+        $query = $this->query_structure["WHERE"]["query"];
+        $params = $this->params["WHERE"];
+        return new class($query,$params){
+            public $query;
+            public $params;
+            public function __construct($query,$params)
+            {
+                $this->params = $params;
+                $this->query = $query;
+            }
+        };
     }
 
     public function whereCreatedSince($days)
@@ -527,21 +561,28 @@ abstract class Model
         $conditions,
         $params = null
     ) {
-        $this->where_gen($conditions, "OR");
+        if($conditions && (is_array($conditions) || is_string($conditions))){
+            $this->where_gen($conditions, "OR");
+        }elseif ($conditions && is_callable($conditions)){
+            $inst = new static();
+            $c = $conditions($inst);
+            $q = $inst->getWhereQuery();
+            $this->rawWhere("( {$q->query} )",...$q->params);
+        }
         return $this;
     }
 
     private function genRawJsonSelect($col)
     {
         $column = $this->genJsonPath($col);
+        $first = empty($this->query_structure["SELECT"]["query"]);
+        $col = $column['column'] . "->>\"" . $column['path'] . "\" ";
+        if($column['func'])
+            $col = "{$column['func']}($col)";
 
-        if ($this->query_structure["SELECT"]["query"]) {
-            $this->query_structure["SELECT"]["query"] .= ", " . $column['column'] . "->>\"" . $column['path'] . "\" as '{$column['column']}->{$column['path']}'";
-            $this->query_structure["SELECT"]["columns"][] = $column['column'] . "->>\"" . $column['path'] . "\" as '{$column['column']}->{$column['path']}'";
-        } else {
-            $this->query_structure["SELECT"]["query"] = $column['column'] . "->>\"" . $column['path'] . "\"  as '{$column['column']}->{$column['path']}'";
-            $this->query_structure["SELECT"]["columns"][] = $column['column'] . "->>\"" . $column['path'] . "\"  as '{$column['column']}->{$column['path']}'";
-        }
+        $this->query_structure["SELECT"]["query"] .= ( $first ? "" : ", ") . $col;
+        $this->query_structure["SELECT"]["columns"][] = $col;
+
     }
 
     private function getSqlJsonExp($col)
@@ -800,6 +841,23 @@ abstract class Model
         }
 
         return $this;
+    }
+
+    public function updateOrInsert(array $data = null,array $condition = []){
+        $instance = (clone $this)->where($condition);
+        if((clone $instance)->exists()){
+            $instance->update($data);
+        }else{
+            (clone $this)->insert($data);
+        }
+    }
+
+    public function insertOrUpdate(array $data = null){
+        if((clone $this)->exists()){
+            $this->update($data);
+        }else{
+            (clone $this)->insert($data);
+        }
     }
 
     public function insert(array $data = null)
@@ -1253,7 +1311,22 @@ abstract class Model
     private function genJsonPath($selector)
     {
         //            typical selector looks this way column->jsonProp->another
-        $selector = explode("->", $selector);
+        $real_col = null;
+        $func = null;
+        $matches = [];
+        preg_match('/(([\w]+)\()?(\w+->[^()\n]+)/',$selector,$matches);
+
+        //if matches is 4, there is a function
+        //if matches is 2, it's literal
+        if(count($matches) === 4){
+            $real_col = $matches[3];
+            $func = $matches[2];
+        }elseif(count($matches) === 2){
+            $real_col = $matches[1];
+        }else{
+            $real_col = $selector;
+        }
+        $selector = explode("->", $real_col);
         $column = $selector[0];
         $path = "$";
         for ($i = 1; $i < count($selector); $i++) {
@@ -1266,7 +1339,8 @@ abstract class Model
         }
         return [
             "column" => $column,
-            "path" => $path
+            "path" => $path,
+            "func" => $func
         ];
     }
 
@@ -1289,7 +1363,7 @@ abstract class Model
     }
 
     /**
-     * @param array ...$columns
+     * @param ...$columns
      * @return $this
      * @throws Exceptions\Database
      */
@@ -1349,6 +1423,7 @@ abstract class Model
     }
     public function groupBy($col)
     {
+        $col = $this->isJsonRef($col) ? $this->getSqlJsonExp($col):$col;
         if (is_array($col)) {
             $this->query_structure["GROUP_BY"] = join(",", $col);
         } else {
@@ -1453,5 +1528,9 @@ abstract class Model
 
     public function getKeys(){
         return $this->keys;
+    }
+
+    public static function init(){
+        return new static();
     }
 }
