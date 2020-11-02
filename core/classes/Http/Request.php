@@ -14,6 +14,7 @@ class Request
     public $METHOD;
     public $server;
     public $params;
+    public $filters;
     public $args;
     public $inputs;
     public $fetching;
@@ -77,7 +78,7 @@ class Request
      */
     public function getPost($key = null){
         $posts = $this->inputs;
-        $posts = array_merge($posts,$this->sending_post_feilds);
+        $posts = array_merge($posts ?? [],$this->sending_post_feilds);
         if(!is_null($key))
             return $posts[$key] ?? null;
 
@@ -90,7 +91,7 @@ class Request
     public function getHeader($key = null){
         $heads = $this->headers;
         if(!is_null($key))
-            return $heads[$key] ?? null;
+            return $heads[strtoupper($key)] ?? null;
         return $heads;
     }
 
@@ -101,7 +102,7 @@ class Request
      */
     public function getPatch($key = null){
 
-        $patches = array_merge($this->inputs,$this->sending_patch_fields);
+        $patches = array_merge($this->inputs ?? [],$this->sending_patch_fields);
 
         if(!is_null($key))
             return $patches[$key] ?? null;
@@ -128,7 +129,7 @@ class Request
         return $this;
     }
 
-    public function getParam($param){
+    public function getParam($param = null){
         return $this->params->{$param} ?? null;
     }
 
@@ -137,7 +138,7 @@ class Request
         $file = @$_FILES[$name];
         if(!$file){
             $this->fetching = [];
-            return $this;
+            return null;
         }
         $files = is_array($file['name']) ? $this->restructure($file) : [$file];
         $this->fetching = $files;
@@ -194,8 +195,9 @@ class Request
         return $this;
     }
 
-    public function overridePost(array $fields){
-        $this->inputs = $fields;
+    public function overridePost(?array $fields){
+        if($fields)
+            $this->inputs = $fields;
         return $this;
     }
 
@@ -233,6 +235,13 @@ class Request
         return $this;
     }
 
+    public function setArgs(array $fields)
+    {
+        $this->args = array_merge($this->args,$fields);
+//        $this->inputs = $fields;
+        return $this;
+    }
+
     public function setPostJson(array $fields)
     {
         $this->sending_post_json_fields = json_encode($fields);
@@ -241,7 +250,7 @@ class Request
 
     public function setQuery(array $fields)
     {
-        $this->sending_query_fields = $fields;
+        $this->sending_query_fields = array_merge($this->sending_query_fields,$fields);
         $_GET = $fields;
         return $this;
     }
@@ -360,5 +369,39 @@ class Request
     public function getAny(string $key)
     {
         return $this->getQuery($key) ?? $this->getPost($key) ?? $this->getPatch($key);
+    }
+
+    /**
+     * @param string|null $key
+     * @return mixed
+     */
+    public function getArg(?string $key = null)
+    {
+        if($key){
+            return $this->args->$key ?? null;
+        }
+        return (array) $this->args;
+    }
+
+    /**
+     * @param string|null $key
+     * @return mixed
+     */
+    public function getFilters(?string $key = null)
+    {
+        if($key){
+            return $this->filters[$key] ?? null;
+        }
+        return (array) $this->filters;
+    }
+
+    /**
+     * @param array $fields
+     * @return Request
+     */
+    public function setFilters(array $fields)
+    {
+        $this->filters = $fields;
+        return $this;
     }
 }
