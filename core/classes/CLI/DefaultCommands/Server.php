@@ -18,7 +18,7 @@ class Server extends CInterface
 {
     private const DEFAULT_PORT = 8080;
     private const DEFAULT_HOST = "localhost";
-    public $name = "server";
+    public $name = "serve";
 
     public $description = "start development server";
 
@@ -26,7 +26,7 @@ class Server extends CInterface
         "start" => [
             "desc" => "starts server"
         ],
-        "port"  => [
+        "--port"  => [
             "desc" => "port to use"
         ],
         "--ip" => [
@@ -83,7 +83,7 @@ class Server extends CInterface
     public function entry($argument)
     {
         $ip = $this->getHost($argument['--ip'] ?? null);
-        $port = $this->getPort(@$argument['port'], $ip);
+        $port = $this->getPort($argument['--port'] ?? null, $ip);
         $cmd = "cd " . ROOT_PATH . "/ && php -S {$ip}:{$port}";
         echo PHP_EOL;
         $this->write("`green`[+] Server started at: `green` {$ip}:{$port}" . PHP_EOL);
