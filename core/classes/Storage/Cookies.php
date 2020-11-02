@@ -16,21 +16,21 @@ class Cookies
     public  $expire = null;
     public  $path = "/";
     public  $domain = "";
-    public  $secure = false;
+    public  $secure = true;
     public  $httponly = false;
     public function __construct(
         $expire = null,
         $path = "/",
         $domain = "",
-        $secure = false,
+        $secure = true,
         $httponly = false
     )
     {
-        $this->expire = null;
-        $this->path = "/";
-        $this->domain = "";
-        $this->secure = false;
-        $this->httponly = false;
+        $this->expire = $expire;
+        $this->path = $path;
+        $this->domain = $domain;
+        $this->secure = $secure;
+        $this->httponly = $httponly;
     }
     public function store(
         $key,
@@ -40,8 +40,8 @@ class Cookies
             $expire = time() + self::ONE_DAY;
         else
             $expire = time() + $this->expire;
-
-                setcookie($key, $value, $expire, $this->path, $this->domain, $this->secure, $this->httponly);
+        setcookie($key, $value, $expire, $this->path.'', $this->domain, $this->secure, $this->httponly);
+//
     }
     public function overwrite(
         $key,
