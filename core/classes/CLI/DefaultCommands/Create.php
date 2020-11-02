@@ -190,7 +190,6 @@ class $command_file_name extends CInterface
                 $new_model_name = $this->ask("Enter Existing Model's Name", true);
             }
         }
-        var_dump($controller_type);
         if ($controller_type === "route") {
             var_dump($controller_type);
 
@@ -405,8 +404,10 @@ class {$controller_name} extends Controller
     }
     private function writeGraphControllerBoilerPlate($controller_file, $controller_name)
     {
-        $model_name = $this->createModel($controller_name);
+//        create migration
+        $this->createMigration($controller_name);
 
+        $model_name = $this->createModel($controller_name);
         $model_name_var = strtolower($model_name);
         $contr_boiler_plate = "<?php
 
@@ -450,10 +451,9 @@ class {$controller_name} extends Controller
         echo PHP_EOL . PHP_EOL . "[+] ----  Graph Service boiler plate for --{$model_name}-- generated in \"{$this->graph_controllers_path}\" " . PHP_EOL;
         fclose($controller_file);
     }
-
     private function createMigration($table_name)
     {
-        $table_name = is_string($table_name) ? $table_name : $this->ask("Enter Table Name", true);
+        $table_name = is_string($table_name) ? $table_name : $this->ask("Enter Table Name: ", true);
         $file_path = "{$this->migration_files_path}/{$table_name}.php";
         if (file_exists($file_path) && $this->confirm("Migration file already exists, do you want to override?")) { //check if file already
             //            open file
@@ -548,12 +548,12 @@ class {$middleware_name} implements MiddleWare
      * @throws \Path\\ConfigException
      * @internal param \$params
      */
-    public function validate(Request \$request, Response \$response):bool
+    public function validate(Request &\$request, Response \$response):bool
     {
         return false;
     }
 
-    public function fallBack(Request \$request, Response \$response)
+    public function fallBack(Request &\$request, Response \$response)
     {
             return \$response->json([\"msg\" => \"This json response is from \\\"{$middleware_name}\\\" MiddleWare, you get this response because \\\$this->validate() returns false\"]);
     }
