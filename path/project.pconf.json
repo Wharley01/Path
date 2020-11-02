@@ -11,7 +11,8 @@
     "domain": ".website.com"
   },
   "FILE": {
-    "max_size": 5242880
+    "max_size": 5242880,
+    "storage_path": "/path/.Storage/"
   },
   "SSR": {
     "is_node": false,
@@ -23,7 +24,7 @@
     "recaptcha_secret_key": "6Le3JsUUAAAAAN66trdf1SJsXpz_tA3K3uSg-Ltv",
     "version": "1.0",
     "directory": "",
-    "host": "192.168.0.128",
+    "host": "0.0.0.0",
     "port": 8080,
     "protocol": "http",
     "server": "https://localhost:8080",
@@ -40,18 +41,19 @@
     }
   },
   "MAILER": {
-    "USE": "sendmail",
+    "USE": "smtp",
     "SMTP": {
-      "host": "",
-      "username": "",
-      "password": "",
-      "port": 0,
+      "host": "smtp-relay.gmail.com",
+      "uses_auth": false,
+      "username": null,
+      "password": null,
+      "port": 587,
       "protocol": "",
       "charset": "UTF-8"
     },
     "ADMIN_INFO": {
-      "email": "noreply@waploadadewale.dev",
-      "name": "Path"
+      "email": "noreply@buysafe.ng",
+      "name": "Buysafe support"
     }
   }
 }
