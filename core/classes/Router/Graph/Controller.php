@@ -23,7 +23,7 @@ abstract class Controller
         if($this->model instanceof Model){
             $this->model->insert($request->getPost());
         }
-        return $response->success('successfully updated',$request->getPost());
+        return $response->success('successfully updated',(array) $this->model->identify($this->model->last_insert_id)->getFirst());
     }
 
     public function update(Request $request,Response $response):Response{
@@ -40,7 +40,7 @@ abstract class Controller
         return $response->success('successfully deleted');
     }
 
-    public function schema(){
+    public function rules(){
 //        specify service that can call it
         return [
             "getOne" => [
@@ -48,5 +48,14 @@ abstract class Controller
                 "required_args" => []
             ]
         ];
+    }
+
+    /**
+     * @param Request $request
+     * @return mixed
+     */
+    public function filters(Request $request):array
+    {
+        return [];
     }
 }
