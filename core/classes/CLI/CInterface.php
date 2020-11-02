@@ -84,7 +84,10 @@ abstract class CInterface
         }
         return $input;
     }
-
+    public function writeLn($text, $format = null){
+        $text = PHP_EOL. $text;
+        $this->write($text,$format);
+    }
     public function write($text, $format = null)
     {
         if(is_array($text)){
