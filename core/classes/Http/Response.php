@@ -10,6 +10,7 @@ namespace Path\Core\Http;
 
 use Path\Core\Database\Model;
 use Path\Core\Error\Exceptions;
+use Path\Core\Error\Logger;
 use Path\Core\Storage\Caches;
 use Spatie\Ssr\Engines\Node;
 use Spatie\Ssr\Engines\V8;
@@ -46,13 +47,31 @@ class Response
         }catch (\Throwable $exception){}
         return $this;
     }
-    public function disableCORS(){
-        $this->headers = array_merge($this->headers,[
-            "Access-Control-Allow-Origin" => "*",
+    public function disableCORS($server = null){
+        $headers = [
             "Access-Control-Allow-Credentials" => "true",
-            "Access-Control-Allow-Methods" => "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers" => "Origin, Content-Type, Accept"
-        ]);
+            "Access-Control-Allow-Methods" => "GET, POST, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers" => "Origin, Content-Type, Accept, Authorization"
+        ];
+        if($server){
+            $servers = explode(",",$server);
+            if ($origin = @parse_url($_SERVER["HTTP_REFERER"]) and @$origin['path']){
+                $_base = $origin;
+                $origin = $origin["scheme"] . "://" . $origin["host"];
+
+                if(isset($_base["port"]))
+                    $origin .= ":".$_base["port"];
+            }
+//            echo $origin;
+            if(in_array($origin,$servers)){
+
+                $headers['Access-Control-Allow-Origin'] = $origin;
+            }
+        }else{
+            $headers['Access-Control-Allow-Origin'] = "*";
+        }
+        $this->headers = array_merge($this->headers,$headers);
+        return $this;
     }
     private function generateManifest(){
         $manifest_filepath = ROOT_PATH.$this->build_path.'asset-manifest.json';
