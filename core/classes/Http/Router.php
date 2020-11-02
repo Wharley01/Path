@@ -297,7 +297,7 @@ class Router
         if (!is_array($middle_wares) || is_string($middle_wares))
             $middle_wares = [$middle_wares];
 
-        $request = $this->request;
+        $request = &$this->request;
         $request->params = $params;
         foreach ($middle_wares as $middle_ware) {
             if ($middle_ware) {
@@ -591,7 +591,7 @@ class Router
 
     public function graph($path = "/graph-path")
     {
-        $this->processMultipleRequestPath($path, GraphPath::class, "ANY");
+        $this->processMultipleRequestPath($path, PathGraph::class, "ANY");
         return $this;
     }
 
