@@ -28,9 +28,15 @@ class File
         "max_size" => 0
     ]; //accepted_exts,accepted_types,max_size(bytes),retain_name
     private $write_folder = "/";
-    public function __construct()
+    public function __construct($file)
     {
         $this->rules["max_size"] = config("FILE->max_size");
+        if ($file instanceof Request) {
+            $this->files = $file->fetching;
+        } else {
+            $this->file_paths = $file;
+        }
+        return $this;
     }
     /**
      * File file.
@@ -38,15 +44,9 @@ class File
      * @return $this
      * @throws FileSystemException
      */
-    public function file($file)
+    public static function file($file)
     {
-
-        if ($file instanceof Request) {
-            $this->files = $file->fetching;
-        } else {
-            $this->file_paths = $file;
-        }
-        return $this;
+        return new static($file);
     }
 
 
@@ -57,7 +57,7 @@ class File
      * @return FileSys
      * @throws FileSystem
      */
-    public function moveUploadedTo($target_folder = null,$retain_name = false, callable $callback = null):?File
+    public function moveUploadedTo($target_folder = null, callable $callback = null,$retain_name = false):?File
     {
         $target_folder = $target_folder ?? $this->write_folder;
         //        var_dump($this->files);
@@ -89,7 +89,7 @@ class File
                 }
 
                 if (is_callable($callback)) {
-                    $callback($this->files[$i], $this->errors[$real_file_name]);
+                    $callback($this->files[$i], $this->errors[$real_file_name] ?? null);
                 }
             }
         } else {
@@ -107,6 +107,31 @@ class File
                 throw new FileSystem('Unable to move '.$path);
         });
     }
+    public function moveURLFileTo($target_folder,$retain_name = true,$ext = null)
+    {
+        $saved_file_name = null;
+
+        $this->processFile(function ($path) use ($target_folder,$retain_name,&$saved_file_name,$ext){
+            $file_name = pathinfo($path, PATHINFO_BASENAME);
+            $ext = $ext ? $ext : pathinfo($file_name, PATHINFO_EXTENSION);
+
+            $file_name = $retain_name ? $file_name:substr(md5($file_name . (time() + rand(10, 50))), 0, 50) . "." . $ext;
+            $full_path = $target_folder.'/'.$file_name;
+
+            $request = new Request();
+            $response = $request->get($path);
+
+            if ($response->status != 200 ){
+                throw new FileSystem('Unable to download: '. $path);
+            }
+
+            if(file_put_contents($full_path, $response->content) === false)
+                throw new FileSystem('Unable to save ' . $path);
+
+            $saved_file_name = $file_name;
+        });
+        return $saved_file_name;
+    }
 
     private function processFile(callable $func){
         if(!$this->file_paths)
@@ -122,7 +147,7 @@ class File
     public function delete()
     {
         $this->processFile(function ($path){
-            if(!unlink($path))
+            if(!@unlink($path))
                 throw new FileSystem('Unable to delete '.$path);
         });
     }
@@ -179,4 +204,30 @@ class File
     public static function MbToBytes(float $mb_size){
         return (1024 * 1024) * $mb_size;
     }
+
+    public function exists():bool
+    {
+        return ($this->file_paths && file_exists($this->file_paths));
+    }
+
+    public function getContent()
+    {
+        if($this->file_paths && file_exists($this->file_paths)){
+            return file_get_contents($this->file_paths);
+        }
+
+        return null;
+    }
+
+    public function writeLn(string $message,$flag = null)
+    {
+        return file_put_contents($this->file_paths, PHP_EOL.$message, $flag);
+    }
+
+    public function write(string $message, $flag = null)
+    {
+        return file_put_contents($this->file_paths, $message, $flag);
+    }
+
+
 }
