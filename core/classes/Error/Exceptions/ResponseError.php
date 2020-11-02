@@ -8,6 +8,7 @@
 
 namespace Path\Core\Error\Exceptions;
 
+use Path\Core\Http\Response;
 use Throwable;
 
 class ResponseError extends \Exception
@@ -20,9 +21,9 @@ class ResponseError extends \Exception
     }
 
     /**
-     * @return int
+     * @return Response
      */
-    public function getResponse()
+    public function getResponse():?Response
     {
         return $this->response;
     }
