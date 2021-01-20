@@ -15,6 +15,7 @@ abstract class Model
     protected $table_name;
     private $model_name;
     protected $primary_key     = "id";
+    public ?int $id = null;
     protected $updated_col     = "last_update_date";
     protected $created_col     = "date_added";
     protected $record_per_page = 10;
@@ -65,7 +66,7 @@ abstract class Model
     private $table_columns;
     private $table_columns_str;
     private $table_columns_short;
-    public $columns;
+    public array $columns = [];
 
     protected $fetch_method         = "FETCH_ASSOC";
     private $pages                = [];
@@ -81,9 +82,10 @@ abstract class Model
     public function __construct()
     {
         $this->conn = MySql::connection();
-        $this->table_columns = $this->getColumns($this->table_name)->full;
-        $this->table_columns_short = $this->getColumns($this->table_name)->short;
-        $this->columns = $this->filterNonReadable($this->table_columns);
+        $columns = $this->getColumns($this->table_name);
+        $this->table_columns = $columns->full;
+        $this->table_columns_short = $columns->short;
+//        $this->columns = $this->filterNonReadable($this->table_columns);
         $this->model_name =  get_class($this);
         $this->readable_cols = $this->convertColumnsToFull($this->readable_cols);
         $this->non_readable_cols = $this->convertColumnsToFull($this->non_readable_cols);
@@ -347,7 +349,9 @@ abstract class Model
      */
     private function isReadable($key)
     {
-        if (in_array(trim($key), $this->readable_cols) || !in_array(trim($key), $this->non_readable_cols)) {
+        $key = trim($key);
+
+        if (!in_array($key, $this->non_readable_cols)) {
             return true;
         }
         return false;
@@ -364,14 +368,22 @@ abstract class Model
         }
         return $data;
     }
-    private function filterNonReadable(array $data)
+    private function filterNonReadable(?array $data)
     {
-        foreach ($data as $index => $key) {
-            if (!$this->isReadable($key)) {
-                unset($data[$index]);
-            }
-        }
-        return $data;
+//        echo PHP_EOL.PHP_EOL;
+//        echo json_encode($data);
+//        echo PHP_EOL.PHP_EOL;
+//        $data = ;
+//        foreach ($data as $index => $key) {
+////            echo $index.'>>>'.$key.PHP_EOL;
+//
+//            if (!$this->isReadable($key)) {
+//                unset($data[$index]);
+//            }
+//        }
+//        echo json_encode($data);
+//var_dump($this->non_readable_cols);
+        return !$data ? $data:array_values(array_filter($data,fn($col) => !in_array($col, $this->non_readable_cols)));
     }
 
     private function generateSqlObjFromArray($array, $root = "", $type = "UPDATE", $tree = [])
@@ -484,7 +496,27 @@ abstract class Model
         $this->where_gen($where);
         return $this;
     }
+    public function whereYoungerThan($count, $interval = 'day')
+    {
+        $where = "from_unixtime({$this->created_col}) >= date_sub(now(), interval {$count} {$interval})";
+        $this->where_gen($where);
+        return $this;
+    }
 
+    public function whereOlderThan($count, $interval = 'day',$date_col = null)
+    {
+        $date_col = $date_col ?? $this->created_col;
+        $where = "from_unixtime({$date_col}) < date_sub(now(), interval {$count} {$interval})";
+        $this->where_gen($where);
+        return $this;
+    }
+    public function orWhereOlderThan($count, $interval = 'day',$date_col = null)
+    {
+        $date_col = $date_col ?? $this->created_col;
+        $where = "from_unixtime({$date_col}) < date_sub(now(), interval {$count} {$interval})";
+        $this->where_gen($where,'OR');
+        return $this;
+    }
     public function whereNotCreatedSince($days)
     {
         $where = "from_unixtime({$this->created_col}) < date_sub(now(), interval {$days} day)";
@@ -515,13 +547,26 @@ abstract class Model
         return $this;
     }
 
-    //    public function whereJsonIncludes($column, $needle){
-    //     if($this->query_structure["WHERE"]){
-    //         $this->query_structure["WHERE"] = "AND JSON_CONTAINS($needle,$column,'{$_condition['path']}') > 0 {$logic_gate}";
-    //         var_dump($this->genJsonPath($condition));
-    //     }
-    //
-    //    }
+    public function whereColIncludes($column, ?array $keywords = null){
+        if(!$keywords)
+            return $this;
+
+        $keywords = json_encode($keywords);
+        $where = "JSON_CONTAINS($column, '$keywords')";
+        $this->where_gen($where);
+
+        return $this;
+    }
+    public function orWhereColIncludes($column, ?array $keywords = null){
+        if(!$keywords)
+            return $this;
+
+        $keywords = json_encode($keywords);
+        $where = "JSON_CONTAINS($column, '$keywords')";
+        $this->where_gen($where,'OR');
+
+        return $this;
+    }
 
     public function rawWhere(
         $where,
@@ -594,6 +639,7 @@ abstract class Model
 
     private function rawColumnGen($cols)
     {
+//        var_dump($cols);
         foreach ($cols as $col) {
             if ($col instanceof Model) {
                 $this->generateRawSelectFromInstance($col);
@@ -871,7 +917,7 @@ abstract class Model
             throw new Exceptions\Database("Error Attempting to add Empty data set");
         if (!$this->table_name)
             throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
-        //        add miscellinouse data
+        //        add miscellaneous data
 
         $data[$this->updated_col ?? $this->table_name.'.'."last_update_date"] = array_key_exists($this->toColName($this->updated_col),$data) ? $data[$this->toColName($this->updated_col)] : time();
 
@@ -939,31 +985,23 @@ abstract class Model
         if(!$this->has_specified_needed){
             if (is_array($cols)) {
                 if (!$cols) {
-                    if ((is_array($this->readable_cols) && count($this->readable_cols) > 0)) {
-                        $cols = $this->filterNonReadable($this->readable_cols);
-                    } elseif (is_array($this->non_readable_cols) && count($this->non_readable_cols) > 0) {
-                        $cols = $this->filterNonReadable($this->table_columns);
-                    } else {
-                        $cols = $this->filterNonReadable($this->table_columns);
-                    }
+                    $cols = $this->table_columns;
                 }
-
-                $cols = $this->filterNonReadable($cols);
-
-                //            if(!$cols)
-                //                throw new Exceptions\Database("Error Attempting to update Empty data set");
-                if (!$this->table_name)
-                    throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
-                if (count($cols) > 0) {
-                    $this->rawColumnGen($cols);
-                }
-            }else{
-                if (is_string($cols)){
-                    $cols = explode(",", $cols);
-                    $this->rawColumnGen($cols);
-                }
+            }else if (is_string($cols)){
+                $cols = $this->toFullName(explode(",", $cols)) ;
             }
+        }else{
+            $cols = $this->columns;
         }
+        if (!$this->table_name)
+            throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
+
+        $cols = $this->filterNonReadable($cols);
+
+        if ($cols && count($cols) > 0) {
+            $this->rawColumnGen($cols);
+        }
+
         $query      = $this->buildWriteRawQuery("SELECT");
         $params     = array_merge($this->params["SELECT"], $this->params["WHERE"], $this->params["HAVING"], $this->params["LIMIT"]);
 //
@@ -971,7 +1009,7 @@ abstract class Model
 //                echo "<br>".$query."<br>";
 //                exit();
         try {
-            $prepare                = $this->conn->prepare($query); //Prepare query\
+            $prepare = $this->conn->prepare($query); //Prepare query\
             $prepare->execute($params);
 
             if ($sing_record) {
@@ -1059,7 +1097,7 @@ abstract class Model
         $this->current_page = $page;
         return $this;
     }
-    public function getPage($page = null,$cols = [])
+    public function getPage($page = 1,$cols = [])
     {
         //        get total record
         $page -= 1;
@@ -1151,7 +1189,7 @@ abstract class Model
      * @param $on
      * @return $this
      */
-    private function join($type = "INNER", $table, $on)
+    private function join($table,$on ,$type = "INNER")
     {
         $this->query_structure["JOIN"][$table]["type"] =  $type . " JOIN";
         $this->query_structure["JOIN"][$table]["on"] =  $on;
@@ -1165,7 +1203,7 @@ abstract class Model
      */
     public function leftJoin($table, $on)
     {
-        $this->join("LEFT", $table, $on);
+        $this->join( $table, $on, "LEFT");
         /** @var Model $this */
         return $this;
     }
@@ -1181,7 +1219,7 @@ abstract class Model
             $table = $table->table_name;
         }
 
-        $this->join("INNER", $table, $on);
+        $this->join($table, $on, "INNER");
         /** @var Model $this */
         return $this;
     }
@@ -1193,7 +1231,7 @@ abstract class Model
      */
     public function rightJoin($table, $on)
     {
-        $this->join("RIGHT", $table, $on);
+        $this->join( $table, $on, "RIGHT");
         /** @var Model $this */
         return $this;
     }
@@ -1205,7 +1243,7 @@ abstract class Model
      */
     public function fullJoin($table, $on)
     {
-        $this->join("FULL", $table, $on);
+        $this->join( $table, $on, "FULL");
         /** @var Model $this */
         return $this;
     }
@@ -1261,11 +1299,17 @@ abstract class Model
     public function count()
     {
         $primary = $this->primary_key;
-        $this->query_structure["SELECT"]["query"] = "COUNT({$primary})";
-        return (int) $this->all(null, true)["COUNT({$primary})"];
+        $this->columns = ["COUNT({$primary})"];
+        $this->has_specified_needed = true;
+
+        $get = $this->all([], true);
+        if(!$get)
+            return 0;
+        return (int) ($get["COUNT({$primary})"] ?? 0);
     }
 
     public function getTotalPages(){
+//        echo json_encode($this->query_structure["SELECT"]["query"]);
         $total_record = (clone $this)->count();
         $this->total_pages = ceil($total_record / $this->record_per_page);
         return $this->total_pages;
@@ -1378,11 +1422,12 @@ abstract class Model
 
                 if (!$this->table_name)
                     throw new Exceptions\Database("No Database table name specified, Configure Your model or  ");
-                $columns = $this->filterNonReadable($columns);
-                if (!$columns)
+                $this->columns = array_merge($this->columns,$columns);
+
+                if (!$this->columns)
                     throw new Exceptions\Database("Can't read empty sets of columns in \"select()\" Method ");
 
-                $this->rawColumnGen($columns);
+//                $this->rawColumnGen($columns);
             } else {
                 if ($this->isJsonRef($columns)) {
                     $this->genRawJsonSelect($columns);
@@ -1530,7 +1575,11 @@ abstract class Model
         return $this->keys;
     }
 
-    public static function init(){
-        return new static();
+    public static function init($id = null){
+
+        $res = new static();
+        $res->id = $id;
+        if ($id) $res->identify($id);
+        return $res;
     }
 }
