@@ -13,17 +13,17 @@ use Path\App\Controllers\Graph;
 
 class PathGraph extends Route\Controller
 {
-    private $controller_namespace = "Path\\App\\Controllers\\Graph\\";
-    private $request_method = "GET";
-    private $auto_link = null;
+    private string $controller_namespace = "Path\\App\\Controllers\\Graph\\";
+    private string $request_method = "GET";
+    private ?string $auto_link = null;
 
-    private $http_verb_func_pair = [
+    private array $http_verb_func_pair = [
         "POST" => "set",
         "PATCH" => "update",
         "DELETE" => "delete"
     ];
-    private $allowed_key_pattern = "/^([^\s\W]+)$/";
-    private $page = 1;
+    private string $allowed_key_pattern = "/^([^\s\W]+)$/";
+    private int $page = 1;
 
     public function onOptions(Request $request, Response $response)
     {
@@ -55,7 +55,6 @@ class PathGraph extends Route\Controller
         if (!is_array($middle_wares) || is_string($middle_wares))
             $middle_wares = [$middle_wares];
 
-
         foreach ($middle_wares as $middle_ware) {
             if ($middle_ware) {
 
@@ -86,11 +85,9 @@ class PathGraph extends Route\Controller
 
                         if (!is_null($fallback_response)) { //if user has a fallback method
 
-                            if ($fallback_response && is_array($fallback_response)) {
+                            if (($fallback_response && is_array($fallback_response)) || $fallback_response instanceof Response) {
                                 return $fallback_response;
-                            } elseif($fallback_response instanceof Response) {
-                                return $fallback_response;
-                            }else{
+                            } else{
                                 throw new ResponseError("Invalid middleware Response at $_path");
                             }
                         }else{
@@ -119,9 +116,9 @@ class PathGraph extends Route\Controller
         }
 
         try {
-//            $response_data = [];
-            $data = $this->generateResponseData($query,null);
-            return $data;
+//
+            return $this->generateResponseData($query,null);
+
         } catch (\Throwable $e) {
             if(method_exists($e,'getResponse')){
                 $res = $e->getResponse();
@@ -130,8 +127,46 @@ class PathGraph extends Route\Controller
                 }
             }
 
-            return $response->error($e->getMessage());
+            return $response->text($e->getMessage().PHP_EOL.PHP_EOL.$this->getExceptionTraceAsString($e),400);
         }
+    }
+
+
+    private function getExceptionTraceAsString($exception) {
+        $rtn = "";
+        $count = 0;
+        foreach ($exception->getTrace() as $frame) {
+            $args = "";
+            if (isset($frame['args'])) {
+                $args = array();
+                foreach ($frame['args'] as $arg) {
+                    if (is_string($arg)) {
+                        $args[] = "'" . $arg . "'";
+                    } elseif (is_array($arg)) {
+                        $args[] = "Array";
+                    } elseif (is_null($arg)) {
+                        $args[] = 'NULL';
+                    } elseif (is_bool($arg)) {
+                        $args[] = ($arg) ? "true" : "false";
+                    } elseif (is_object($arg)) {
+                        $args[] = get_class($arg);
+                    } elseif (is_resource($arg)) {
+                        $args[] = get_resource_type($arg);
+                    } else {
+                        $args[] = $arg;
+                    }
+                }
+                $args = join(", ", $args);
+            }
+            $rtn .= sprintf( "#%s %s(%s): %s(%s)\n",
+                $count,
+                $frame['file'],
+                $frame['line'],
+                $frame['function'],
+                $args );
+            $count++;
+        }
+        return $rtn;
     }
 
     private function serviceToTable($input){
@@ -147,9 +182,6 @@ class PathGraph extends Route\Controller
     private function generateResponseData($query,$parent = null,$parent_tbl_name = null, $args = null){
         $req = &$this->request;
         $req->METHOD =  $this->request_method;
-
-//        var_dump($req->METHOD);
-
         $req->args = $args;
 
         $res = (clone $this->response);
@@ -158,7 +190,6 @@ class PathGraph extends Route\Controller
         $data = [];
         foreach ($query as $service => $structure){
             $table_name = $this->serviceToTable($service);
-//            echo $table_name;
             $service = $this->controller_namespace. $service;
             $service_name = $this->controller_namespace. $service;
             if(!class_exists($service)){
@@ -173,7 +204,8 @@ class PathGraph extends Route\Controller
             }else{
                 throw new ResponseError("No function specified");
             }
-//            var_dump($func);
+
+            $req->func = $func;
 
 //            page
             $page = $structure['page'] ?? 1;
@@ -199,66 +231,7 @@ class PathGraph extends Route\Controller
 //                Check for rules
                 $model = $service->model;
 
-// perform DB operations on the odel to be used by function
-//                echo "He;";
-                if($model instanceof Model){
-                    $pry_key = $table_name.'.id';
-                    $self_id = null;
-                    if($this->auto_link && $parent){
-                        $self_id_key = strtolower($table_name).'_id';
-                        $self_id = $parent->$self_id_key ?? '______id____';//don't remove
-//                        echo $self_id_key;
-                    }
-
-                    if($self_id){
-                        $filters['id'] = $self_id;
-                        $model->identify($self_id);
-                    }elseif(array_key_exists($pry_key,$filters)){
-                        $id = $filters['id'];
-
-                        if(!is_numeric($id)){
-                            throw new ResponseError("ID must be numeric" );
-                        }else{
-                            $model->identify($id);
-                        }
-                        unset($filters['id']);
-                    }
-
-                    $core_filters = $service->filters($req);
-
-                    $req->setFilters($filters);
-
-                    if (is_array($core_filters)){
-                        $filters = array_merge($filters ?? [],$core_filters);
-                    }
-                    $filters = $this->cleanAndValidateKeys($filters, $table_name);
-
-                    $model->where($filters);
-//                    check if auto link is enabled
-                    $model->setPage($page);
-//                    search if search query exists
-                    if($search_query){
-                        $keyword = $search_query['keyword'] ?? null;
-                        if(is_string($keyword) && strlen(trim($search_query['keyword'])) > 0){
-                            if(isset($search_query['col'])){
-                                $cols = explode(',',$search_query['col']);
-//                                $model->whereColumns(...$cols)->matches($search_query['keyword']);
-                                $model->where(function (Model &$model) use ($keyword,$cols){
-                                    foreach ($cols as $index => $col){
-                                        if($index == 0){
-                                            $model->whereColumns($col)->matches($keyword);
-                                        }else{
-                                            $model->orWhereColumns($col)->matches($keyword);
-                                        }
-                                    }
-                                });
-
-                            }
-
-                        }
-                    }
-
-                }
+                //Check for rules
                 if(method_exists($service,'rules')){
 //
                     $rules = $service->rules();
@@ -303,6 +276,68 @@ class PathGraph extends Route\Controller
                         }
                     }
                 }
+
+                $non_readable_cols = $service->nonReadableCols($req);
+
+// perform DB operations on the odel to be used by function
+//                echo "He;";
+                if($model instanceof Model){
+                    $pry_key = $table_name.'.id';
+                    $self_id = null;
+                    if($this->auto_link && $parent){
+                        $self_id_key = strtolower($table_name).'_id';
+                        $self_id = $parent->$self_id_key ?? '______id____';//don't remove
+//                        echo $self_id_key;
+                    }
+
+                    if($self_id){
+                        $filters['id'] = $self_id;
+                        $model->identify($self_id);
+                    }elseif(array_key_exists($pry_key,$filters)){
+                        $id = $filters['id'];
+
+                        if(!is_numeric($id)){
+                            throw new ResponseError("ID must be numeric" );
+                        }else{
+                            $model->identify($id);
+                        }
+                        unset($filters['id']);
+                    }
+
+                    $core_filters = $service->filters($req);
+
+                    $req->setFilters($filters);
+
+                    if (is_array($core_filters)){
+                        $filters = array_merge($filters ?? [],$core_filters);
+                    }
+                    $filters = $this->cleanAndValidateKeys($filters, $table_name);
+                    $model = $this->bindFilters($model,$filters);
+//                    check if auto link is enabled
+                    $model->setPage($page);
+                    //set column protection
+                    $model->nonReadable($non_readable_cols);
+//                    search if search query exists
+                    if($search_query){
+                        $keyword = $search_query['keyword'] ?? null;
+                        if($keyword && is_string($keyword) && strlen(trim($keyword)) > 0){
+                            if(isset($search_query['col'])){
+                                $cols = explode(',',$search_query['col']);
+//                                $model->whereColumns(...$cols)->matches($search_query['keyword']);
+                                $model->where(function (Model &$model) use ($keyword,$cols){
+                                    foreach ($cols as $index => $col){
+                                        if($index == 0){
+                                            $model->whereColumns($col)->matches($keyword);
+                                        }else{
+                                            $model->orWhereColumns($col)->matches($keyword);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+
 //
                 if(!method_exists($service,$func)){
                     throw new ResponseError("Error!: trying to access service function \"".$func."\" that does not exist in ".$service_name );
@@ -352,6 +387,7 @@ class PathGraph extends Route\Controller
                             $data,
                             $columns,
                             $table_name,
+                            $non_readable_cols,
                             $last_ins_id
                         );
 
@@ -374,8 +410,47 @@ class PathGraph extends Route\Controller
         }
     }
     private function getPostParams(Request $req){
-        $posts = $req->getPost();
-        return $posts;
+        return $req->getPost();
+    }
+    private function bindFilters(Model &$model,array $filters){
+        $operators = [
+            ">" => function(string $key, $value,Model &$model){
+                $model->rawWhere("$key > ?",$value);
+            },
+            "<" => function(string $key, $value,Model &$model){
+                $model->rawWhere("$key < ?",$value);
+            },
+            "==" => function(string $key, $value,Model &$model){
+                $model->rawWhere("$key = ?",$value);
+            },
+            "NULL" => function(string $key, $value,Model &$model){
+                $model->whereColIsNull($key);
+            },
+            "NOTNULL" => function(string $key, $value,Model &$model){
+                $model->whereColIsNotNull($key);
+            },
+            "MATCHES" => function(string $key, $value,Model &$model){
+                $model->whereColumns($key)->matches($value);
+            },
+            "LIKES" => function(string $key, $value,Model &$model){
+                $model->where($key)->like("%$value%");
+            },
+            "NOT-LIKES" => function(string $key, $value,Model &$model){
+            echo $value;
+                $model->where($key)->notLike("%$value%");
+            }
+        ];
+        foreach ($filters as $key => $filter){
+
+            if(is_array($filter)){
+                $value = $filter['value'] ?? null;
+                $operator = $filter['operator'];
+                $operators[$operator]($key,$value,$model);
+            }else{
+                $model->where([$key => $filter]);
+            }
+        }
+        return $model;
     }
     private function generateSelectColumnsToModel(Model &$model, $columns,$table_name){
         if(!$columns)
@@ -447,6 +522,7 @@ class PathGraph extends Route\Controller
         &$data,
         $columns,
         $tbl_name,
+        $non_readable= [],
         $primary_key_val = null
     )
     {
@@ -454,13 +530,17 @@ class PathGraph extends Route\Controller
             return;
         if(is_object($data)){
             $res = [];
+
             if (isset($data->id))
                 $res['id'] = $data->id;
+
             foreach ($columns as $column => $det){
 //            var_dump($det);
                 if($det['type'] == "column"){
                     $res_value = $data->$column ?? null;
                     $json_res_value = json_decode($res_value);
+                    if(in_array($column,$non_readable))//skip non readables
+                        continue;
                     if (is_array($json_res_value) || is_object($json_res_value)){//parse value if json
                         $res[$column] = $json_res_value;
                     }else{//else, return it raw
@@ -490,6 +570,8 @@ class PathGraph extends Route\Controller
                     if($det['type'] == "column"){
                         $res_value = $_data->$column ?? null;
                         $json_res_value = json_decode($res_value);
+                        if(in_array($column,$non_readable))//skip non readables
+                            continue;
                         if (is_array($json_res_value) || is_object($json_res_value)){//parse value if json
                             $obj->$column = $json_res_value;
                         }else{//else, return it raw
