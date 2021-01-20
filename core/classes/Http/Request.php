@@ -17,6 +17,7 @@ class Request
     public $filters;
     public $args;
     public $inputs;
+    public ?string $func;
     public $fetching;
     public $headers = [];
     private $sending_post_feilds = [];
@@ -235,10 +236,13 @@ class Request
         return $this;
     }
 
-    public function setArgs(array $fields)
+    public function setArgs(string $key,$fields)
     {
-        $this->args = array_merge($this->args,$fields);
-//        $this->inputs = $fields;
+
+        if(!$this->args)
+            $this->args = (object) [];
+
+        $this->args->$key = $fields;
         return $this;
     }
 
