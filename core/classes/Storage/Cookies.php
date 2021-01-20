@@ -14,10 +14,10 @@ class Cookies
     public const ONE_DAY = 86400;
     public const ONE_WEEK = 604800;
     public  $expire = null;
-    public  $path = "/";
-    public  $domain = "";
-    public  $secure = true;
-    public  $httponly = false;
+    public string $path = "/";
+    public ?string $domain = null;
+    public bool $secure = true;
+    public bool $httponly = false;
     public function __construct(
         $expire = null,
         $path = "/",
