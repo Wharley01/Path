@@ -403,10 +403,17 @@ class Structure
                 $str  = "";
                 if (!$this->colExists($column['name'])) {
 
+                    $expression = $column['expression'] ?? null;
+                    $expression_store = $column['store_expression'] ?? null;
+
                     $str .= " ADD ";
                     $str .= " `{$column['name']}` {$column['type']}";
 
-                    $str .= $this->genColQueryStr($column);
+                    if($expression)
+                        $str .= " GENERATED ALWAYS AS (".$expression.") ".($expression_store ? ' STORED':'');
+                    else
+                        $str .= $this->genColQueryStr($column);
+
                 } else {
                     if (isset($column['is_dropping'])) {
                         $str .= " DROP ";
