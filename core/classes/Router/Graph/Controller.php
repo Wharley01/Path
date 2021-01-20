@@ -58,4 +58,11 @@ abstract class Controller
     {
         return [];
     }
+
+    public function nonReadableCols(Request $request):array
+    {
+        return [
+
+        ];
+    }
 }
