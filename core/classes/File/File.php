@@ -11,28 +11,37 @@ namespace Path\Core\File;
 
 
 use Path\Core\Error\Exceptions\FileSystem;
+use Path\Core\File\Types\Raw;
+use Path\Core\File\Types\Temp;
 use Path\Core\Http\Request;
+
 
 class File
 {
     private $file_name;
-    private $files = null;
+    private ?array $files = null;
     private $file_paths;
-    private $errors         = [];
-    private $rules = [
-        "retain_name"       => false,
-        "accepted_exts"     => [],
-        "restricted_exts"   => [],
-        "accepted_types"    => [],
-        "restricted_types"  => [],
+    private array $errors = [];
+    private array $rules = [
+        "retain_name" => false,
+        "accepted_exts" => [],
+        "restricted_exts" => [],
+        "accepted_types" => [],
+        "restricted_types" => [],
         "max_size" => 0
     ]; //accepted_exts,accepted_types,max_size(bytes),retain_name
-    private $write_folder = "/";
+    private string $write_folder = "/";
+    private ?Writer $writer = null;
+
     public function __construct($file)
     {
         $this->rules["max_size"] = config("FILE->max_size");
         if ($file instanceof Request) {
             $this->files = $file->fetching;
+        } elseif (is_array($file)){
+            $this->files = $file;
+        }elseif (is_object($file)){
+            $this->files = [$file];
         } else {
             $this->file_paths = $file;
         }
@@ -84,7 +93,13 @@ class File
                 }
 
                 //            check if there is no error\
-                if (!move_uploaded_file($file_tmp_name, $target_folder . $file_name)) {
+                $content = new Temp();
+                $content->setPath($file_tmp_name);
+
+                if($this->writer instanceof Writer){
+                    if(!$this->writer->write($target_folder,$content,$file_name))
+                        throw new FileSystem("Unable to process file");
+                }elseif (!move_uploaded_file($content->getPath(), $target_folder . $file_name)) {
                     throw new FileSystem("There was an error while uploading {$real_file_name}");
                 }
 
@@ -107,6 +122,7 @@ class File
                 throw new FileSystem('Unable to move '.$path);
         });
     }
+
     public function moveURLFileTo($target_folder,$retain_name = true,$ext = null)
     {
         $saved_file_name = null;
@@ -124,11 +140,14 @@ class File
             if ($response->status != 200 ){
                 throw new FileSystem('Unable to download: '. $path);
             }
-
-            if(file_put_contents($full_path, $response->content) === false)
-                throw new FileSystem('Unable to save ' . $path);
-
             $saved_file_name = $file_name;
+            $content = new Raw();
+            $content->setContent($response->content);
+            if($this->writer instanceof Writer){
+                if ($this->writer->write($full_path,$content,$saved_file_name))
+                    throw new FileSystem('Unable to save ' . $path);
+            }else if(file_put_contents($full_path, $content->getContent()) === false)
+                throw new FileSystem('Unable to save ' . $path);
         });
         return $saved_file_name;
     }
@@ -226,7 +245,24 @@ class File
 
     public function write(string $message, $flag = null)
     {
-        return file_put_contents($this->file_paths, $message, $flag);
+        $content = new Raw();
+        $content->setContent($message);
+
+        if($this->writer instanceof Writer){
+            $this->writer->write($this->file_paths,$content);
+            return true;
+        }
+        return file_put_contents($this->file_paths, $content->getContent(), $flag);
+    }
+
+    /**
+     * @param Writer|null $writer
+     * @return File
+     */
+    public function setWriter(Writer $writer): File
+    {
+        $this->writer = $writer;
+        return $this;
     }
 
 
