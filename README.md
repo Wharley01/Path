@@ -1,6 +1,6 @@
 # Path
 
-Path's Documentation can be found here [https://path.adewale.dev/](https://path.adewale.dev/)
+Path's Documentation can be found here [https://path.adewale.dev/](https://path.adewale.tech/)
 
 ## Installation
 
