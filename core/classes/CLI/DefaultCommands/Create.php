@@ -32,11 +32,14 @@ class Create extends CInterface
         "model" => [
             "desc" => "create database model, e.g: __path create model yourModelName"
         ],
-        "email" => [
+        "email-tmp" => [
             "desc" => "create email Mailable, e.g: __path create email yourTemplateName"
         ],
         "--graph" => [
             "desc" => "create graph controller"
+        ],
+        "--auth" => [
+            "desc" => "Make graph controller a Auth one"
         ],
         "--live" => [
             "desc" => "create live controller"
@@ -191,7 +194,6 @@ class $command_file_name extends CInterface
             }
         }
         if ($controller_type === "route") {
-            var_dump($controller_type);
 
             $_controller_file = "{$this->route_controllers_path}{$controller_name}.php";
 
@@ -205,7 +207,8 @@ class $command_file_name extends CInterface
 
             if (!file_exists($_controller_file) || $this->confirm("{$controller_name} Controller Already exists, Override?", ['Yes', 'y'], ['No', 'n'])) {
                 $controller_file = fopen($_controller_file, "w");
-                $this->writeGraphControllerBoilerPlate($controller_file, $controller_name);
+                var_dump($params);
+                $this->writeGraphControllerBoilerPlate($controller_file, $controller_name,$params['--auth']);
             }
         } else if ($controller_type === "live") {
             //            TODO: implement Live controller generation here
@@ -402,10 +405,11 @@ class {$controller_name} extends Controller
         echo PHP_EOL . PHP_EOL . "[+] ----  Controller boiler plate for --{$model_name}-- generated in \"{$this->route_controllers_path}\" " . PHP_EOL;
         fclose($controller_file);
     }
-    private function writeGraphControllerBoilerPlate($controller_file, $controller_name)
+    private function writeGraphControllerBoilerPlate($controller_file, $controller_name, $auth = false)
     {
+//        var_dump($auth);
 //        create migration
-        $this->createMigration($controller_name);
+        $this->createMigration($controller_name,$auth);
 
         $model_name = $this->createModel($controller_name);
         $model_name_var = strtolower($model_name);
@@ -424,7 +428,7 @@ use Path\Core\\Router\\Graph\\Controller;
 use Path\Core\\Http\\Request;
 use Path\Core\\Http\\Response;
 use Path\Core\\Storage\\Sessions;
-
+use Path\Core\\Http\\Auth\\Token;
 use Path\App\Database\Model;
 
 
@@ -436,7 +440,30 @@ class {$controller_name} extends Controller
     {
         /* Do not change/remove anything */
         \$this->model = new Model\\{$model_name}();
-    }
+    }";
+ if ($auth){
+ $contr_boiler_plate .= "
+    public function auth(Request \$request, Response \$response){
+        \$$auth = trim(\$request->getPost('$auth'));
+        \$password = trim(\$request->getPost('password'));
+        \$user = Model\\$controller_name::init()->where([
+            '$auth' => \$$auth
+        ])->getFirst();
+
+        if(!password_verify(\$password,\$user->password))
+            return \$response->error('Error! invalid login');
+        \$user_id = \$user->id;
+        \$token = Token::init(\$request)->generateToken(\$user_id);
+
+        return \$response->success(\"Account logged in\", [
+            'is_new' => false,
+            'auth_token' => \$token
+        ]);
+    }        
+            ";
+        }
+
+        $contr_boiler_plate .= "
     
     /*
     your service  functions
@@ -451,20 +478,20 @@ class {$controller_name} extends Controller
         echo PHP_EOL . PHP_EOL . "[+] ----  Graph Service boiler plate for --{$model_name}-- generated in \"{$this->graph_controllers_path}\" " . PHP_EOL;
         fclose($controller_file);
     }
-    private function createMigration($table_name)
+    private function createMigration($table_name,$auth = null)
     {
         $table_name = is_string($table_name) ? $table_name : $this->ask("Enter Table Name: ", true);
         $file_path = "{$this->migration_files_path}/{$table_name}.php";
         if (file_exists($file_path) && $this->confirm("Migration file already exists, do you want to override?")) { //check if file already
             //            open file
             $file_instance = fopen($file_path, "w");
-            $this->writeMigrationBoilerPlate($file_instance, $table_name);
+            $this->writeMigrationBoilerPlate($file_instance, $table_name, $auth);
         } elseif (!file_exists($file_path)) {
             $file_instance = fopen($file_path, "w");
-            $this->writeMigrationBoilerPlate($file_instance, $table_name);
+            $this->writeMigrationBoilerPlate($file_instance, $table_name, $auth);
         }
     }
-    private function writeMigrationBoilerPlate($migration_file, $table_name)
+    private function writeMigrationBoilerPlate($migration_file, $table_name, $auth = null)
     {
         $codes = "<?php
 /*
@@ -487,9 +514,22 @@ class {$table_name} implements Table
     public \$table_name = \"" . $this->toLower($table_name) . "\";
     public \$primary_key = \"id\";
     public function install(Structure &\$table)
-    {
+    {";
 
+if ($auth){
+    $codes .= "
+        \$table->column('$auth')
+            ->type('VARCHAR(200)')
+            ->nullable()
+            ->uniqueKey();
 
+        \$table->column('password')
+            ->type('TEXT')
+            ->nullable();
+    ";
+}
+
+$codes .= "
     }
 
     public function uninstall()
